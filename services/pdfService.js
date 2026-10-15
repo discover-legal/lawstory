@@ -8,7 +8,7 @@ const fs = require('fs').promises;
 const fssync = require('fs');
 const path = require('path');
 const previewRenderer = require('./previewRenderer');
-const { blankPlaceholders } = require('../templates/core/placeholders');
+const { blankPlaceholdersDeep } = require('../templates/core/placeholders');
 const { makeSectionPrefixer } = require('../utils/sectionNumbering');
 const { prepareFactsForDisplay, isEvidence, evidenceHasFile, getEvidenceItems } = require('../utils/factNormalizer');
 const { validatePath } = require('../utils/pathSecurity');
@@ -100,16 +100,7 @@ class PDFService {
    * fill-in-by-hand blank, keeping any instruction as a Draft note.
    */
   sanitizeForFiling(value) {
-    if (typeof value === 'string') {
-      return blankPlaceholders(value);
-    }
-    if (Array.isArray(value)) return value.map((v) => this.sanitizeForFiling(v));
-    if (value && typeof value === 'object') {
-      const out = {};
-      for (const [k, v] of Object.entries(value)) out[k] = this.sanitizeForFiling(v);
-      return out;
-    }
-    return value;
+    return blankPlaceholdersDeep(value);
   }
 
   async generatePDF(document, options = {}) {

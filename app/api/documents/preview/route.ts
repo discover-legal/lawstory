@@ -9,6 +9,13 @@ import { readJsonBody } from '@/lib/api/requestBody';
 import { isCoreEngineEnabled } from '@/lib/api/coreChat';
 import { draftPreview } from '@/lib/api/coreDocuments';
 
+// The preview shows exactly what the download will: every bracketed
+// placeholder token ("[PETITIONER NAME]", "[COURT FILE NUMBER]") becomes the
+// same fill-in blank pdfService prints (templates/core/placeholders.js).
+const { blankPlaceholdersDeep } = require('@/templates/core/placeholders') as {
+  blankPlaceholdersDeep: <T>(value: T) => T;
+};
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -285,7 +292,7 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
         : createFallbackPreview(affidavitData);
       return NextResponse.json({
         success: true,
-        preview,
+        preview: blankPlaceholdersDeep(preview),
         metadata: { generatedAt: new Date().toISOString(), fallback: true },
       });
     }
@@ -329,7 +336,7 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
         : createFallbackPreview(affidavitData);
       return NextResponse.json({
         success: true,
-        preview,
+        preview: blankPlaceholdersDeep(preview),
         metadata: { generatedAt: new Date().toISOString(), fallback: true },
       });
     }
@@ -346,8 +353,8 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
     return NextResponse.json({
       success: true,
       preview: {
-        sections: document.sections,
-        htmlContent: document.htmlContent,
+        sections: blankPlaceholdersDeep(document.sections),
+        htmlContent: blankPlaceholdersDeep(document.htmlContent),
         metadata: { totalFacts: facts.length },
       },
       metadata: {
@@ -368,7 +375,7 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
     }
     return NextResponse.json({
       success: true,
-      preview: createFallbackPreview(affidavitData),
+      preview: blankPlaceholdersDeep(createFallbackPreview(affidavitData)),
       metadata: { generatedAt: new Date().toISOString(), fallback: true, degraded: true },
     });
   }

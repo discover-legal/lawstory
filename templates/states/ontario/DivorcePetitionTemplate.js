@@ -18,7 +18,9 @@ const {
  * Ontario Divorce Application Template
  *
  * Ontario uses the term "Application" rather than "Petition" for divorce proceedings.
- * The standard form is Form 8 (Application — General) under the Family Law Rules.
+ * The standard form is Form 8 (Application — General) under the Family Law Rules:
+ * this draft pleads corollary claims (parenting, support, NFP equalization), and
+ * Form 8A (Application — Divorce) is only for a divorce-only claim.
  *
  * Key Legal References:
  * - Divorce Act, RSC 1985, c. 3 (2nd Supp.) (federal — governs divorce nationwide)

@@ -10,9 +10,9 @@
 // dropped every divorce decree from the registry. `node:crypto` is a
 // built-in and always resolvable.
 const { randomUUID: uuidv4 } = require('node:crypto');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('./blanks');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, draftBlank } = require('./blanks');
 const { normalizeCountyName } = require('./countyName');
-const { asList, partitionByCharacter } = require('./dataShapes');
+const { asList, partitionByCharacter, propertyAgreementProse } = require('./dataShapes');
 const { DEFAULT_TERMS } = require('./terminology');
 const {
   resolveCustodyArrangement,
@@ -48,6 +48,26 @@ const escapeHtml = (str) => {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 };
+
+/**
+ * Replace a decree section's content with a single Draft-note blank,
+ * keeping the jurisdiction's own title/type.
+ * @param {Object|null} section - The jurisdiction's section (for its title)
+ * @param {string} note - Draft-note blank text
+ * @param {string} type - Item type
+ * @returns {Object}
+ */
+function blankDecreeSection(section, note, type) {
+  const base = section && typeof section === 'object' ? section : {};
+  // A jurisdiction that already rendered only its own Draft note (in its
+  // own vocabulary, e.g. Ontario's net-family-property note) keeps it.
+  const ownItems = Array.isArray(base.items) ? base.items : [];
+  if (!base.text && ownItems.length > 0 && ownItems.every((i) => /_draft_note$/.test(String(i.type || '')))) {
+    return base;
+  }
+  const { text: _text, items: _items, ...rest } = base;
+  return { title: 'DIVISION OF PROPERTY', ...rest, items: [{ content: note, type }] };
+}
 
 /**
  * Base template class for final divorce decree/judgment generation
@@ -258,8 +278,16 @@ class BaseDivorceDecreeTemplate {
     const appearances = this.generateAppearancesSection(divorceData);
     const jurisdiction = this.generateJurisdictionSection(divorceData);
     const dissolution = this.generateDissolutionSection(divorceData);
-    const propertyDivision = this.generatePropertyDivisionSection(divorceData);
-    const debtAllocation = this.generateDebtAllocationSection(divorceData);
+    // SAFETY GATE (owner decision, 2026-10): a proposed order may find or
+    // award property / allocate debts only from known facts. When the
+    // record says nothing usable, every jurisdiction's section — however its
+    // override words the boilerplate — is replaced by a Draft-note blank.
+    const propertyDivision = this.propertyPostureKnown(divorceData)
+      ? this.generatePropertyDivisionSection(divorceData)
+      : blankDecreeSection(this.generatePropertyDivisionSection(divorceData), this.getUnknownPropertyNote(divorceData), 'property_draft_note');
+    const debtAllocation = this.debtPostureKnown(divorceData)
+      ? this.generateDebtAllocationSection(divorceData)
+      : blankDecreeSection(this.generateDebtAllocationSection(divorceData), this.getUnknownDebtNote(divorceData), 'debts_draft_note');
     const childCustody = this.generateChildCustodySection(divorceData);
     const childSupport = this.generateChildSupportSection(divorceData);
     const spousalSupport = this.generateSpousalSupportSection(divorceData);
@@ -519,6 +547,78 @@ class BaseDivorceDecreeTemplate {
   }
 
   /**
+   * Whether the record says anything a property ORDER can rest on —
+   * itemized property, a described or
+   * affirmed agreement, a separation agreement or prenup that governs, an
+   * equalization payment, or a user-confirmed "no property". A bare
+   * `hasProperty === true` says property exists but not who keeps what, so
+   * it proposes no award; a bare `hasProperty === false` may be silence
+   * promoted to a boolean. Both, and silence, render a Draft-note blank.
+   * @param {Object} d - The divorce data
+   * @returns {boolean}
+   */
+  propertyPostureKnown(d) {
+    const agreement = typeof d.propertyAgreement === 'string' ? d.propertyAgreement.trim().toLowerCase() : d.propertyAgreement;
+    const agreed =
+      d.propertyAgreementConfirmed === true ||
+      agreement === true ||
+      agreement === 'agreed' || agreement === 'yes' ||
+      Boolean(propertyAgreementProse(d.propertyAgreement));
+    const nilConfirmed =
+      d.noPropertyConfirmed === true ||
+      (d.hasProperty === false && agreed);
+    return Boolean(
+      nilConfirmed ||
+      asList(d.petitionerProperty).length > 0 ||
+      asList(d.respondentProperty).length > 0 ||
+      (Array.isArray(d.realEstateItems) && d.realEstateItems.length > 0) ||
+      (Array.isArray(d.propertyItems) && d.propertyItems.length > 0) ||
+      (agreed && d.hasProperty !== false) ||
+      d.propertyResolvedBySeparationAgreement === true ||
+      d.prenupSigned === true ||
+      d.prenupGovernsAfterDivorce === true ||
+      Number(d.equalizationAmount) > 0
+    );
+  }
+
+  /**
+   * Same rule for debts: itemized debts, a described debt agreement, or a
+   * user-confirmed "no debts". A bare `hasDebts === true` allocates nothing.
+   * @param {Object} d - The divorce data
+   * @returns {boolean}
+   */
+  debtPostureKnown(d) {
+    const debtAgreement = typeof d.debtAgreement === 'string' && d.debtAgreement.trim() !== '';
+    return Boolean(
+      d.noDebtsConfirmed === true ||
+      (d.hasDebts === false && debtAgreement) ||
+      asList(d.petitionerDebts).length > 0 ||
+      asList(d.respondentDebts).length > 0 ||
+      (Array.isArray(d.debtItems) && d.debtItems.length > 0)
+    );
+  }
+
+  /** Draft note for a property order the record cannot support. */
+  getUnknownPropertyNote(d) {
+    if (d.hasProperty === true) {
+      return draftBlank('list the property you and your spouse have and who you propose keeps each item before filing; the proposed order awards nothing until you do.');
+    }
+    return d.hasProperty === false
+      ? draftBlank('confirm whether you and your spouse have any property to divide, or a written agreement dividing it, before filing. Silence on this line may be treated as no property, waiving your claim.')
+      : draftBlank('state what property you and your spouse have and who you propose keeps each item, or confirm that there is none, before filing. The proposed order awards nothing until you do.');
+  }
+
+  /** Draft note for a debt order the record cannot support. */
+  getUnknownDebtNote(d) {
+    if (d.hasDebts === true) {
+      return draftBlank('list the debts you and your spouse owe and who you propose pays each before filing; the proposed order allocates nothing until you do.');
+    }
+    return d.hasDebts === false
+      ? draftBlank('confirm whether you and your spouse have any debts to allocate, or a written agreement dividing them, before filing. Silence on this line may leave you solely responsible for any unallocated debt.')
+      : draftBlank('state what debts you and your spouse owe and who you propose pays each, or confirm that there are none, before filing. The proposed order allocates nothing until you do.');
+  }
+
+  /**
    * Generate property division section
    * @param {Object} divorceData - The divorce data
    * @returns {Object} Property division section
@@ -585,11 +685,13 @@ class BaseDivorceDecreeTemplate {
         });
       }
 
-      // Default language if no specific property listed
-      if (!divorceData.petitionerProperty && !divorceData.respondentProperty) {
+      // No itemized division on the record: the draft proposes no award
+      // (a catch-all "each keeps what they hold" would be an order the
+      // filer never asked for). Draft-note blank instead.
+      if (petitionerPropertyList.length === 0 && respondentPropertyList.length === 0) {
         items.push({
-          content: 'IT IS ORDERED that each party is awarded the personal property currently in that party\'s possession as that party\'s sole and separate property.',
-          type: 'order'
+          content: draftBlank('state who you propose keeps each item of property before filing; the proposed order awards nothing until you do.'),
+          type: 'property_draft_note'
         });
       }
     }

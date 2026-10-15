@@ -53,8 +53,13 @@
     "basic": [
       {
         "name": "Form 8 — Application (General)",
-        "description": "Initiates the divorce proceeding under the Family Law Rules, O. Reg. 114/99",
+        "description": "Initiates the divorce proceeding under the Family Law Rules, O. Reg. 114/99, when the divorce is joined with any other claim (parenting, child or spousal support, property / equalization of net family property, or the matrimonial home). The draft Application this tool prepares pleads those corollary claims, so Form 8 is the matching form.",
         "required": true
+      },
+      {
+        "name": "Form 8A — Application (Divorce)",
+        "description": "Use instead of Form 8 ONLY for a divorce-only claim (a simple or joint divorce with no parenting, support, property or matrimonial-home claims). Rule: divorce only → Form 8A; divorce plus any corollary claim → Form 8 (Family Law Rules, O. Reg. 114/99).",
+        "required": false
       },
       {
         "name": "Form 13 — Financial Statement",
@@ -93,7 +98,7 @@
   "filingFees": {
     "approximate": "CAD $224 (initial filing) / $669 (total for divorce)",
     "varies": false,
-    "notes": "Ontario filing fee is CAD $224 for the Application (Form 8A), plus $445 for setting the matter down for divorce (Affidavit for Divorce), totalling $669. A Certificate of Divorce costs an additional $25 ($694 total). Fee waiver available (Form 26B) for parties who cannot afford the fee."
+    "notes": "Ontario filing fee is CAD $224 for the Application (Form 8, or Form 8A for a divorce-only claim), plus $445 for setting the matter down for divorce (Affidavit for Divorce), totalling $669. A Certificate of Divorce costs an additional $25 ($694 total). Fee waiver available (Form 26B) for parties who cannot afford the fee."
   },
   "childSupportGuidelines": {
     "calculationBasis": "federal_table",

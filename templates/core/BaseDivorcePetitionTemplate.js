@@ -1270,6 +1270,14 @@ class BaseDivorcePetitionTemplate {
       });
     }
 
+    // Unknown / unconfirmed posture: keep the jurisdiction's claim-
+    // preserving requests (claims are not allegations).
+    if (items.some((item) => item.type === 'property_draft_note')) {
+      for (const content of this.getPropertyClaimsPreserved(divorceData)) {
+        items.push({ number: paragraphNum++, content, type: 'property_claim' });
+      }
+    }
+
     return {
       title: 'VI. PROPERTY AND DEBTS',
       items,
@@ -1323,6 +1331,19 @@ class BaseDivorcePetitionTemplate {
       asList(divorceData.petitionerDebts).length > 0 ||
       asList(divorceData.respondentDebts).length > 0;
     return signal && !this.factsIndicateNoDebts(divorceData);
+  }
+
+  /**
+   * Property CLAIMS a jurisdiction must keep in the petition even when the
+   * filer has not yet described any property — e.g. North Carolina's
+   * equitable-distribution claim, which is lost if not asserted before the
+   * divorce judgment. These are requests, not allegations that property
+   * exists, so they render alongside the Draft-note blank. Default: none.
+   * @param {Object} _divorceData - The divorce data
+   * @returns {string[]}
+   */
+  getPropertyClaimsPreserved(_divorceData) {
+    return [];
   }
 
   /**

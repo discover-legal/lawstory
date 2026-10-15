@@ -114,8 +114,12 @@ describe('resolveCustodyArrangement', () => {
     expect(resolveCustodyArrangement({ custodyType: 'Joint Custody' })).toMatchObject({ kind: 'joint' });
   });
 
-  it('keeps the legacy exact "sole" value on its historical branch', () => {
-    expect(resolveCustodyArrangement({ custodyType: 'sole' })).toMatchObject({ kind: 'legacy_sole' });
+  it('keeps the legacy exact "sole" value on its historical branch when a custodian is named', () => {
+    expect(resolveCustodyArrangement({ custodyType: 'sole', primaryCustodian: 'petitioner', petitionerName: 'A B' })).toMatchObject({ kind: 'legacy_sole' });
+  });
+
+  it('legacy "sole" with no named custodian renders neutral — never a sole order to the filer', () => {
+    expect(resolveCustodyArrangement({ custodyType: 'sole' })).toMatchObject({ kind: 'unspecified' });
   });
 
   it('never maps ambiguous free text to a sole branch', () => {

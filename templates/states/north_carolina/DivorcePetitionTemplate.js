@@ -285,6 +285,15 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   /**
+   * Claim-preserving property paragraph, rendered even when the property
+   * posture is unknown (N.C.G.S. § 50-21(a) requires the equitable-distribution claim to be asserted before the divorce judgment or it is lost — a claim, not an allegation that property exists).
+   * @returns {string[]}
+   */
+  getPropertyClaimsPreserved(_divorceData) {
+    return ['Plaintiff hereby claims and requests equitable distribution of the marital property and divisional property pursuant to N.C.G.S. § 50-20. Plaintiff expressly asserts this claim before entry of the divorce judgment to preserve the right to equitable distribution.'];
+  }
+
+  /**
    * Generate North Carolina property section
    * CRITICAL: Equitable distribution claim must be asserted in complaint or separate action
    * before the divorce is granted, or the right is permanently waived
@@ -311,7 +320,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'Plaintiff hereby claims and requests equitable distribution of the marital property and divisional property pursuant to N.C.G.S. § 50-20. Plaintiff expressly asserts this claim before entry of the divorce judgment to preserve the right to equitable distribution.',
+      content: this.getPropertyClaimsPreserved(divorceData)[0],
       type: 'property_request'
     });
 

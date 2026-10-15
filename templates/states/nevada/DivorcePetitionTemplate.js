@@ -228,6 +228,15 @@ class NevadaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   /**
+   * Claim-preserving property paragraph, rendered even when the property
+   * posture is unknown (the separate-property request is a claim, not an allegation that property exists).
+   * @returns {string[]}
+   */
+  getPropertyClaimsPreserved(_divorceData) {
+    return ['Plaintiff requests that each party be awarded their respective separate property. Separate property includes property acquired before the marriage, by gift, or by inheritance.'];
+  }
+
+  /**
    * Generate Nevada property section — community property / equal 50/50 division
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
@@ -252,7 +261,7 @@ class NevadaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'Plaintiff requests that each party be awarded their respective separate property. Separate property includes property acquired before the marriage, by gift, or by inheritance.',
+      content: this.getPropertyClaimsPreserved(divorceData)[0],
       type: 'property_info'
     });
 

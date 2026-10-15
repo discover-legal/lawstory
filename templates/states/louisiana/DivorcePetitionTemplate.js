@@ -262,6 +262,15 @@ class LouisianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   /**
+   * Claim-preserving property paragraph, rendered even when the property
+   * posture is unknown (the separate-property confirmation request is a claim, not an allegation that property exists).
+   * @returns {string[]}
+   */
+  getPropertyClaimsPreserved(_divorceData) {
+    return ['Petitioner further requests that each party be confirmed as the owner of their separate property, including property acquired before the marriage, property acquired during the marriage by gift or inheritance, and property designated as separate by valid matrimonial agreement.'];
+  }
+
+  /**
    * Generate Louisiana property section — community property / equal 50/50 partition
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
@@ -286,7 +295,7 @@ class LouisianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'Petitioner further requests that each party be confirmed as the owner of their separate property, including property acquired before the marriage, property acquired during the marriage by gift or inheritance, and property designated as separate by valid matrimonial agreement.',
+      content: this.getPropertyClaimsPreserved(divorceData)[0],
       type: 'property_info'
     });
 

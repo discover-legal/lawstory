@@ -56,10 +56,14 @@ function resolveCustodyArrangement(divorceData) {
     return { kind: 'unspecified', raw, explicit: true };
   }
 
-  // Legacy exact 'sole': the old else-branch was the deliberate rendering for
-  // this stored value (sole to primaryCustodian, falling back to the filer).
+  // Legacy exact 'sole': sole to the recorded primaryCustodian /
+  // primaryResidence. With no named custodian it is NOT a sole order to the
+  // filer (silence never picks a parent) — render neutral, like any other
+  // arrangement the data does not pin to a party.
   if (value === 'sole') {
-    return { kind: 'legacy_sole', raw, explicit: true };
+    return resolvePrimaryResidenceName(divorceData)
+      ? { kind: 'legacy_sole', raw, explicit: true }
+      : { kind: 'unspecified', raw, explicit: true };
   }
 
   // Legacy free text that positively indicates a shared arrangement

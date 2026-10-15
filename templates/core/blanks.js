@@ -79,11 +79,14 @@ function caseNumberOrBlank(value, blank = CASE_NUMBER_BLANK) {
 /**
  * Whether either party is currently pregnant, as affirmatively recorded.
  * `eitherPartyPregnant` is the neutral field; `wifePregnant` is the legacy
- * Florida alias. Anything other than a boolean is unknown.
+ * Florida alias; `notPregnantConfirmed` is the v2 confirmation flag. Anything other than a boolean is unknown.
  * @param {Object} data
  * @returns {'pregnant'|'not_pregnant'|'unknown'}
  */
 function pregnancyStatus(data = {}) {
+  // v2 engine: an affirmed `not_pregnant` Confirmation arrives as this flag
+  // (core/adapters/legacy.ts CONFIRMATION_FLAGS).
+  if (data.notPregnantConfirmed === true) return 'not_pregnant';
   const raw = data.eitherPartyPregnant !== undefined && data.eitherPartyPregnant !== null
     ? data.eitherPartyPregnant
     : data.wifePregnant;

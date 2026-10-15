@@ -129,7 +129,27 @@ function blankPlaceholders(text) {
   });
 }
 
+/**
+ * blankPlaceholders applied to every string in a structure (objects and
+ * arrays walked; other values untouched). The PDF/DOCX choke point and the
+ * editor preview both use it, so the preview shows exactly the blanks the
+ * download will.
+ * @param {*} value
+ * @returns {*}
+ */
+function blankPlaceholdersDeep(value) {
+  if (typeof value === 'string') return blankPlaceholders(value);
+  if (Array.isArray(value)) return value.map(blankPlaceholdersDeep);
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = blankPlaceholdersDeep(v);
+    return out;
+  }
+  return value;
+}
+
 module.exports = {
+  blankPlaceholdersDeep,
   PLACEHOLDER_SOURCE,
   COURT_COMPLETED,
   findPlaceholders,

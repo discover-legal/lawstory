@@ -480,6 +480,12 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       'An order allocating responsibility for family debt in an equitable manner;'
     ];
 
+    // Exclusive possession of the family home is claimed only when the filer
+    // asks for it in the interview (never assumed from silence).
+    if (divorceData.matrimonialHomePossessionRequested === true) {
+      reliefItems.splice(2, 0, 'An order for exclusive possession of the family home and its contents pursuant to the Family Property Act, RSA 2000, c. F-4.7;');
+    }
+
     if (divorceData.hasMinorChildren === true || (divorceData.children && divorceData.children.length > 0)) {
       reliefItems.push('A parenting order specifying parenting time and decision-making responsibility pursuant to section 16.1 of the Divorce Act;');
       reliefItems.push('A child support order pursuant to section 15.1 of the Divorce Act and the Federal Child Support Guidelines, SOR/97-175;');
