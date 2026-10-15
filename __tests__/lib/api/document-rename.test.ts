@@ -23,7 +23,7 @@ jest.mock('@/lib/api/rateLimit', () => ({
 const { PUT } = require('@/app/api/documents/[id]/rename/route');
 
 describe('PUT /api/documents/:id/rename', () => {
-  beforeEach(() => mockQuery.mockReset().mockResolvedValue({ rowCount: 1, rows: [{ id: 5 }] }));
+  beforeEach(() => mockQuery.mockReset().mockResolvedValue({ rowCount: 1, rows: [{ id: 5, edit_revision: '4' }] }));
 
   it('updates the title column AND content.documentTitle, scoped to the owner', async () => {
     const req = new NextRequest('http://localhost/api/documents/5/rename', {
@@ -32,7 +32,7 @@ describe('PUT /api/documents/:id/rename', () => {
     });
     const res = await PUT(req, { params: { id: '5' } });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true, id: 5, title: 'Jordan — final' });
+    expect(await res.json()).toEqual({ success: true, id: 5, title: 'Jordan — final', editRevision: 4 });
 
     const [sql, params] = mockQuery.mock.calls[0];
     // Same parameter for both targets: typed explicitly so Postgres does not
@@ -40,8 +40,9 @@ describe('PUT /api/documents/:id/rename', () => {
     expect(sql).toMatch(/SET title = \$1::text/);
     expect(sql).toMatch(/jsonb_set\(content, '\{documentTitle\}', to_jsonb\(\$1::text\)/);
     expect(sql).toMatch(/WHERE id = \$2 AND user_id = \$3/);
-    // A rename is metadata, never a content edit (migration 019).
-    expect(sql).not.toMatch(/edit_revision/);
+    // A rename changes content, so it bumps the revision: stale tabs get a
+    // conflict instead of silently saving the old name back.
+    expect(sql).toMatch(/edit_revision = edit_revision \+ 1/);
     expect(params).toEqual(['Jordan — final', 5, 7]);
   });
 
@@ -65,9 +66,10 @@ describe('APPLY_RENAME reducer', () => {
   it('updates the open document\'s title without marking it unsaved', () => {
     const next = documentReducer(base, {
       type: ActionTypes.APPLY_RENAME,
-      payload: { documentId: '5', title: 'Jordan — final' },
+      payload: { documentId: '5', title: 'Jordan — final', editRevision: 4 },
     });
     expect(next.currentDocument.documentTitle).toBe('Jordan — final');
+    expect(next.currentDocument.serverRevision).toBe(4);
     expect(next.currentDocument.state).toBe('UT');
     expect(next.hasUnsavedChanges).toBe(false);
   });

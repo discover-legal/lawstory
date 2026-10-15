@@ -403,8 +403,9 @@ const UserDashboard = ({ onNewDocument, onContinueDocument }) => {
       });
       if (response.ok) {
         // Keep an already-open copy of this document (editor state survives
-        // client navigation) in step with the saved name.
-        applyRename(docId, newName.trim());
+        // client navigation) in step with the saved name and revision.
+        const renamed = await response.json().catch(() => ({}));
+        applyRename(docId, newName.trim(), Number(renamed.editRevision));
         await loadDocuments();
         cancelRename();
       } else {

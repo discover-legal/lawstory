@@ -4,7 +4,6 @@ import { withAuth } from '@/lib/api/auth';
 import { query } from '@/lib/db';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/api/rateLimit';
 import {
-  AuthorizationError,
   NotFoundError,
   ValidationError,
   toErrorResponse,
@@ -49,9 +48,15 @@ export const PUT = withAuth<{ id: string | string[] }>(async (req: NextRequest, 
     // `content.documentTitle` (the editor's Document Title field, which every
     // save writes back into `title`). Renaming only the column left the
     // editor showing the old name and let the next autosave revert it, so
-    // both are updated together. `edit_revision` is deliberately untouched
-    // (migration 019: a rename is metadata, not a content edit).
-    const updated = await query<{ id: number }>(
+    // both are updated together.
+    //
+    // The rename bumps edit_revision: it changes content, so an editor tab
+    // opened before the rename must not silently save the old name back. The
+    // tab that renamed adopts the returned revision (APPLY_RENAME) and keeps
+    // saving; any other open tab gets the normal 409 conflict prompt. The
+    // documentTitle change never affects payment status (documents/save
+    // ignores documentTitle when deciding whether content changed).
+    const updated = await query<{ id: number; edit_revision: string | number }>(
       `UPDATE documents
           SET title = $1::text,
               content = CASE
@@ -59,14 +64,19 @@ export const PUT = withAuth<{ id: string | string[] }>(async (req: NextRequest, 
                   THEN jsonb_set(content, '{documentTitle}', to_jsonb($1::text), true)
                 ELSE content
               END,
-              updated_at = CURRENT_TIMESTAMP
+              updated_at = CURRENT_TIMESTAMP,
+              edit_revision = edit_revision + 1
         WHERE id = $2 AND user_id = $3
-        RETURNING id`,
+        RETURNING id, edit_revision`,
       [title, id, user.id],
     );
     if (updated.rowCount === 0) throw new NotFoundError('Document not found');
-    void AuthorizationError; // referenced for symmetry; runtime no-op
-    return NextResponse.json({ success: true, id, title });
+    return NextResponse.json({
+      success: true,
+      id,
+      title,
+      editRevision: Number(updated.rows[0].edit_revision),
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return toErrorResponse(new ValidationError('Invalid title'));

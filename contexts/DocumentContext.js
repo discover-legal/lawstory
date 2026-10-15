@@ -186,7 +186,13 @@ export const documentReducer = (state, action) => {
       }
       return {
         ...state,
-        currentDocument: { ...state.currentDocument, documentTitle: action.payload.title },
+        currentDocument: {
+          ...state.currentDocument,
+          documentTitle: action.payload.title,
+          ...(Number.isInteger(action.payload.editRevision)
+            ? { serverRevision: action.payload.editRevision }
+            : {}),
+        },
       };
 
     case ActionTypes.SET_DOCUMENTS:
@@ -1270,8 +1276,15 @@ export const DocumentProvider = ({ children }) => {
 
   // Reflect a completed server-side rename in the open document, if it is
   // the one renamed.
-  const applyRename = useCallback((documentId, title) => {
-    dispatch({ type: ActionTypes.APPLY_RENAME, payload: { documentId, title } });
+  const applyRename = useCallback((documentId, title, editRevision) => {
+    const current = stateRef.current.currentDocument;
+    const isOpen = current.documentId != null && String(current.documentId) === String(documentId);
+    // The rename bumped edit_revision; this tab made that change, so it
+    // adopts the new revision and its next save is not a false conflict.
+    if (isOpen && Number.isInteger(editRevision)) {
+      serverRevisionRef.current = editRevision;
+    }
+    dispatch({ type: ActionTypes.APPLY_RENAME, payload: { documentId, title, editRevision } });
   }, []);
 
   // Update document data WITHOUT triggering preview generation

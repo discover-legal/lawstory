@@ -113,7 +113,9 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
         `UPDATE documents
             SET payment_status = CASE
                   WHEN payment_status = 'free' THEN 'free'
-                  WHEN content IS DISTINCT FROM $1::jsonb THEN 'unpaid'
+                  -- A rename (documentTitle) is not a material edit: it
+                  -- must never revoke a paid entitlement.
+                  WHEN (content - 'documentTitle') IS DISTINCT FROM ($1::jsonb - 'documentTitle') THEN 'unpaid'
                   ELSE payment_status
                 END,
                 content = $1, title = $2, template_state = $3, validation_results = $4,
