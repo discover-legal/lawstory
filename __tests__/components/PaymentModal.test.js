@@ -1,6 +1,6 @@
 import { waitForPaymentSuccess } from '@/components/app/PaymentModal';
 
-jest.mock('@stripe/stripe-js', () => ({
+jest.mock('@stripe/stripe-js/pure', () => ({
   loadStripe: jest.fn(() => Promise.resolve({})),
 }));
 
@@ -80,5 +80,54 @@ describe('waitForPaymentSuccess', () => {
     await expect(waitForPaymentSuccess('pi_12345678901234', { fetchImpl }))
       .rejects.toThrow('Payment not found');
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Stripe.js loading', () => {
+  const ORIGINAL_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  afterEach(() => {
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = ORIGINAL_KEY;
+  });
+
+  it('does not load Stripe.js when the module is imported (free deployment)', () => {
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = 'pk_test_123';
+    jest.isolateModules(() => {
+      const { loadStripe } = require('@stripe/stripe-js/pure');
+      loadStripe.mockClear();
+      require('@/components/app/PaymentModal');
+      expect(loadStripe).not.toHaveBeenCalled();
+    });
+  });
+
+  it('loads Stripe.js once, only when a payment form is requested', () => {
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = 'pk_test_123';
+    jest.isolateModules(() => {
+      const { loadStripe } = require('@stripe/stripe-js/pure');
+      loadStripe.mockClear();
+      const { getStripePromise } = require('@/components/app/PaymentModal');
+      const first = getStripePromise();
+      expect(getStripePromise()).toBe(first);
+      expect(loadStripe).toHaveBeenCalledTimes(1);
+      expect(loadStripe).toHaveBeenCalledWith('pk_test_123');
+    });
+  });
+
+  it('never loads Stripe.js without a publishable key', () => {
+    delete process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    jest.isolateModules(() => {
+      const { loadStripe } = require('@stripe/stripe-js/pure');
+      loadStripe.mockClear();
+      const { getStripePromise } = require('@/components/app/PaymentModal');
+      expect(getStripePromise()).toBeNull();
+      expect(loadStripe).not.toHaveBeenCalled();
+    });
+  });
+
+  it('imports only the side-effect-free entry point', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const src = fs.readFileSync(path.join(process.cwd(), 'components/app/PaymentModal.js'), 'utf8');
+    expect(src).toMatch(/from '@stripe\/stripe-js\/pure'/);
+    expect(src).not.toMatch(/from '@stripe\/stripe-js'/);
   });
 });

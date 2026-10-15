@@ -3,7 +3,10 @@
 // Payment Modal Component with Stripe Payment Element
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
+// The `pure` entry point does NOT inject js.stripe.com on import (the default
+// entry does, as a module side effect). Stripe.js is loaded only when a
+// payment form is actually about to render.
+import { loadStripe } from '@stripe/stripe-js/pure';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { trackEvent } from '@/lib/utils/analytics';
 import { useModalFocus } from '@/hooks/useModalFocus';
@@ -11,10 +14,19 @@ import { useModalFocus } from '@/hooks/useModalFocus';
 // Use relative URLs in production (empty string), localhost in development
 const API_BASE_URL = '';
 
-// In the free/donation deployment the publishable key is unset; loadStripe('')
-// rejects at import time on every editor page load. <Elements> accepts null.
+// Stripe.js is fetched lazily, the first time a payment form renders — which
+// only happens after the server created a payment intent, i.e. only when
+// PAYMENTS_ENABLED=true. The free/donation deployment (payments off, or no
+// publishable key) never contacts js.stripe.com. The promise is memoized:
+// <Elements> requires a stable `stripe` prop. <Elements> accepts null.
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+let stripePromise;
+export const getStripePromise = () => {
+  if (stripePromise === undefined) {
+    stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+  }
+  return stripePromise;
+};
 
 const PAYMENT_STATUS_DELAYS_MS = [500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000];
 const TERMINAL_PAYMENT_FAILURES = new Set(['canceled', 'failed', 'requires_payment_method']);
@@ -354,7 +366,7 @@ const PaymentModal = ({ isOpen, onClose, affidavitData, onPaymentSuccess, docume
           )}
 
           {!loading && !error && clientSecret && paymentIntentId && (
-            <Elements stripe={stripePromise} options={options}>
+            <Elements stripe={getStripePromise()} options={options}>
               <PaymentForm
                 amount={amount}
                 currency={currency}
