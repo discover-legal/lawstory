@@ -46,7 +46,9 @@ describe('ContactCta without JavaScript', () => {
 describe('ConsultancyNav on phones', () => {
   it('server-renders a native disclosure menu holding every link and Sign in', () => {
     const html = renderToString(<ConsultancyNav />);
-    expect(html).toMatch(/<details[^>]*md:hidden/);
+    expect(html).toMatch(/<details[^>]*lg:hidden/);
+    // Inline links only from lg up (they overflowed the bar at 768–880px).
+    expect(html).toMatch(/hidden lg:inline[^"]*"[^>]*>Services</);
     expect(html).toMatch(/<summary[^>]*aria-label="Menu"/);
     for (const href of ['/services', '/tools/documents', '/tools/biglaw', '/research', '/resources', '/api/auth/login']) {
       // Each destination appears in the desktop row (or Sign in) AND the menu.
@@ -66,5 +68,15 @@ describe('ConsultancyNav on phones', () => {
     fireEvent.click(menuLinks[0]);
     expect(details.open).toBe(false);
     expect(screen.getAllByText('Sign in').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('closes on a click outside the menu, not inside it', () => {
+    const { container } = render(<ConsultancyNav />);
+    const details = container.querySelector('details') as HTMLDetailsElement;
+    details.open = true;
+    fireEvent.pointerDown(details.querySelector('ul') as Element);
+    expect(details.open).toBe(true);
+    fireEvent.pointerDown(document.body);
+    expect(details.open).toBe(false);
   });
 });

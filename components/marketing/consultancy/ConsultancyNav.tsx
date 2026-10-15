@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { Menu, Scale, X } from 'lucide-react';
@@ -23,6 +23,15 @@ export default function ConsultancyNav() {
   const closeMenu = () => {
     if (menuRef.current) menuRef.current.open = false;
   };
+  // Close the mobile menu on a tap or click anywhere outside it.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const menu = menuRef.current;
+      if (menu?.open && e.target instanceof Node && !menu.contains(e.target)) menu.open = false;
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/70">
@@ -45,7 +54,7 @@ export default function ConsultancyNav() {
               <Link
                 key={l.href}
                 href={l.href}
-                className="hidden md:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
+                className="hidden lg:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
               >
                 {l.label}
               </Link>
@@ -59,11 +68,12 @@ export default function ConsultancyNav() {
             </a>
             <ContactCta variant="nav" />
 
-            {/* Mobile menu: a native disclosure, so it opens before hydration
-                and without JavaScript, and is announced as expandable. */}
+            {/* Menu below lg (the inline links overflow the bar at 768–880px):
+                a native disclosure, so it opens before hydration and without
+                JavaScript, and is announced as expandable. */}
             <details
               ref={menuRef}
-              className="group md:hidden"
+              className="group lg:hidden"
               onKeyDown={(e) => {
                 if (e.key === 'Escape' && menuRef.current?.open) {
                   closeMenu();
@@ -93,7 +103,7 @@ export default function ConsultancyNav() {
                       </Link>
                     </li>
                   ))}
-                  <li className="border-t border-slate-200/70 mt-1 pt-1">
+                  <li className="sm:hidden border-t border-slate-200/70 mt-1 pt-1">
                     <a
                       href={signInHref}
                       onClick={closeMenu}
