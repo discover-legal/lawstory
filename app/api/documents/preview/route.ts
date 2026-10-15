@@ -7,7 +7,7 @@ import { getServices } from '@/lib/api/services';
 import { logger } from '@/lib/logger';
 import { readJsonBody } from '@/lib/api/requestBody';
 import { isCoreEngineEnabled } from '@/lib/api/coreChat';
-import { draftPreview } from '@/lib/api/coreDocuments';
+import { draftPreview, logV2Fallback } from '@/lib/api/coreDocuments';
 import { divorceDocLabels } from '@/lib/divorceDocLabels';
 
 export const runtime = 'nodejs';
@@ -290,11 +290,10 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
         v2 = await draftPreview({ userId: user.id, affidavitData: affidavitData as Record<string, unknown> });
       } catch (v2Err) {
         v2Failed = true;
-        logger.error('preview_v2_failed_falling_back_to_v1', {
+        logV2Fallback('preview', v2Err, {
           userId: user.id,
-          state,
-          effectiveDocType,
-          error: v2Err instanceof Error ? v2Err.message : String(v2Err),
+          documentId: affidavitData.documentId,
+          affidavitData: affidavitData as Record<string, unknown>,
         });
       }
       if (v2) {

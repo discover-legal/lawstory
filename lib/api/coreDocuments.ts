@@ -155,3 +155,31 @@ const PREFIX_BY_KIND: Record<DocumentKind, string> = {
   cert_last_known_address: 'cert-last-known-address',
   lawyer_handoff_summary: 'lawyer-handoff-summary',
 };
+
+/**
+ * One log shape for "v2 failed, v1 drafts this document instead" so preview
+ * and download failures can be correlated: which document, which kind,
+ * which jurisdiction, and the full stack.
+ */
+export function logV2Fallback(
+  surface: 'preview' | 'generate',
+  err: unknown,
+  ctx: { userId: number; documentId?: unknown; affidavitData: AffidavitData },
+): void {
+  let kind: string | null = null;
+  try {
+    kind = resolveDocumentKind(ctx.affidavitData);
+  } catch {
+    kind = null;
+  }
+  logger.error(`${surface}_v2_failed_falling_back_to_v1`, {
+    userId: ctx.userId,
+    documentId: ctx.documentId ?? null,
+    documentKind: kind,
+    documentType: ctx.affidavitData.documentType ?? null,
+    activeSubDocument: ctx.affidavitData.activeSubDocument ?? null,
+    state: ctx.affidavitData.state ?? null,
+    error: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
+}

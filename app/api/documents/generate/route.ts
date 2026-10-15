@@ -23,7 +23,7 @@ import {
 import { readJsonBody } from '@/lib/api/requestBody';
 import { getUserProfile } from '@/lib/api/profile';
 import { isCoreEngineEnabled } from '@/lib/api/coreChat';
-import { draftPdf } from '@/lib/api/coreDocuments';
+import { draftPdf, logV2Fallback } from '@/lib/api/coreDocuments';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -328,7 +328,19 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
     // v2 engine (core/): typed document tree → PDF. Word output and anything
     // the v2 composer cannot draft fall through to the v1 pipeline below.
     if (isCoreEngineEnabled() && !isDocx) {
-      const v2 = await draftPdf({ userId: user.id, affidavitData: affidavitData as Record<string, unknown> });
+      // A v2 failure falls through to v1 for the same document, exactly as
+      // /api/documents/preview does, so the download always matches what the
+      // editor previewed (and never 500s while v1 can draft it).
+      let v2: Awaited<ReturnType<typeof draftPdf>> = null;
+      try {
+        v2 = await draftPdf({ userId: user.id, affidavitData: affidavitData as Record<string, unknown> });
+      } catch (v2Err) {
+        logV2Fallback('generate', v2Err, {
+          userId: user.id,
+          documentId,
+          affidavitData: affidavitData as Record<string, unknown>,
+        });
+      }
       if (v2) {
         const safeFilename = `${v2.prefix}-${sanitizeFilename(documentId, 'draft')}.pdf`;
         logger.info('document_generated', {

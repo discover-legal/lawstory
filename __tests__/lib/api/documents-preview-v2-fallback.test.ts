@@ -9,6 +9,7 @@
 import { NextRequest } from 'next/server';
 
 const mockDraftPreview = jest.fn();
+const mockLogV2Fallback = jest.fn();
 const mockGeneratePetition = jest.fn();
 let mockServicesFail = false;
 
@@ -25,6 +26,7 @@ jest.mock('@/lib/logger', () => ({
 jest.mock('@/lib/api/coreChat', () => ({ isCoreEngineEnabled: () => true }));
 jest.mock('@/lib/api/coreDocuments', () => ({
   draftPreview: (...args: unknown[]) => mockDraftPreview(...args),
+  logV2Fallback: (...args: unknown[]) => mockLogV2Fallback(...args),
 }));
 jest.mock('@/lib/api/services', () => ({
   getServices: async () => {
@@ -75,6 +77,7 @@ describe('POST /api/documents/preview with CORE_ENGINE=v2', () => {
     expect(body.preview.sections).toEqual({ title: 'APPLICATION FOR DIVORCE' });
     expect(body.metadata).toMatchObject({ engine: 'v1', v2Failed: true });
     expect(mockGeneratePetition).toHaveBeenCalled();
+    expect(mockLogV2Fallback).toHaveBeenCalledWith('preview', expect.any(Error), expect.objectContaining({ userId: 3 }));
   });
 
   it('never degrades a divorce draft into an affidavit placeholder', async () => {
