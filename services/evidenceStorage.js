@@ -303,6 +303,45 @@ class EvidenceStorage {
   }
 
   /**
+   * Like assertWithin, but on the filesystem's REAL paths: a symlink (the
+   * file itself, or any directory below the storage root) that points
+   * outside the sandbox is refused. A path that does not exist yet is
+   * judged by its nearest existing ancestor.
+   *
+   * @param {string} candidate - Untrusted absolute path
+   * @param {string} expectedDir - Trusted absolute directory
+   */
+  async assertRealWithin(candidate, expectedDir) {
+    this.assertWithin(candidate, expectedDir);
+    const realOrNearest = async (p) => {
+      let current = path.resolve(p);
+      const suffix = [];
+      for (;;) {
+        try {
+          const real = await fs.realpath(current);
+          return path.join(real, ...suffix.reverse());
+        } catch (err) {
+          if (err.code !== 'ENOENT') throw err;
+          const parent = path.dirname(current);
+          if (parent === current) return path.resolve(p);
+          suffix.push(path.basename(current));
+          current = parent;
+        }
+      }
+    };
+    // The sandbox is anchored at the storage root's real location (an
+    // operator may mount or symlink the root itself); everything below the
+    // root must be real directories, so a symlinked user or document
+    // directory cannot re-root the sandbox somewhere else.
+    const [realCandidate, realBase] = await Promise.all([
+      realOrNearest(candidate),
+      realOrNearest(this.basePath),
+    ]);
+    const realExpected = path.join(realBase, path.relative(path.resolve(this.basePath), path.resolve(expectedDir)));
+    this.assertWithin(realCandidate, realExpected);
+  }
+
+  /**
    * Get evidence file
    * @param {number} userId - User ID
    * @param {number} documentId - Document ID
@@ -316,7 +355,7 @@ class EvidenceStorage {
 
       // Defense in depth — refuse paths that resolve outside the user/doc
       // sandbox, even if a future caller hands us untrusted input.
-      this.assertWithin(filepath, expectedDir);
+      await this.assertRealWithin(filepath, expectedDir);
 
       // Check file exists
       await fs.access(filepath);
@@ -342,14 +381,22 @@ class EvidenceStorage {
     try {
       const expectedDir = this.getUserEvidenceDir(userId, documentId);
 
-      // Delete main file
+      // Delete main file. A missing file, or one that resolves outside the
+      // sandbox, reports notFound (the route answers 404 either way, so the
+      // response is no oracle for what exists outside).
       if (fileKey) {
         const filepath = path.join(this.basePath, fileKey);
         try {
-          this.assertWithin(filepath, expectedDir);
-          await fs.unlink(filepath).catch(() => {});
+          await this.assertRealWithin(filepath, expectedDir);
         } catch (err) {
           logger.warn('Refusing to delete out-of-bounds evidence path:', err.message);
+          return { success: false, notFound: true };
+        }
+        try {
+          await fs.unlink(filepath);
+        } catch (err) {
+          if (err.code === 'ENOENT') return { success: false, notFound: true };
+          throw err;
         }
       }
 
@@ -363,7 +410,7 @@ class EvidenceStorage {
       if (derivedThumbnailKey) {
         const thumbnailPath = path.join(this.basePath, derivedThumbnailKey);
         try {
-          this.assertWithin(thumbnailPath, expectedDir);
+          await this.assertRealWithin(thumbnailPath, expectedDir);
           await fs.unlink(thumbnailPath).catch(() => {});
         } catch (err) {
           logger.warn('Refusing to delete out-of-bounds thumbnail path:', err.message);
@@ -493,7 +540,7 @@ class EvidenceStorage {
   async deleteDocumentEvidence(userId, documentId) {
     const documentDir = this.getUserEvidenceDir(userId, documentId);
     const userDir = path.join(this.basePath, String(userId));
-    this.assertWithin(documentDir, userDir);
+    await this.assertRealWithin(documentDir, userDir);
     await fs.rm(documentDir, { recursive: true, force: true });
     return { success: true };
   }

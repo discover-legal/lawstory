@@ -100,6 +100,12 @@ describe('GET/DELETE /api/evidence/:documentId/:fileKey', () => {
     expect(mockGetEvidence).not.toHaveBeenCalled();
   });
 
+  it('DELETE of a file that is not there answers 404', async () => {
+    mockDeleteEvidence.mockResolvedValue({ success: false, notFound: true });
+    const res = await route.DELETE(req('DELETE'), { params: { documentId: '2', fileKey: '2/2/gone.png' } });
+    expect(res.status).toBe(404);
+  });
+
   it('still checks document ownership', async () => {
     mockQuery.mockResolvedValue({ rows: [{ user_id: 99 }] });
     const res = await route.DELETE(req('DELETE'), { params: { documentId: '2', fileKey: '2/2/x.png' } });

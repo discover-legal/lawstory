@@ -116,6 +116,36 @@ describe('EvidenceStorage security boundaries', () => {
     await expect(fs.access(path.join(legacyDir, 'proof_thumb.jpg'))).resolves.toBeUndefined();
   });
 
+  test('refuses a file symlinked out of the sandbox (read and delete)', async () => {
+    const documentDir = path.join(storage.basePath, '17', '42');
+    await fs.mkdir(documentDir, { recursive: true });
+    const outside = path.join(root, 'secret.txt');
+    await fs.writeFile(outside, 'not yours');
+    await fs.symlink(outside, path.join(documentDir, 'escape.png'));
+
+    await expect(storage.getEvidence(17, 42, '17/42/escape.png')).rejects.toThrow();
+    await expect(storage.deleteEvidence(17, 42, '17/42/escape.png')).resolves.toEqual({ success: false, notFound: true });
+    await expect(fs.readFile(outside, 'utf8')).resolves.toBe('not yours');
+  });
+
+  test('refuses a document directory symlinked out of the user sandbox', async () => {
+    const userDir = path.join(storage.basePath, '17');
+    const elsewhere = path.join(root, 'elsewhere');
+    await fs.mkdir(userDir, { recursive: true });
+    await fs.mkdir(elsewhere, { recursive: true });
+    await fs.writeFile(path.join(elsewhere, 'other.png'), 'other');
+    await fs.symlink(elsewhere, path.join(userDir, '42'));
+
+    await expect(storage.getEvidence(17, 42, '17/42/other.png')).rejects.toThrow();
+    await expect(storage.deleteDocumentEvidence(17, 42)).rejects.toThrow('Path traversal blocked');
+    await expect(fs.readFile(path.join(elsewhere, 'other.png'), 'utf8')).resolves.toBe('other');
+  });
+
+  test('reports a missing file as notFound on delete', async () => {
+    await fs.mkdir(path.join(storage.basePath, '17', '42'), { recursive: true });
+    await expect(storage.deleteEvidence(17, 42, '17/42/never.png')).resolves.toEqual({ success: false, notFound: true });
+  });
+
   test('enforces per-document storage quotas before moving the staged file', async () => {
     const previousLimit = process.env.EVIDENCE_DOCUMENT_MAX_BYTES;
     process.env.EVIDENCE_DOCUMENT_MAX_BYTES = '30';

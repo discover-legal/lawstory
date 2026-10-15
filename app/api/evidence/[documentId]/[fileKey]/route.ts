@@ -179,10 +179,11 @@ export const DELETE = withAuth<Params>(async (req: NextRequest, { user, params }
         documentId: number,
         fileKey: string,
         thumbnailKey?: string,
-      ) => Promise<{ success: boolean }>;
+      ) => Promise<{ success: boolean; notFound?: boolean }>;
     };
 
-    await evidenceStorage.deleteEvidence(user.id, documentId, relativeKey, thumbnailKey);
+    const result = await evidenceStorage.deleteEvidence(user.id, documentId, relativeKey, thumbnailKey);
+    if (result.notFound) throw new NotFoundError('Evidence file not found');
 
     logger.info('evidence_deleted', {
       userId: user.id,
