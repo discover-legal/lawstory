@@ -3,6 +3,7 @@
 // Complies with Arizona Revised Statutes Title 25 and Arizona Rules of Family Law Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -134,7 +135,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `${respondent},\n`;
     caption += `Respondent.`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `\n\nCase No. ${caseNumber}`;
 
     if (divorceData.hasMinorChildren) {
@@ -161,7 +162,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court on ${this.formatDate(divorceData.hearingDate) || '___________________'}.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'through counsel' : 'self-represented'}.\n\n`;
+      text += `Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'through counsel', 'self-represented')}.\n\n`;
 
       if (divorceData.respondentAppeared) {
         text += `Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, appeared and consented to the entry of this Decree.\n\n`;
@@ -169,7 +170,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += `Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, having been properly served, did not appear. Default was entered.\n\n`;
       }
     } else {
-      text += `Petitioner appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'through counsel' : 'self-represented'}.\n\n`;
+      text += `Petitioner appeared ${representationPhrase(divorceData.petitionerRepresentation, 'through counsel', 'self-represented')}.\n\n`;
       text += `Respondent ${divorceData.respondentAppeared ? 'appeared' : 'did not appear after proper service'}.\n\n`;
     }
 
@@ -316,7 +317,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'Petitioner'} shall be the primary residential parent.`,
+        content: `IT IS ORDERED that ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} shall be the primary residential parent.`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -335,7 +336,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

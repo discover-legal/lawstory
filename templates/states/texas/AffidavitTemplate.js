@@ -3,6 +3,7 @@
 // Governing Law: Tex. Gov't Code § 312.011, Tex. Civ. Prac. & Rem. Code § 18.002, Tex. Penal Code § 37.02
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Texas Affidavit Template - LEGALLY COMPLIANT v2.0
@@ -69,7 +70,7 @@ class TexasAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number - Texas uses "CAUSE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names

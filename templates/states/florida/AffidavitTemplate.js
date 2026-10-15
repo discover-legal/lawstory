@@ -3,6 +3,7 @@
 // Governing Law: Fla. Stat. § 92.50, Fla. Stat. § 117.05, Fla. Stat. § 92.525
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Florida Affidavit Template - LEGALLY COMPLIANT v2.0
@@ -47,7 +48,7 @@ class FloridaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number - Florida uses "CASE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names

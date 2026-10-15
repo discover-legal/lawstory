@@ -3,6 +3,7 @@
 // Governing Law: N.Y. C.P.L.R. § 2106, N.Y. Executive Law § 137, N.Y. Real Property Law § 309-B
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * New York Affidavit Template - LEGALLY COMPLIANT v2.0
@@ -48,7 +49,7 @@ class NewYorkAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `${courtName}\n\n`;
 
     // Case number - New York uses "INDEX NO."
-    const indexNumber = affidavitData.indexNumber || affidavitData.caseNumber || '[INDEX NUMBER]';
+    const indexNumber = affidavitData.indexNumber || caseNumberOrBlank(affidavitData.caseNumber);
     caption += `INDEX NO. ${indexNumber.toUpperCase()}\n\n`;
 
     // Add party names

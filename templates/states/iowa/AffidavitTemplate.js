@@ -4,6 +4,7 @@
 //                Iowa Code §720.2 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Iowa Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -50,7 +51,7 @@ class IowaAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PETITIONER NAME]';

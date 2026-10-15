@@ -3,6 +3,7 @@
 // Complies with M.G.L. c. 208 (Massachusetts divorce statutes)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -101,7 +102,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = divorceData.court || this.getDefaultCourt(divorceData.county);
     caption += `${courtName.toUpperCase()}\n\n`;
 
-    const docketNum = divorceData.caseNumber || '[DOCKET NUMBER]';
+    const docketNum = caseNumberOrBlank(divorceData.caseNumber);
     caption += `DOCKET NO. ${docketNum}\n\n`;
 
     const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
@@ -133,10 +134,10 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This cause came on to be heard on ${this.formatDate(divorceData.hearingDate) || '___________________'}, `;
     text += `at the ${divorceData.county || '[COUNTY]'} Division of the Probate and Family Court, `;
 
-    text += `${divorceData.petitionerName || 'Plaintiff'} appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'by counsel' : 'pro se'}`;
+    text += `${divorceData.petitionerName || 'Plaintiff'} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')}`;
 
     if (divorceData.respondentAppeared) {
-      text += `, and ${divorceData.respondentName || 'Defendant'} appearing ${divorceData.respondentRepresentation === 'attorney' ? 'by counsel' : 'pro se'}`;
+      text += `, and ${divorceData.respondentName || 'Defendant'} appearing ${representationPhrase(divorceData.respondentRepresentation, 'by counsel', 'pro se')}`;
     } else {
       text += `, and ${divorceData.respondentName || 'Defendant'} ${divorceData.isUncontested ? 'having executed a Separation Agreement and waived appearance' : 'having been duly served and not appearing'}`;
     }
@@ -299,7 +300,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

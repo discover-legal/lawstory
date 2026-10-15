@@ -4,6 +4,7 @@
 //                Del. Code tit. 11, §1221 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Delaware Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -50,7 +51,7 @@ class DelawareAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `PETITION NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

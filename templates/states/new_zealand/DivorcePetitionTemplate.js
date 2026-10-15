@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * New Zealand Dissolution of Marriage Application Template
@@ -117,7 +118,7 @@ class NewZealandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[FAM NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();

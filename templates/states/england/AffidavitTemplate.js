@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * England & Wales Affidavit Template
@@ -75,7 +76,7 @@ class EnglandAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT';
     const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
-    const caseNo = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
     const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

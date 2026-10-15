@@ -4,6 +4,7 @@
 //                R.I. Gen. Laws §11-33-2 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Rhode Island Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -50,7 +51,7 @@ class RhodeIslandAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

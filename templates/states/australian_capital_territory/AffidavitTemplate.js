@@ -2,6 +2,7 @@
 // Evidence Act 2011 (ACT)
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class ACTAffidavitTemplate extends BaseAffidavitTemplate {
   // Australian terminology (see templates/core/terminology.js): divorce is
@@ -20,7 +21,7 @@ class ACTAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA';
     const location = (affidavitData.county || affidavitData.city || 'CANBERRA').toUpperCase();
-    const fileNo = affidavitData.caseNumber || '[FILE NUMBER]';
+    const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
     const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
     return { courtName: court, caseNumber: affidavitData.caseNumber, plaintiff: applicant, defendant: respondent, formatted: `${court.toUpperCase()}\nREGISTRY: ${location}\n\nFile Number: ${fileNo}\n\n${applicant.toUpperCase()}\nApplicant\n\n— and —\n\n${respondent.toUpperCase()}\nRespondent` };

@@ -3,6 +3,7 @@
 // Complies with Arizona Revised Statutes Title 25 and Arizona Rules of Family Law Procedure
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Arizona Petition for Dissolution of Marriage Template
@@ -123,9 +124,9 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     // Petitioner info block (left side)
     caption += `${divorceData.petitionerName || '[PETITIONER NAME]'}\n`;
-    caption += `${divorceData.petitionerAddress || '[ADDRESS]'}\n`;
-    caption += `${divorceData.petitionerCity || '[CITY]'}, ${divorceData.petitionerState || 'AZ'} ${divorceData.petitionerZip || '[ZIP]'}\n`;
-    caption += `Telephone: ${divorceData.petitionerPhone || '[PHONE]'}\n`;
+    caption += `${divorceData.petitionerAddress || '______________________________'}\n`;
+    caption += `${divorceData.petitionerCity || '__________________'}, ${divorceData.petitionerState || 'AZ'} ${divorceData.petitionerZip || '__________'}\n`;
+    caption += `Telephone: ${divorceData.petitionerPhone || '______________'}\n`;
     caption += `Petitioner In Proper Person\n\n`;
 
     // Court header
@@ -144,7 +145,7 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `     Respondent.\n\n`;
 
     // Case number
-    caption += `Case No. ${divorceData.caseNumber || '____________________'}\n\n`;
+    caption += `Case No. ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // Document title
     caption += `PETITION FOR DISSOLUTION OF MARRIAGE\n`;
@@ -197,9 +198,11 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
       items.push({
         number: paragraphNum++,
-        content: 'There are no minor children common to the parties, and the wife is not pregnant.',
+        content: 'There are no minor children common to the parties.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -256,10 +259,11 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 

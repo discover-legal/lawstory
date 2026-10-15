@@ -2,6 +2,7 @@
 // TODO: Replace [statename] with actual state name (lowercase)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * [State Name] Affidavit Template
@@ -78,7 +79,7 @@ class StateAffidavitTemplate extends BaseAffidavitTemplate {
   //   const courtName = (affidavitData.court || '[COURT NAME]').toUpperCase();
   //   caption += `IN THE ${courtName}\n\n`;
   //
-  //   const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+  //   const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
   //   caption += `${this.metadata.features.caseNumberLabel} ${caseNumber}\n\n`;
   //
   //   const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

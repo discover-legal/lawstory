@@ -4,6 +4,7 @@
 // Misc. Docket No. 15-9171
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
 /**
@@ -93,7 +94,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
     const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = data.caseNumber || '[CAUSE NUMBER]';
+    const caseNumber = caseNumberOrBlank(data.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party identifiers: affiant is the party filing; respondent/opposing party may or may not be known
@@ -354,7 +355,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
 
     const incomeAmt = (data.monthlyIncome !== undefined && data.monthlyIncome !== null)
       ? `$${Number(data.monthlyIncome).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : '$[AMOUNT]';
+      : '$______________';
 
     items.push({
       number: n++,
@@ -369,7 +370,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
 
     const expenseAmt = (data.monthlyExpenses !== undefined && data.monthlyExpenses !== null)
       ? `$${Number(data.monthlyExpenses).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : '$[AMOUNT]';
+      : '$______________';
 
     items.push({
       number: n++,
@@ -394,7 +395,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
       : null;
 
     const depStatement = depCount === null
-      ? `I have [NUMBER] person(s) who are financially dependent upon me, including myself.`
+      ? `I have _____ person(s) who are financially dependent upon me, including myself.`
       : depCount === 0
         ? `I have no persons other than myself who are financially dependent upon me.`
         : `I have ${depCount} person${depCount === 1 ? '' : 's'} who ${depCount === 1 ? 'is' : 'are'} financially dependent upon me, including myself.`;

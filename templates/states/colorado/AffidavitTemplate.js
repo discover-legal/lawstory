@@ -4,6 +4,7 @@
 //                C.R.S. § 18-8-502 (perjury in the second degree)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Colorado Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -50,7 +51,7 @@ class ColoradoAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

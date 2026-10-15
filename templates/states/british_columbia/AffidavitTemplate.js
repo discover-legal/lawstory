@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * British Columbia Affidavit Template
@@ -54,7 +55,7 @@ class BCAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const registry = (affidavitData.county || affidavitData.city || '[REGISTRY]').toUpperCase();
-    const fileNo = affidavitData.caseNumber || '[FILE NUMBER]';
+    const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
     const claimant = affidavitData.plaintiff || affidavitData.petitionerName || '[CLAIMANT NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

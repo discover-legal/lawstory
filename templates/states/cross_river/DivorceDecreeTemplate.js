@@ -1,6 +1,7 @@
 // templates/states/cross_river/DivorceDecreeTemplate.js
 'use strict';
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 
 class CrossRiverDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
@@ -21,7 +22,7 @@ class CrossRiverDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateVenue(county) { return `${(county || '[JUDICIAL DIVISION]').toUpperCase()} JUDICIAL DIVISION`; }
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
-    const caseNumber = divorceData.caseNumber || '[SUIT NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted: `IN THE ${courtName}\n\nSuit No. ${caseNumber}\n\nIN THE MATTER OF THE MATRIMONIAL CAUSES ACT, CAP M7 LFN 2004\n\nBETWEEN:\n\n${petitioner}\nPetitioner\n\n— AND —\n\n${respondent}\nRespondent` };
@@ -53,7 +54,7 @@ class CrossRiverDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
           : (resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'the Petitioner');
       items.push({ content: `IT IS ORDERED that ${soleCustodianName} shall have custody of the child(ren) pursuant to MCA s.71.`, type: 'order' });
     } else {
-      items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].', type: 'order' });
+      items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).', type: 'order' });
     }
     if (custodyKind !== 'joint' && residenceName && residenceName !== soleCustodianName) {
       items.push({ content: `IT IS ORDERED that the child(ren) shall primarily reside with ${residenceName}.`, type: 'order' });

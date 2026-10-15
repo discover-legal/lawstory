@@ -3,6 +3,7 @@
 // Governing Law: Va. Code § 8.01-390, Va. Code § 18.2-434, Va. Code § 47.1-12
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Virginia Affidavit Template - Legally Compliant v1.0
@@ -76,7 +77,7 @@ class VirginiaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number — Virginia uses "CASE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names

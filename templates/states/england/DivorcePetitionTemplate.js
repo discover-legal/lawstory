@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * England & Wales Divorce Application Template
@@ -116,7 +117,7 @@ class EnglandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();

@@ -3,6 +3,7 @@
 // Governing Law: 735 ILCS 5/1-109, 735 ILCS 5/2-1005, 5 ILCS 312/ (Illinois Notary Public Act)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Illinois Affidavit Template - LEGALLY COMPLIANT v2.0
@@ -48,7 +49,7 @@ class IllinoisAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number - Illinois uses "CASE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names

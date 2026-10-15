@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const {
   oneYearSeparationPleading,
@@ -132,7 +133,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[ACTION NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
     const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
@@ -275,9 +276,11 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
       items.push({
         number: paragraphNum++,
-        content: 'No other children were born to or adopted by the Plaintiff and the Defendant during the marriage, and none are expected.',
+        content: 'No other children were born to or adopted by the Plaintiff and the Defendant during the marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
 
       // Current parenting arrangement — Divorce Act s.16.1 (decision-making
       // responsibility) and s.16 (parenting time), never "custody"/"access".
@@ -585,7 +588,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     } else {
       items.push({
         number: paragraphNum++,
-        content: 'The parties have accumulated family property during the marriage, including but not limited to real property, personal property, and financial accounts, subject to distribution under the Family Property Act, RSA 2000, c. F-4.7.',
+        content: 'The parties have accumulated family property during the marriage, subject to distribution under the Family Property Act, RSA 2000, c. F-4.7.',
         type: 'property_info'
       });
       items.push({
@@ -595,7 +598,9 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
     }
 
-    if (divorceData.hasDebts !== false) {
+    // Debts are alleged only on an affirmative signal (hasDebts === true or
+    // an itemized debt list) — silence is not "the parties have debts".
+    if (this.hasAffirmativeDebtSignal(divorceData)) {
       items.push({
         number: paragraphNum++,
         content: 'The parties have accumulated family debt during the marriage. The Plaintiff requests that the Court allocate responsibility for family debt in an equitable manner.',

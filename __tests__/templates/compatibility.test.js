@@ -262,7 +262,8 @@ describe('Template System', () => {
       const doc = registry.generateAffidavit('TX', {
         affiantName: 'John Doe', state: 'TX', county: 'Travis', facts: ['Fact 1'],
       });
-      expect(doc.sections.caseCaption.formatted).toContain('[CASE NUMBER]');
+      expect(doc.sections.caseCaption.formatted).toContain('____________________'); // unassigned case number → fill-in blank, never a [CASE NUMBER] token
+      expect(doc.sections.caseCaption.formatted).not.toContain('[CASE NUMBER]');
     });
   });
 

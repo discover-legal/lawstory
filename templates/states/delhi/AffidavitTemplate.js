@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Delhi Affidavit Template
@@ -71,7 +72,7 @@ class DelhiAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT, SAKET, NEW DELHI';
     const location = (affidavitData.county || affidavitData.city || 'New Delhi').toUpperCase();
-    const caseNo = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

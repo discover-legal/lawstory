@@ -4,6 +4,7 @@
 //                IC 35-44.1-2-1 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Indiana Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -51,7 +52,7 @@ class IndianaAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

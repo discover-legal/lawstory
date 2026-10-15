@@ -1,6 +1,7 @@
 // templates/states/tamil_nadu/AffidavitTemplate.js
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class TamilNaduAffidavitTemplate extends BaseAffidavitTemplate {
   // Indian terminology (see templates/core/terminology.js): the caption is the
@@ -20,7 +21,7 @@ class TamilNaduAffidavitTemplate extends BaseAffidavitTemplate {
     const loc = (d.county || d.city || 'Chennai').toUpperCase();
     const p = d.plaintiff || d.petitionerName || '[PETITIONER NAME]';
     const r = d.defendant || d.respondentName || '[RESPONDENT NAME]';
-    return { courtName: court, caseNumber: d.caseNumber, plaintiff: p, defendant: r, formatted: `${court.toUpperCase()}\n${loc}\n\nCase No. ${d.caseNumber || '[CASE NUMBER]'}\n\n${p.toUpperCase()}\nPetitioner\n\nVersus\n\n${r.toUpperCase()}\nRespondent` };
+    return { courtName: court, caseNumber: d.caseNumber, plaintiff: p, defendant: r, formatted: `${court.toUpperCase()}\n${loc}\n\nCase No. ${caseNumberOrBlank(d.caseNumber)}\n\n${p.toUpperCase()}\nPetitioner\n\nVersus\n\n${r.toUpperCase()}\nRespondent` };
   }
   performStateSpecificValidation(d) {
     const errors = [], warnings = [];

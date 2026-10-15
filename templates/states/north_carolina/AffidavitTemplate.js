@@ -3,6 +3,7 @@
 // Governing Law: N.C.G.S. § 11-7, N.C.G.S. § 14-209, N.C.G.S. § 10B-20, N.C.G.S. § 10B-40
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * North Carolina Affidavit Template - Legally Compliant v1.0
@@ -68,7 +69,7 @@ class NorthCarolinaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number — North Carolina uses "FILE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `FILE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names

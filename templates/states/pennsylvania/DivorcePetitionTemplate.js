@@ -3,6 +3,7 @@
 // Complies with 23 Pa.C.S. § 3101 et seq. (Pennsylvania Divorce Code)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Pennsylvania Complaint in Divorce Template
@@ -128,7 +129,7 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `IN THE ${courtName.toUpperCase()}\n\n`;
 
     // Pennsylvania uses "DOCKET NO."
-    caption += `DOCKET NO. ${divorceData.caseNumber || '____________________'}\n\n`;
+    caption += `DOCKET NO. ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // Pennsylvania uses Plaintiff/Defendant in divorce complaints
     const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
@@ -268,10 +269,11 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 

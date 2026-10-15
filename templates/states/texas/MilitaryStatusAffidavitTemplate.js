@@ -4,6 +4,7 @@
 // Complies with Servicemembers Civil Relief Act (SCRA), 50 U.S.C. § 3931
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
 /**
@@ -104,7 +105,7 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
     const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = data.caseNumber || '[CAUSE NUMBER]';
+    const caseNumber = caseNumberOrBlank(data.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // captionUpper preserves McPherson/DiCaprio style internal capitals.
@@ -401,7 +402,7 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
   _buildMilitaryStatusFacts(data) {
     const affiantName = data.affiantName || '[PETITIONER NAME]';
     const respondentName = data.respondentName || '[RESPONDENT NAME]';
-    const searchDate = data.searchDate ? data.searchDate.trim() : '[DATE OF SEARCH]';
+    const searchDate = data.searchDate ? data.searchDate.trim() : '______________';
     const searchMethod = data.searchMethod
       ? data.searchMethod.trim()
       : 'Defense Manpower Data Center (DMDC) online database at scra.dmdc.osd.mil';

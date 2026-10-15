@@ -16,6 +16,7 @@ const { DEFAULT_TERMS, districtPhrase } = require('./terminology');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('./parenting');
 const { asList, propertyAgreementProse, PROPERTY_AGREEMENT_STATUS_TOKENS } = require('./dataShapes');
 const { yearOnlyOf } = require('./canadianHelpers');
+const { sanitizeCaseNumber, pregnancyAverment, draftBlank, primaryResidenceOrBlank } = require('./blanks');
 
 // Round-3 attorney review (2026-08-30): live personas (Mari TX, David NY)
 // arrived with `hasProperty`/`hasDebts` UNSET but a facts[] array that
@@ -108,25 +109,28 @@ const normalizeCountyName = (county, fallback = '[COUNTY]') =>
   String(county || fallback).replace(/\s+county$/i, '').trim();
 
 /**
- * Round-5 attorney review (Tavita FL, 2026-08-30): the LLM extraction
- * layer occasionally lands the literal string "null" / "undefined" /
- * "N/A" in a slot the caller expected to be empty (see Tavita profile:
- * `county: "null"`). Rendering "Case No.: null" is worse than an
- * unfilled blank — treat these sentinels as absent.
+ * Each child listed under "The following children were born…:" is part of
+ * that paragraph, not a pleading paragraph of its own ("8. The following…:
+ * 9. Emma…" read as two allegations). Unnumber the `child_detail` items and
+ * renumber the remaining numbered items so the section stays sequential;
+ * the next section picks up from the corrected nextParagraphNumber.
+ * @param {Object} section - Children section from generateChildrenSection
+ * @returns {Object} The same section, renumbered in place
  */
-function _sanitizeCaseNumber(value) {
-  if (value == null) return '';
-  const s = String(value).trim();
-  if (!s) return '';
-  const lower = s.toLowerCase();
-  if (lower === 'null' || lower === 'undefined' || lower === 'n/a' || lower === 'none') return '';
-  // Round-6 attorney review (Tavita FL, 2026-08-30 v29): tolerate stray
-  // punctuation-only values ("." or "..") that LLM extraction leaves when
-  // the case number is absent — rendering "Case No. ." is worse than a
-  // fill-in blank. Any value that contains no alphanumeric character is
-  // treated as absent.
-  if (!/[A-Za-z0-9]/.test(s)) return '';
-  return s;
+function nestChildDetails(section) {
+  if (!section || !Array.isArray(section.items)) return section;
+  const numbered = section.items.filter((i) => typeof i.number === 'number');
+  if (!section.items.some((i) => i.type === 'child_detail' && typeof i.number === 'number')) {
+    return section;
+  }
+  let n = numbered[0].number;
+  section.items = section.items.map((item) => {
+    if (item.type === 'child_detail') return { ...item, number: null };
+    if (typeof item.number === 'number') return { ...item, number: n++ };
+    return item;
+  });
+  section.nextParagraphNumber = n;
+  return section;
 }
 
 /**
@@ -380,7 +384,7 @@ class BaseDivorcePetitionTemplate {
     divorceData._paragraphNum = marriageInfo.nextParagraphNumber;
     const grounds = this.generateGroundsSection(divorceData);
     divorceData._paragraphNum = grounds.nextParagraphNumber;
-    const childrenInfo = this.generateChildrenSection(divorceData);
+    const childrenInfo = nestChildDetails(this.generateChildrenSection(divorceData));
     divorceData._paragraphNum = childrenInfo.nextParagraphNumber;
     const propertyInfo = this.generatePropertySection(divorceData);
     divorceData._paragraphNum = propertyInfo.nextParagraphNumber;
@@ -489,7 +493,7 @@ class BaseDivorcePetitionTemplate {
 
     // Case number — reject literal "null"/"undefined" sentinels.
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumberClean = _sanitizeCaseNumber(divorceData.caseNumber);
+    const caseNumberClean = sanitizeCaseNumber(divorceData.caseNumber);
     const caseNumber = caseNumberClean || '____________________';
     caption += `${caseLabel} ${caseNumber}\n\n`;
 
@@ -1031,12 +1035,15 @@ class BaseDivorcePetitionTemplate {
         });
       }
 
-      // Add statement about no other children
+      // Add statement about no other children. Whether another child is
+      // expected is a separate averment, rendered only from an affirmative
+      // answer (getPregnancyAverment) — never assumed.
       items.push({
         number: paragraphNum++,
-        content: `No other children were born to or adopted by ${this.terminology.filerLabel} and ${this.terminology.responderLabel} during the marriage, and none are expected.`,
+        content: `No other children were born to or adopted by ${this.terminology.filerLabel} and ${this.terminology.responderLabel} during the marriage.`,
         type: 'children_info'
       });
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
 
       // Plead the arrangements the parties actually reached (custody enum,
       // primary residence, agreed child support). Unknown data keeps the
@@ -1123,7 +1130,7 @@ class BaseDivorcePetitionTemplate {
       return `${t.filerLabel} requests that ${divorceData.respondentName || t.responderLabel} be awarded sole legal and physical custody of the minor child(ren).`;
     }
     if (custody.kind === 'legacy_sole') {
-      return `${t.filerLabel} requests that ${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || t.filerLabel} be awarded sole legal and physical custody of the minor child(ren).`;
+      return `${t.filerLabel} requests that ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} be awarded sole legal and physical custody of the minor child(ren).`;
     }
     return null;
   }
@@ -1211,7 +1218,7 @@ class BaseDivorcePetitionTemplate {
     } else if (divorceData.hasProperty === true) {
       items.push({
         number: paragraphNum++,
-        content: 'The parties have accumulated community/marital property during the marriage, including but not limited to real property, personal property, and financial accounts.',
+        content: 'The parties have accumulated community/marital property during the marriage.',
         type: 'property_info'
       });
 
@@ -1239,21 +1246,27 @@ class BaseDivorcePetitionTemplate {
     // side, or an explicit facts-derived "we have debts" cue); silence
     // OR a facts-derived "no debts" statement suppress the paragraph.
     const factsSayNoDebts = this.factsIndicateNoDebts(divorceData);
-    const affirmativeDebtSignal =
-      divorceData.hasDebts === true ||
-      asList(divorceData.petitionerDebts).length > 0 ||
-      asList(divorceData.respondentDebts).length > 0;
-    if (affirmativeDebtSignal && !factsSayNoDebts) {
+    if (this.hasAffirmativeDebtSignal(divorceData)) {
       items.push({
         number: paragraphNum++,
         content: `The parties have accumulated debts during the marriage. ${this.terminology.filerLabel} requests that the Court allocate responsibility for such debts in a just and equitable manner.`,
         type: 'debt_info'
       });
-    } else if (divorceData.hasDebts === false || factsSayNoDebts) {
+    } else if (divorceData.noDebtsConfirmed === true || factsSayNoDebts) {
+      // Dispositive nil finding — only on an affirmative, user-confirmed
+      // "no debts" (mirrors the decree's debt gate).
       items.push({
         number: paragraphNum++,
         content: 'The parties have no marital debts to be divided.',
         type: 'debt_info'
+      });
+    } else if (divorceData.hasDebts === false) {
+      // Unconfirmed "no debts" — a nil allegation would leave unallocated
+      // debt with whoever signed for it. Draft note, like property.
+      items.push({
+        number: paragraphNum++,
+        content: draftBlank('confirm whether you and your spouse have any marital debts to allocate before filing. Silence on this line may leave you solely responsible for any debt that is not allocated.'),
+        type: 'debts_draft_note'
       });
     }
 
@@ -1262,6 +1275,98 @@ class BaseDivorcePetitionTemplate {
       items,
       nextParagraphNumber: paragraphNum
     };
+  }
+
+  /**
+   * SAFETY GATE for jurisdiction property boilerplate ("The parties have
+   * accumulated marital property and debts…", "There exists community
+   * property…"). Those paragraphs ALLEGE that a marital estate exists, so a
+   * subclass may plead them only on an affirmative user "yes"
+   * (`hasProperty === true`) that is not contradicted by a confirmed
+   * no-property statement and is not better expressed as the parties'
+   * agreed division. Every other posture — including silence — belongs to
+   * the base generatePropertySection, which renders the agreed division,
+   * the confirmed nil finding, or a Draft-note blank. Subclass overrides
+   * open with `if (!this.shouldPleadPropertyBoilerplate(divorceData))
+   * return super.generatePropertySection(divorceData);`. The prayer for
+   * relief keeps each jurisdiction's division request either way, so no
+   * property claim is waived by the blank.
+   *
+   * @param {Object} divorceData - The divorce data
+   * @returns {boolean}
+   */
+  shouldPleadPropertyBoilerplate(divorceData) {
+    // Described parcels (realEstateItems / propertyItems) are an
+    // affirmative "we own property" even when the boolean never landed.
+    const describedProperty =
+      (Array.isArray(divorceData.realEstateItems) && divorceData.realEstateItems.length > 0) ||
+      (Array.isArray(divorceData.propertyItems) && divorceData.propertyItems.length > 0);
+    return (
+      (divorceData.hasProperty === true || describedProperty) &&
+      divorceData.noPropertyConfirmed !== true &&
+      !this.hasAgreedPropertyDivision(divorceData) &&
+      !this.factsIndicateNoProperty(divorceData)
+    );
+  }
+
+  /**
+   * Whether the case data affirmatively says the parties have marital
+   * debts (`hasDebts === true` or an itemized debt list) and no fact says
+   * otherwise. Debt-allegation paragraphs render only when this is true;
+   * silence is never pleaded as "the parties have accumulated debts".
+   * @param {Object} divorceData - The divorce data
+   * @returns {boolean}
+   */
+  hasAffirmativeDebtSignal(divorceData) {
+    const signal =
+      divorceData.hasDebts === true ||
+      asList(divorceData.petitionerDebts).length > 0 ||
+      asList(divorceData.respondentDebts).length > 0;
+    return signal && !this.factsIndicateNoDebts(divorceData);
+  }
+
+  /**
+   * The " and debts" half of a property allegation ("The parties have
+   * accumulated marital property and debts…"): included only when the
+   * case data affirmatively says there are debts, so an affirmative
+   * "we have property" never drags an unconfirmed debt allegation along.
+   * @param {Object} divorceData - The divorce data
+   * @param {string} clause - e.g. ' and debts'
+   * @returns {string}
+   */
+  debtsClause(divorceData, clause) {
+    return this.hasAffirmativeDebtSignal(divorceData) ? clause : '';
+  }
+
+  /**
+   * Statute that requires the petition to state whether a party is
+   * pregnant, cited in the Draft note when the answer is unknown.
+   * Jurisdictions that know the cite override this.
+   * @returns {string|null}
+   */
+  getPregnancyAvermentAuthority() {
+    return null;
+  }
+
+  /**
+   * The "is either party pregnant" averment: a sworn statement only from an
+   * affirmative recorded answer, otherwise a gender-neutral Draft-note
+   * blank (templates/core/blanks.js pregnancyAverment).
+   * @param {Object} divorceData - The divorce data
+   * @returns {string}
+   */
+  getPregnancyAverment(divorceData) {
+    return pregnancyAverment(divorceData, { authority: this.getPregnancyAvermentAuthority() });
+  }
+
+  /**
+   * The pregnancy averment as a numbered pleading paragraph.
+   * @param {Object} divorceData - The divorce data
+   * @param {number} number - Paragraph number
+   * @returns {Object} Section item
+   */
+  pregnancyItem(divorceData, number) {
+    return { number, content: this.getPregnancyAverment(divorceData), type: 'pregnancy_averment' };
   }
 
   /**

@@ -3,6 +3,7 @@
 // Complies with 23 Pa.C.S. § 3101 et seq. (Pennsylvania Divorce Code)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -113,7 +114,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `IN THE COURT OF COMMON PLEAS OF ${countyUpper} COUNTY, PENNSYLVANIA\n\n`;
 
     // Pennsylvania uses DOCKET NO.
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `DOCKET NO. ${caseNumber}\n\n`;
 
     // Pennsylvania uses Plaintiff/Defendant
@@ -152,10 +153,10 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
     let text = '';
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `AND NOW, this cause coming before the Court, Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : 'pro se'},`;
+      text += `AND NOW, this cause coming before the Court, Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')},`;
       text += ` and the Court having considered the Affidavit(s) of Consent and the record in this matter, and being fully advised in the premises;`;
     } else {
-      text += `AND NOW, this cause coming before the Court for hearing, Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${divorceData.petitionerRepresentation === 'attorney' ? 'appearing by and through counsel' : 'appearing pro se'},`;
+      text += `AND NOW, this cause coming before the Court for hearing, Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se')},`;
       text += ` and Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${divorceData.respondentAppeared ? 'appearing' : 'having been duly served but failing to appear'},`;
       text += ` and the Court having heard all testimony, reviewed the record, and considered the applicable law;`;
     }
@@ -335,7 +336,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

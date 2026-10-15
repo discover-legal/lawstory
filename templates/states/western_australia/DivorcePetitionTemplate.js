@@ -3,6 +3,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class WesternAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   constructor() {
@@ -43,7 +44,7 @@ class WesternAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplat
 
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
-    const caseNumber = divorceData.caseNumber || '[FILE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
     const caption = [

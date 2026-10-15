@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -121,7 +122,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[NUMBER]/[YEAR]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
 
@@ -155,10 +156,10 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += 'On this date, the Court considered the above-entitled matter.\n\n';
 
     if (divorceData.appearanceType === 'agreed' || divorceData.isUncontested) {
-      text += `The Applicant, ${divorceData.petitionerName || '[APPLICANT NAME]'}, appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'by counsel' : 'in person'}.\n\n`;
+      text += `The Applicant, ${divorceData.petitionerName || '[APPLICANT NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'in person')}.\n\n`;
       text += `The Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and consented to the proceedings' : 'having been duly served, did not appear and did not contest the proceedings'}.`;
     } else {
-      text += `The Applicant, ${divorceData.petitionerName || '[APPLICANT NAME]'}, appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'by counsel' : 'in person'}.\n\n`;
+      text += `The Applicant, ${divorceData.petitionerName || '[APPLICANT NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'in person')}.\n\n`;
       text += `The Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${divorceData.respondentAppeared ? 'appeared' : 'although duly served, did not appear'}.`;
     }
 
@@ -275,7 +276,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         type: 'order'
       });
       items.push({
-        content: `IT IS ORDERED that ${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'the Applicant'} shall have care and control of the child(ren).`,
+        content: `IT IS ORDERED that ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} shall have care and control of the child(ren).`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -294,7 +295,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

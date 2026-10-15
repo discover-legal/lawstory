@@ -3,6 +3,7 @@
 // Complies with MCL § 552.6 et seq. (Michigan divorce statutes)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -84,12 +85,12 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     let caption = '';
 
     const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
-    const circuit = divorceData.judicialCircuit || '[NUMBER]';
+    const circuit = divorceData.judicialCircuit || '_____';
 
     caption += `IN THE ${circuit} JUDICIAL CIRCUIT COURT FOR ${countyUpper} COUNTY, STATE OF MICHIGAN\n`;
     caption += `FAMILY DIVISION\n\n`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CASE NO. ${caseNumber}\n\n`;
 
     const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
@@ -119,10 +120,10 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     let text = '';
 
     text += `This matter came before the Court on ${this.formatDate(divorceData.hearingDate) || '___________________'}, `;
-    text += `${divorceData.petitionerName || 'Plaintiff'} appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : 'in propria persona'}`;
+    text += `${divorceData.petitionerName || 'Plaintiff'} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'in propria persona')}`;
 
     if (divorceData.respondentAppeared) {
-      text += `, and ${divorceData.respondentName || 'Defendant'} appearing ${divorceData.respondentRepresentation === 'attorney' ? 'by and through counsel' : 'in propria persona'}`;
+      text += `, and ${divorceData.respondentName || 'Defendant'} appearing ${representationPhrase(divorceData.respondentRepresentation, 'by and through counsel', 'in propria persona')}`;
     } else if (divorceData.isUncontested) {
       text += `, and ${divorceData.respondentName || 'Defendant'} having been duly served, having executed a Consent to Entry of Judgment / Waiver of Service`;
     } else {
@@ -292,7 +293,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }
@@ -508,7 +509,7 @@ Date: ___________________
 
 _________________________________
 Circuit Court Judge
-${divorceData.county ? `${divorceData.judicialCircuit || '[NUMBER]'} Judicial Circuit Court\n${countyUpper} County, Michigan` : '[NUMBER] Judicial Circuit Court\n[COUNTY] County, Michigan'}`,
+${divorceData.county ? `${divorceData.judicialCircuit || '_____'} Judicial Circuit Court\n${countyUpper} County, Michigan` : '_____ Judicial Circuit Court\n[COUNTY] County, Michigan'}`,
       type: 'judgment'
     };
   }

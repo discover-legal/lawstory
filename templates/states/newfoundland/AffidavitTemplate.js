@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Newfoundland and Labrador Affidavit Template
@@ -67,7 +68,7 @@ class NewfoundlandAffidavitTemplate extends BaseAffidavitTemplate {
     const court = affidavitData.court || affidavitData.courtName ||
       'SUPREME COURT OF NEWFOUNDLAND AND LABRADOR (TRIAL DIVISION)';
     const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
-    const fileNo = affidavitData.caseNumber || '[FILE NUMBER]';
+    const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

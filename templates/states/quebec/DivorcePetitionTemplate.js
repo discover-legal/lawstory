@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Quebec Divorce Application Template
@@ -123,7 +124,7 @@ class QuebecDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[FILE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
     const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();

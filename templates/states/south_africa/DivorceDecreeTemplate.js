@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, primaryResidenceOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -118,7 +119,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
     const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
 
@@ -285,7 +286,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         type: 'order'
       });
       items.push({
-        content: `IT IS ORDERED that the child(ren) shall be in the primary care of ${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'Plaintiff'}, with reasonable contact to ${divorceData.respondentName || 'Defendant'} as agreed between the parties or as set out in the Parenting Plan.`,
+        content: `IT IS ORDERED that the child(ren) shall be in the primary care of ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))}, with reasonable contact to ${divorceData.respondentName || 'Defendant'} as agreed between the parties or as set out in the Parenting Plan.`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -312,7 +313,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

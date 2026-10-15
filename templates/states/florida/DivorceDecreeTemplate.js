@@ -3,6 +3,7 @@
 // Complies with Florida Statutes Chapter 61 and Florida Family Law Rules of Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -123,7 +124,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     caption += `FAMILY LAW DIVISION\n\n`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `Case No.: ${caseNumber}\n`;
     caption += `Division: ${divorceData.division || '________'}\n\n`;
 
@@ -157,7 +158,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `THIS CAUSE having come before this Court on ${this.formatDate(divorceData.hearingDate) || '___________________'} for final hearing,`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += ` and Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'with counsel' : 'pro se'},`;
+      text += ` and Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appearing ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')},`;
 
       if (divorceData.respondentAppeared) {
         text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, appearing and consenting to the entry of this Final Judgment,`;
@@ -165,7 +166,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, having been served and not appearing,`;
       }
     } else {
-      text += ` and Petitioner appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'with counsel' : 'pro se'},`;
+      text += ` and Petitioner appearing ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')},`;
       text += ` and Respondent ${divorceData.respondentAppeared ? 'appearing' : 'not appearing after proper service'},`;
     }
 
@@ -312,7 +313,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'Petitioner'} shall have majority time-sharing with the minor child(ren).`,
+        content: `${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} shall have majority time-sharing with the minor child(ren).`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -331,7 +332,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

@@ -3,6 +3,7 @@
 // Complies with Texas Family Code and Texas Rules of Civil Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList, partitionByCharacter } = require('../../core/dataShapes');
 const { resolveSpousalSupportDecision } = require('../../core/spousalSupport');
@@ -173,7 +174,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = divorceData.court || this.getDefaultCourt(divorceData.county);
     caption += `IN THE ${courtName.toUpperCase()}\n\n`;
 
-    const causeNumber = divorceData.caseNumber || '[CAUSE NUMBER]';
+    const causeNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CAUSE NO. ${causeNumber}\n\n`;
 
     caption += `IN THE MATTER OF\n`;
@@ -219,8 +220,13 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     const petitioner = divorceData.petitionerName || 'Petitioner';
     const respondent = divorceData.respondentName || 'Respondent';
-    const petitionerAppearance =
-      divorceData.petitionerRepresentation === 'attorney' ? ' and through attorney of record' : ', pro se';
+    // Representation is recited only from a recorded answer — a missing
+    // field is not evidence of self-representation.
+    const petitionerAppearance = representationPhrase(
+      divorceData.petitionerRepresentation,
+      'in person and through attorney of record',
+      'in person, pro se',
+    );
 
     // Truthful respondent appearance. serviceMethod 'publication' (TRCP 109
     // citation-by-publication) is NOT a default in itself — an attorney ad
@@ -262,7 +268,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       respondentLine = `${respondent}, although duly cited, did not appear.`;
     }
 
-    text += `${petitioner} appeared in person${petitionerAppearance}.\n\n`;
+    text += `${petitioner} appeared ${petitionerAppearance}.\n\n`;
     text += `${respondentLine}\n\n`;
     text += `A jury was waived. All matters in controversy were submitted to the Court.`;
 
@@ -485,7 +491,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
       // Primary residence
       items.push({
-        content: `IT IS ORDERED AND DECREED that ${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'Petitioner'} shall have the exclusive right to designate the primary residence of the child(ren) within ${divorceData.residenceRestriction || divorceData.county || '[COUNTY]'} County, Texas, and contiguous counties.`,
+        content: `IT IS ORDERED AND DECREED that ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} shall have the exclusive right to designate the primary residence of the child(ren) within ${divorceData.residenceRestriction || divorceData.county || '[COUNTY]'} County, Texas, and contiguous counties.`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -513,7 +519,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

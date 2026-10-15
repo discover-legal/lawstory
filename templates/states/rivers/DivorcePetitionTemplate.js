@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class RiversDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   constructor() {
@@ -43,7 +44,7 @@ class RiversDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
-    const caseNumber = divorceData.caseNumber || '[SUIT NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
     const caption = [`IN THE ${courtName}`, '', `Suit No. ${caseNumber}`, '', `IN THE MATTER OF THE MATRIMONIAL CAUSES ACT, CAP M7 LFN 2004`, '', `BETWEEN:`, '', `${petitioner}`, `Petitioner`, '', `AND`, '', `${respondent}`, `Respondent`].join('\n');

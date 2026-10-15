@@ -228,9 +228,11 @@ class MississippiDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
       items.push({
         number: paragraphNum++,
-        content: 'There are no children born of or adopted during this marriage, and none are expected.',
+        content: 'There are no children born of or adopted during this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -275,10 +277,11 @@ class MississippiDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 
@@ -287,7 +290,7 @@ class MississippiDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'The parties have accumulated marital property and debts during the marriage. Complainant requests that the Court equitably divide the marital property and debts pursuant to Miss. Code §93-5-23.',
+      content: 'The parties have accumulated marital property' + this.debtsClause(divorceData, ' and debts') + ' during the marriage. Complainant requests that the Court equitably divide the marital property and debts pursuant to Miss. Code §93-5-23.',
       type: 'property_info'
     });
 

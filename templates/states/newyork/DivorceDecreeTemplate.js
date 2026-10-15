@@ -3,6 +3,7 @@
 // Complies with New York Domestic Relations Law and CPLR
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 const { resolveGroundsForDivorce } = require('./groundsResolver');
@@ -171,7 +172,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     caption += `\n\n-------------------------------------------------------------------X`;
 
-    const indexNumber = divorceData.caseNumber || '[INDEX NUMBER]';
+    const indexNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `\n\nIndex No.: ${indexNumber}`;
 
     return {
@@ -200,7 +201,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `The above-entitled action having been brought on for trial on ${this.formatDate(divorceData.hearingDate) || '___________________'},`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += ` ${plaintiff} appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'by counsel' : 'pro se'},`;
+      text += ` ${plaintiff} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')},`;
 
       if (divorceData.respondentAppeared) {
         text += ` and ${defendant} appearing and consenting,`;
@@ -208,7 +209,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += ` and ${defendant} having defaulted,`;
       }
     } else {
-      text += ` ${plaintiff} appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'by counsel' : 'pro se'},`;
+      text += ` ${plaintiff} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')},`;
       text += ` and ${defendant} ${divorceData.respondentAppeared ? 'appearing' : 'not appearing after proper service'},`;
     }
 
@@ -244,7 +245,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     return {
       title: 'FINDINGS OF FACT',
-      text: `ORDERED, ADJUDGED and DECREED as follows:\n\n1. The Court has jurisdiction over this action pursuant to DRL § 230.\n\n2. ${residencyText}\n\n3. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'} in ${divorceData.marriageLocation || '[LOCATION]'}.\n\n4. ${groundsClause}\n\n5. All economic issues have been resolved either by stipulation or by the Court's determination.`,
+      text: `ORDERED, ADJUDGED and DECREED as follows:\n\n1. The Court has jurisdiction over this action pursuant to DRL § 230.\n\n2. ${residencyText}\n\n3. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'} in ${divorceData.marriageLocation || '______________'}.\n\n4. ${groundsClause}\n\n5. All economic issues have been resolved either by stipulation or by the Court's determination.`,
       type: 'jurisdiction'
     };
   }
@@ -415,7 +416,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

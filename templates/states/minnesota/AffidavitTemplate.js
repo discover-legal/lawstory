@@ -4,6 +4,7 @@
 //                Minn. Stat. § 609.48 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Minnesota Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -50,7 +51,7 @@ class MinnesotaAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `${courtName}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[COURT FILE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `COURT FILE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

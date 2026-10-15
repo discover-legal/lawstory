@@ -3,6 +3,7 @@
 // Governing Law: O.C.G.A. § 16-10-71 (perjury), O.C.G.A. § 45-17-8 (notary)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Georgia Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -47,7 +48,7 @@ class GeorgiaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Georgia Superior Courts use "CIVIL ACTION FILE NO." (official AOC form label)
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CIVIL ACTION FILE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

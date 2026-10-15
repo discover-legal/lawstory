@@ -287,8 +287,8 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
           content:
             'IT IS ORDERED that the parties shall determine the child(ren)\'s primary residence ' +
             'by agreement, or, failing agreement, in accordance with a parenting schedule filed ' +
-            'with this Court: [PRIMARY RESIDENCE — set out the parent with whom the child(ren) ' +
-            'primarily reside].',
+            'with this Court: __________________________ (Draft — name the parent with whom the child(ren) ' +
+            'primarily reside).',
           type: 'order'
         });
       }
@@ -316,7 +316,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement] (Divorce Act, RSC 1985, c. 3, s.16.1).',
+        content: 'IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement) (Divorce Act, RSC 1985, c. 3, s.16.1).',
         type: 'order'
       });
     }

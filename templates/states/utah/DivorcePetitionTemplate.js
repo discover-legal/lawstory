@@ -3,6 +3,7 @@
 // Complies with Utah Code and Utah Rules of Civil Procedure
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 const normalizeCounty = (county, fallback = '[COUNTY]') =>
   (county || fallback).replace(/\s+county$/i, '').trim();
@@ -134,7 +135,7 @@ class UtahDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `IN THE ${courtName.toUpperCase()}\n\n`;
 
     // Case number
-    const caseNumber = divorceData.caseNumber || '____________________';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `Case No. ${caseNumber}\n\n`;
 
     // Judge assignment
@@ -237,9 +238,11 @@ class UtahDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
       items.push({
         number: paragraphNum++,
-        content: 'There are no minor children born of this marriage and no minor children are expected.',
+        content: 'There are no minor children born of this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -259,9 +262,11 @@ class UtahDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
       items.push({
         number: paragraphNum++,
-        content: 'No other children have been born of or adopted by the parties during this marriage, and the wife is not now pregnant.',
+        content: 'No other children have been born of or adopted by the parties during this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
 
       // Plead the arrangements the parties actually reached (custody enum,
       // primary residence, agreed child support) via the base pleading
@@ -299,10 +304,11 @@ class UtahDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the generic
-    // equitable-division boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 
@@ -311,7 +317,7 @@ class UtahDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'During the marriage, the parties have acquired certain real and personal property.',
+      content: 'During the marriage, the parties have acquired marital property.',
       type: 'property_info'
     });
 

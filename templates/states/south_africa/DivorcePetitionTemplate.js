@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * South Africa Divorce Petition (Combined Summons) Template
@@ -125,7 +126,7 @@ class SouthAfricaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
     const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();

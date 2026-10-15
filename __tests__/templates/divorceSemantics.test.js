@@ -161,7 +161,8 @@ describe('decree custody orders (Ontario)', () => {
     const template = new OntarioDecree();
     const doc = template.generateDocument({ ...ONTARIO_CASE, custodyType: 'whatever we said in chat' });
     expect(doc.fullText).not.toContain('sole decision-making responsibility');
-    expect(doc.fullText).toContain('as agreed by the parties: [ARRANGEMENT');
+    expect(doc.fullText).toContain('as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement)');
+    expect(doc.fullText).not.toContain('[ARRANGEMENT');
     // ...and the validation surface warns about it.
     expect(doc.validation.warnings.join(' ')).toMatch(/not recognized/i);
     // The residence order still appears (bug 2: independent of branch).
@@ -199,7 +200,8 @@ describe('decree custody orders (US base)', () => {
   it('unrecognized text renders neutral as-agreed language with a placeholder', () => {
     const doc = baseDecree({ custodyType: 'mom has the kids mostly' });
     expect(doc.fullText).not.toContain('sole legal and physical custody');
-    expect(doc.fullText).toContain('[ARRANGEMENT');
+    expect(doc.fullText).toContain('(Draft — set out the parties\' decision-making agreement)');
+    expect(doc.fullText).not.toContain('[ARRANGEMENT');
     expect(doc.validation.warnings.join(' ')).toMatch(/not recognized/i);
   });
 

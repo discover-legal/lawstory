@@ -3,6 +3,7 @@
 // Complies with Va. Code § 20-91 et seq.
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -119,7 +120,7 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = divorceData.court || this.getDefaultCourt(divorceData.county);
     caption += `IN THE ${courtName.toUpperCase()}, VIRGINIA\n\n`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CASE NO. ${caseNumber}\n\n`;
 
     const petitioner = (divorceData.petitionerName || '[COMPLAINANT NAME]').toUpperCase();
@@ -160,11 +161,11 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (divorceData.isUncontested && divorceData.byAffidavit) {
       text += `This cause came before the Court on the Report of the Commissioner in Chancery and the Affidavit of Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, there being no exceptions thereto filed by either party. The Court, having reviewed and considered said Report and Affidavit and being fully advised in the premises,`;
     } else if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, ${divorceData.petitionerRepresentation === 'attorney' ? 'appearing by and through counsel' : 'appearing pro se'},`;
+      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se')},`;
       text += ` Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${divorceData.respondentAppeared ? 'appearing and announcing agreement' : 'having been duly served and not appearing'},`;
       text += ` and the Court, having heard the evidence, reviewed the record, and being fully advised in the premises,`;
     } else {
-      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, ${divorceData.petitionerRepresentation === 'attorney' ? 'appearing by and through counsel' : 'appearing pro se'},`;
+      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se')},`;
       text += ` and Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${divorceData.respondentAppeared ? 'appearing' : 'although duly served with process, not appearing'},`;
       text += ` and the Court, having heard the evidence, examined the witnesses, reviewed the record, and being fully advised in the premises,`;
     }
@@ -350,7 +351,7 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

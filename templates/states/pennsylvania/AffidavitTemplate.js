@@ -4,6 +4,7 @@
 //                57 Pa.C.S. § 316 (Pennsylvania Notary Public Law)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Pennsylvania Affidavit Template - Legally Compliant v1.0
@@ -69,7 +70,7 @@ class PennsylvaniaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number — Pennsylvania uses "DOCKET NO." or "No."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names

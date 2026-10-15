@@ -1,6 +1,7 @@
 // templates/states/tamil_nadu/DivorcePetitionTemplate.js
 'use strict';
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class TamilNaduDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   // Indian terminology (see templates/core/terminology.js): the caption is the
@@ -26,7 +27,7 @@ class TamilNaduDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     return 'FAMILY COURT, CHENNAI';
   }
   generateCaseCaption(dd) {
-    const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase(); const no = dd.caseNumber || '[CASE NUMBER]';
+    const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase(); const no = caseNumberOrBlank(dd.caseNumber);
     const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase(); const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
     const g = (dd.groundsForDivorce || 'mutual_consent').toLowerCase();
     // Mutual-consent petitions are presented jointly (HMA s.13B(1) / SMA s.28(1))

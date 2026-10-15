@@ -3,7 +3,7 @@
  * string that reads as a subjective wish or explicitly disclaims
  * specificity ("wants additional mid-week parenting time; specific
  * schedule not yet provided") must NOT be paraphrased into an operative
- * "IT IS ORDERED" clause. Render an explicit [SCHEDULE — insert...]
+ * "IT IS ORDERED" clause. Render an explicit fill-in blank + Draft note (was a [SCHEDULE — insert...] token)
  * bracket so the drafter fills in a real schedule before filing.
  */
 
@@ -51,7 +51,8 @@ describe('Ontario decree parenting-time schedule bracket', () => {
       /parenting time with the child\(ren\) on the following schedule: Marcus wants additional mid-week/,
     );
     // The bracket placeholder is present.
-    expect(text).toMatch(/\[SCHEDULE — insert specific parenting schedule/);
+    expect(text).toMatch(/_+ \(Draft — insert specific parenting schedule/);
+    expect(text).not.toMatch(/\[SCHEDULE/);
   });
 
   test('operative schedule text (>50 chars, no wish tokens) still renders verbatim', () => {
@@ -61,13 +62,13 @@ describe('Ontario decree parenting-time schedule bracket', () => {
     });
     const text = decreeText(doc);
     expect(text).toMatch(/alternating weekends from Friday 6:00 p\.m\./);
-    expect(text).not.toMatch(/\[SCHEDULE — insert/);
+    expect(text).not.toMatch(/Draft — insert specific parenting schedule/);
   });
 
   test('empty parentTimeDetails renders the default "as agreed in writing" fallback (unchanged)', () => {
     const doc = makeDecree({ parentTimeDetails: '' });
     const text = decreeText(doc);
     expect(text).toMatch(/as agreed in writing by the parties/);
-    expect(text).not.toMatch(/\[SCHEDULE — insert/);
+    expect(text).not.toMatch(/Draft — insert specific parenting schedule/);
   });
 });

@@ -3,6 +3,7 @@
 // Governing Law: Cal. Gov't Code § 8202, Cal. Civ. Proc. Code § 2015.5, Cal. Civ. Code § 1189
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * California Affidavit Template - LEGALLY COMPLIANT v2.0
@@ -47,7 +48,7 @@ class CaliforniaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number - California uses "CASE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names

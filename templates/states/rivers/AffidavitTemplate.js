@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class RiversAffidavitTemplate extends BaseAffidavitTemplate {
   constructor() {
@@ -44,7 +45,7 @@ class RiversAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF RIVERS STATE';
     const location = (affidavitData.county || affidavitData.city || '[JUDICIAL DIVISION]').toUpperCase();
-    const suitNo = affidavitData.caseNumber || '[SUIT NUMBER]';
+    const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

@@ -597,9 +597,11 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
       items.push({
         number: paragraphNum++,
-        content: 'There are no minor children born of or adopted during this marriage, and none are expected.',
+        content: 'There are no minor children born of or adopted during this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -630,9 +632,11 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
       items.push({
         number: paragraphNum++,
-        content: 'No other children were born of or adopted by the parties during this marriage, and none are expected.',
+        content: 'No other children were born of or adopted by the parties during this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     }
 
     // Agreed child arrangements (custody enum, primary residence, agreed
@@ -786,7 +790,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         plaintiffAddress ||
         (livesWithPlaintiff && countyStateFallback) ||
         countyStateFallback ||
-        '[CURRENT ADDRESS]';
+        '__________________________';
       items.push({
         number: paragraphNum++,
         content: `Child: ${name}${dob ? `, born ${dob}` : ''}. Present address: ${currentAddress}.`,
@@ -835,10 +839,11 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 
@@ -851,11 +856,15 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       type: 'property_info'
     });
 
-    items.push({
-      number: paragraphNum++,
-      content: 'The parties have accumulated marital debts. Plaintiff requests that the Court equitably allocate the marital debts of the parties.',
-      type: 'debt_info'
-    });
+    // Debts are alleged only on an affirmative signal; the prayer keeps
+    // the allocation request either way.
+    if (this.hasAffirmativeDebtSignal(divorceData)) {
+      items.push({
+        number: paragraphNum++,
+        content: 'The parties have accumulated marital debts. Plaintiff requests that the Court equitably allocate the marital debts of the parties.',
+        type: 'debt_info'
+      });
+    }
 
     return {
       title: 'VI. PROPERTY AND DEBTS',

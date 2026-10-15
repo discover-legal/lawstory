@@ -3,6 +3,7 @@
 // Governing Law: A.R.S. § 13-2702 (Perjury), A.R.S. § 41-311 (Notary — forms of notarial acts)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Arizona Affidavit Template - LEGALLY COMPLIANT v2.0
@@ -46,7 +47,7 @@ class ArizonaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number - Arizona uses "CASE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names

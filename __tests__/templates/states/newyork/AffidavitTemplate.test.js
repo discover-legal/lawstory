@@ -110,7 +110,8 @@ describe('NewYorkAffidavitTemplate', () => {
       const caption = template.generateCaseCaption(data);
 
       expect(caption.formatted).toContain('[COURT NAME]');
-      expect(caption.formatted).toContain('[INDEX NUMBER]');
+      expect(caption.formatted).toContain('INDEX NO. ____________________');
+      expect(caption.formatted).not.toContain('[INDEX NUMBER]');
     });
   });
 

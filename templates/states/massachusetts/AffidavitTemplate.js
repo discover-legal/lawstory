@@ -3,6 +3,7 @@
 // Governing Law: M.G.L. c. 268, § 1A (perjury statement), M.G.L. c. 222 (notary public)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Massachusetts Affidavit Template - Legally Compliant v1.0
@@ -76,7 +77,7 @@ class MassachusettsAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `${courtName}\n\n`;
 
     // Case number — Massachusetts Probate courts use "DOCKET NO."
-    const caseNumber = affidavitData.caseNumber || '[DOCKET NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names

@@ -1,6 +1,7 @@
 // templates/states/south_australia/DivorcePetitionTemplate.js
 'use strict';
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class SouthAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   // Australian terminology (see templates/core/terminology.js): divorce is
@@ -22,7 +23,7 @@ class SouthAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate 
 
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
-    const caseNumber = divorceData.caseNumber || '[FILE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
     const caption = [`IN THE ${courtName}`, '', `${this.getCaseNumberLabel()}: ${caseNumber}`, '', `IN THE MATTER OF THE FAMILY LAW ACT 1975 (CTH)`, '', `BETWEEN:`, '', `${applicant}`, `Applicant`, '', `AND`, '', `${respondent}`, `Respondent`].join('\n');

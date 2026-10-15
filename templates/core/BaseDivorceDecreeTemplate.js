@@ -10,6 +10,7 @@
 // dropped every divorce decree from the registry. `node:crypto` is a
 // built-in and always resolvable.
 const { randomUUID: uuidv4 } = require('node:crypto');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('./blanks');
 const { normalizeCountyName } = require('./countyName');
 const { asList, partitionByCharacter } = require('./dataShapes');
 const { DEFAULT_TERMS } = require('./terminology');
@@ -349,7 +350,7 @@ class BaseDivorceDecreeTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '____________________';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `${caseLabel} ${caseNumber}\n\n`;
 
     const petitioner = (divorceData.petitionerName || '_________________________________').toUpperCase();
@@ -407,7 +408,7 @@ class BaseDivorceDecreeTemplate {
     text += `On this date, the Court considered the above-entitled and numbered cause.\n\n`;
 
     const selfRepPhrase = this.terminology.selfRepresentedLabel.toLowerCase();
-    text += `${this.terminology.filerLabel}, ${divorceData.petitionerName || '_________________________________'}, appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : selfRepPhrase}.\n\n`;
+    text += `${this.terminology.filerLabel}, ${divorceData.petitionerName || '_________________________________'}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared by and through counsel', `appeared ${selfRepPhrase}`)}.\n\n`;
     text += `${this.terminology.responderLabel}, ${divorceData.respondentName || '_________________________________'}, ${this.getRespondentAppearanceText(divorceData)}.`;
 
     return {
@@ -789,7 +790,7 @@ class BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }
@@ -799,7 +800,7 @@ class BaseDivorceDecreeTemplate {
     // branch keeps its historical filer fallback for byte-compatibility.
     if (custody.kind === 'joint') {
       items.push({
-        content: `IT IS ORDERED that ${residenceName || divorceData.petitionerName || t.filerLabel} shall have primary physical custody and the right to designate the primary residence of the child(ren).`,
+        content: `IT IS ORDERED that ${primaryResidenceOrBlank(residenceName)} shall have primary physical custody and the right to designate the primary residence of the child(ren).`,
         type: 'order'
       });
     } else if (residenceName && residenceName !== soleCustodianName) {

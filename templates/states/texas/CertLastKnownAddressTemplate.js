@@ -3,6 +3,7 @@
 // Complies with Tex. R. Civ. P. 3a (effective 2021) and Tex. Fam. Code § 102.009
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
 /**
@@ -95,7 +96,7 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
     const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = data.caseNumber || '[CAUSE NUMBER]';
+    const caseNumber = caseNumberOrBlank(data.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // captionUpper preserves McPherson/DiCaprio style internal capitals.
@@ -344,10 +345,10 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
     const respondentName = data.respondentName || '[RESPONDENT NAME]';
 
     // Build the last known address string
-    const address = data.lastKnownAddress ? data.lastKnownAddress.trim() : '[STREET ADDRESS]';
-    const city = data.lastKnownCity ? data.lastKnownCity.trim() : '[CITY]';
-    const addrState = data.lastKnownState ? data.lastKnownState.trim().toUpperCase() : '[STATE]';
-    const zip = data.lastKnownZip ? data.lastKnownZip.trim() : '[ZIP]';
+    const address = data.lastKnownAddress ? data.lastKnownAddress.trim() : '______________________________';
+    const city = data.lastKnownCity ? data.lastKnownCity.trim() : '__________________';
+    const addrState = data.lastKnownState ? data.lastKnownState.trim().toUpperCase() : '____';
+    const zip = data.lastKnownZip ? data.lastKnownZip.trim() : '__________';
     const fullAddress = `${address}, ${city}, ${addrState} ${zip}`;
 
     const lastContactDate = data.lastContactDate

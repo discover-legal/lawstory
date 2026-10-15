@@ -3,6 +3,7 @@
 // Complies with New York Domestic Relations Law and CPLR
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { resolveGroundsForDivorce } = require('./groundsResolver');
 
 /**
@@ -239,7 +240,7 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -x\n\n`;
 
     // Index number
-    caption += `Index No.: ${divorceData.caseNumber || '____________________'}\n\n`;
+    caption += `Index No.: ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // David NY round-7 (2026-08-30): do NOT append this.documentTitle here.
     // BaseDivorcePetitionTemplate.generatePetition puts documentTitle into
@@ -637,7 +638,7 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         plaintiffAddress ||
         (livesWithPlaintiff && countyStateFallback) ||
         countyStateFallback ||
-        '[CURRENT ADDRESS]';
+        '__________________________';
       items.push({
         number: paragraphNum++,
         content: `Child: ${name}${dob ? `, born ${dob}` : ''}. Present address: ${currentAddress}.`,
@@ -816,11 +817,7 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     // accounts" allegations. Delegate to super's silence-aware gate
     // whenever `hasProperty` is not an affirmative true; only render the
     // NY marital-property boilerplate on an explicit user "yes".
-    if (
-      divorceData.hasProperty !== true ||
-      this.hasAgreedPropertyDivision(divorceData) ||
-      this.factsIndicateNoProperty(divorceData)
-    ) {
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       // Fall through to the base agreed/no-property paths, then scrub the
       // "community/marital" phrasing so NY reads as marital-only.
       const section = super.generatePropertySection(divorceData);
@@ -848,7 +845,7 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'The parties have acquired marital property during the marriage, including but not limited to real property, personal property, and financial accounts, subject to equitable distribution pursuant to Domestic Relations Law § 236-B.',
+      content: 'The parties have acquired marital property during the marriage, subject to equitable distribution pursuant to Domestic Relations Law § 236-B.',
       type: 'property_info',
     });
 
@@ -861,18 +858,12 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     // Round-3 attorney review (David NY): silent debts boilerplate. Only
     // emit on an affirmative signal; silence AND facts-derived "no debts"
     // suppress the paragraph.
-    if (
-      divorceData.hasDebts === true ||
-      (Array.isArray(divorceData.petitionerDebts) && divorceData.petitionerDebts.length > 0) ||
-      (Array.isArray(divorceData.respondentDebts) && divorceData.respondentDebts.length > 0)
-    ) {
-      if (!this.factsIndicateNoDebts(divorceData)) {
-        items.push({
-          number: paragraphNum++,
-          content: `The parties have accumulated debts during the marriage. ${t.filerLabel} requests that the Court allocate responsibility for such debts equitably.`,
-          type: 'debt_info',
-        });
-      }
+    if (this.hasAffirmativeDebtSignal(divorceData)) {
+      items.push({
+        number: paragraphNum++,
+        content: `The parties have accumulated debts during the marriage. ${t.filerLabel} requests that the Court allocate responsibility for such debts equitably.`,
+        type: 'debt_info',
+      });
     }
 
     return {

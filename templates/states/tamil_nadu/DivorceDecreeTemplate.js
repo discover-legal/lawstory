@@ -1,6 +1,7 @@
 // templates/states/tamil_nadu/DivorceDecreeTemplate.js
 'use strict';
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 
 class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
@@ -27,7 +28,7 @@ class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateHeader(dd = {}) { return `IN THE ${(dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase()}`; }
   generateVenue(county) { return (county || 'CHENNAI').toUpperCase(); }
   generateCaseCaption(dd) {
-    const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase(); const no = dd.caseNumber || '[CASE NUMBER]';
+    const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase(); const no = caseNumberOrBlank(dd.caseNumber);
     const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase(); const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
     return { courtName: cn, caseNumber: dd.caseNumber, petitioner: dd.petitionerName, respondent: dd.respondentName, formatted: `IN THE ${cn}\n\n${this.getCaseNumberLabel()} ${no}\n\nIN THE MATTER OF:\n\n${p}\nPetitioner\n\nVersus\n\n${r}\nRespondent` };
   }
@@ -55,7 +56,7 @@ class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
           : (resolvePrimaryResidenceName(dd) || dd.petitionerName || 'Petitioner');
       items.push({ content: `IT IS ORDERED that ${soleCustodianName} has sole custody.`, type: 'order' });
     } else {
-      items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].', type: 'order' });
+      items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).', type: 'order' });
     }
     if (custody.kind !== 'joint' && residenceName && residenceName !== soleCustodianName) {
       items.push({ content: `IT IS ORDERED that the child(ren) shall primarily reside with ${residenceName}.`, type: 'order' });

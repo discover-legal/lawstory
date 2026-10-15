@@ -6,6 +6,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * New Brunswick Affidavit Template
@@ -61,7 +62,7 @@ class NewBrunswickAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'COURT OF KING\'S BENCH OF NEW BRUNSWICK';
     const location = (affidavitData.county || affidavitData.city || '[JUDICIAL DISTRICT]').toUpperCase();
-    const fileNo = affidavitData.caseNumber || '[FILE NUMBER]';
+    const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

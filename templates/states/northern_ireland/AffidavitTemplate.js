@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Northern Ireland Affidavit Template
@@ -75,7 +76,7 @@ class NorthernIrelandAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF JUSTICE IN NORTHERN IRELAND (FAMILY DIVISION)';
     const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
-    const refNo = affidavitData.caseNumber || '[REFERENCE NUMBER]';
+    const refNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

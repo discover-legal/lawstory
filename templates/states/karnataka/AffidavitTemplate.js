@@ -1,6 +1,7 @@
 // templates/states/karnataka/AffidavitTemplate.js
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class KarnatakaAffidavitTemplate extends BaseAffidavitTemplate {
   constructor() {
@@ -36,7 +37,7 @@ class KarnatakaAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT, BENGALURU';
     const location = (affidavitData.county || affidavitData.city || 'Bengaluru').toUpperCase();
-    const caseNo = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
     const formatted = `${court.toUpperCase()}\n${location}\n\nCase No. ${caseNo}\n\n${petitioner.toUpperCase()}\nPetitioner\n\nVersus\n\n${respondent.toUpperCase()}\nRespondent`;

@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * South Africa Affidavit Template
@@ -84,7 +85,7 @@ class SouthAfricaAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF SOUTH AFRICA';
     const division = (affidavitData.county || affidavitData.city || '[DIVISION]').toUpperCase();
-    const caseNo = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
     const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || '[PLAINTIFF NAME]';
     const defendant = affidavitData.defendant || affidavitData.respondentName || '[DEFENDANT NAME]';
 

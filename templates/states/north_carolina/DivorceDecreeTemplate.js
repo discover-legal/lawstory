@@ -3,6 +3,7 @@
 // Complies with N.C.G.S. Chapter 50 (§ 50-6 et seq.; § 50-1 was repealed in 1971)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 
 /**
@@ -113,7 +114,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `DISTRICT COURT DIVISION\n`;
     caption += `${countyUpper} COUNTY\n\n`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `FILE NO. ${caseNumber}\n\n`;
 
     const petitioner = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
@@ -153,11 +154,11 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This cause came on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'},`;
 
     if (divorceData.isUncontested || !divorceData.respondentAppeared) {
-      text += ` Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : 'appearing pro se'},`;
+      text += ` Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'appearing pro se')},`;
       text += ` Defendant having been duly served and not appearing,`;
     } else {
-      text += ` Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : 'appearing pro se'},`;
-      text += ` and Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${divorceData.respondentRepresentation === 'attorney' ? 'by and through counsel' : 'appearing pro se'},`;
+      text += ` Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'appearing pro se')},`;
+      text += ` and Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${representationPhrase(divorceData.respondentRepresentation, 'by and through counsel', 'appearing pro se')},`;
     }
 
     text += ` and the Court having heard the evidence and the testimony of the Plaintiff, and being fully advised in the premises:`;
@@ -316,7 +317,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
         // Unrecognized/undecided arrangement — neutral order with an explicit
         // placeholder for the parties' actual agreement. Never default to sole.
         items.push({
-          content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+          content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
           type: 'order'
         });
       }

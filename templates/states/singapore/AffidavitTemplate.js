@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Singapore Affidavit Template
@@ -73,7 +74,7 @@ class SingaporeAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY JUSTICE COURTS';
-    const suitNo = affidavitData.caseNumber || '[NUMBER]/[YEAR]';
+    const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
     const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
     const defendant = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

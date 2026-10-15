@@ -3,6 +3,7 @@
 // Complies with Texas Family Code and Texas Rules of Civil Procedure
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { resolveGroundsForDivorce } = require('./groundsResolver');
 
 // Leading soft-hedge words that make an already-hedged suspected-location
@@ -275,7 +276,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `IN THE ${courtName.toUpperCase()}\n\n`;
 
     // Texas uses "CAUSE NO." - leave blank for clerk to assign
-    const causeNumber = divorceData.caseNumber || '____________________';
+    const causeNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CAUSE NO. ${causeNumber}\n\n`;
 
     // Texas style of cause for divorce
@@ -565,9 +566,11 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
       items.push({
         number: paragraphNum++,
-        content: 'No children were born or adopted of this marriage, and none are expected.',
+        content: 'No children were born or adopted of this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -593,9 +596,11 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
       items.push({
         number: paragraphNum++,
-        content: 'No other children were born to or adopted by Petitioner and Respondent during the marriage, the wife is not pregnant, and none are expected.',
+        content: 'No other children were born to or adopted by Petitioner and Respondent during the marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
 
       // Texas conservatorship language
       items.push({
@@ -628,54 +633,29 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    // Delegate to super for any confirmed no-property or agreed-division
-    // case. `noPropertyConfirmed === true` is treated as an affirmative
-    // no-property finding even when `hasProperty` was never explicitly
-    // set to false — otherwise the "There exists community property..."
-    // presumption below fabricates a community estate against a filer
-    // who told the intake there was none (Mari's TX petition, live
-    // audit 2026-08).
-    if (
-      divorceData.hasProperty === false ||
-      divorceData.noPropertyConfirmed === true ||
-      this.hasAgreedPropertyDivision(divorceData) ||
-      // Round-3 attorney review (Mari TX, 2026-08-30): the structured
-      // hasProperty/noPropertyConfirmed flags were both absent, but facts[]
-      // carried an explicit "no property, no house, no retirement"
-      // statement from the transcript. Delegating to super's silence-
-      // aware gate lets the fact-driven promotion below fire the correct
-      // nil-property clause instead of the community-property boilerplate.
-      this.factsIndicateNoProperty(divorceData)
-    ) {
+    // "There exists community property…" ALLEGES a community estate. Plead
+    // it only on an affirmative hasProperty === true; silence, a confirmed
+    // or facts-derived no-property statement (Mari's TX petition, live
+    // audit 2026-08), or an agreed division go through the base gate.
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
-    if (divorceData.hasProperty === false && divorceData.hasDebts === false) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There is no community property or community debt to be divided.',
-        type: 'property_info'
-      });
-    } else {
-      items.push({
-        number: paragraphNum++,
-        content: 'Petitioner and Respondent will agree to a division of their estate, or alternatively, Petitioner requests the Court to order a division of the estate of the parties in a manner that the Court deems just and right, as provided by law.',
-        type: 'property_request'
-      });
+    items.push({
+      number: paragraphNum++,
+      content: 'Petitioner and Respondent will agree to a division of their estate, or alternatively, Petitioner requests the Court to order a division of the estate of the parties in a manner that the Court deems just and right, as provided by law.',
+      type: 'property_request'
+    });
 
-      // Texas community property presumption
-      items.push({
-        number: paragraphNum++,
-        content: 'There exists community property owned by the parties, the nature and extent of which will be proven at trial or set forth in an agreement of the parties.',
-        type: 'property_info'
-      });
-    }
+    // Texas community property presumption
+    items.push({
+      number: paragraphNum++,
+      content: 'There exists community property owned by the parties, the nature and extent of which will be proven at trial or set forth in an agreement of the parties.',
+      type: 'property_info'
+    });
 
     return {
       title: 'VI. PROPERTY',

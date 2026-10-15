@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Ireland Affidavit Template
@@ -74,7 +75,7 @@ class IrelandAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'CIRCUIT FAMILY COURT';
     const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
-    const recordNo = affidavitData.caseNumber || '[RECORD NUMBER]';
+    const recordNo = caseNumberOrBlank(affidavitData.caseNumber);
     const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

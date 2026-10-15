@@ -8,6 +8,7 @@ const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate'
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 const { resolveSpousalSupportDecision } = require('../../core/spousalSupport');
+const { representationPhrase } = require('../../core/blanks');
 const {
   custodyDisputePosition,
   incomeImputationPosition,
@@ -329,7 +330,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement] (Divorce Act, RSC 1985, c. 3, s.16.3).',
+        content: 'IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement) (Divorce Act, RSC 1985, c. 3, s.16.3).',
         type: 'order'
       });
     }
@@ -354,8 +355,8 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         content:
           'IT IS ORDERED that the parties shall determine the child(ren)\'s primary residence ' +
           'by agreement, or, failing agreement, in accordance with a parenting schedule filed ' +
-          'with this Court: [PRIMARY RESIDENCE — set out the parent with whom the child(ren) ' +
-          'primarily reside].',
+          'with this Court: __________________________ (Draft — name the parent with whom the child(ren) ' +
+          'primarily reside).',
         type: 'order'
       });
     }
@@ -389,15 +390,11 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     // never affirmed is fabrication. Render an explicit blank + Draft note
     // when the representation status is unknown.
     const selfRepPhrase = this.terminology.selfRepresentedLabel.toLowerCase();
-    const petRep = typeof divorceData.petitionerRepresentation === 'string'
-      ? divorceData.petitionerRepresentation.trim().toLowerCase()
-      : '';
-    const petRepClause =
-      petRep === 'lawyer' || petRep === 'attorney'
-        ? 'appeared by and through a lawyer of record'
-        : petRep === 'self' || petRep === 'self-represented' || petRep === 'self_represented' || petRep === 'pro_se' || petRep === 'pro se'
-          ? `appeared ${selfRepPhrase}`
-          : '__________________________ (Draft — confirm representation of the Applicant before filing: appeared by lawyer of record, appeared self-represented, or did not appear)';
+    const petRepClause = representationPhrase(
+      divorceData.petitionerRepresentation,
+      'appeared by and through a lawyer of record',
+      `appeared ${selfRepPhrase}`,
+    );
     text +=
       `${this.terminology.filerLabel}, ${divorceData.petitionerName || '_________________________________'}, ` +
       `${petRepClause}.\n\n`;
@@ -490,7 +487,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     // A schedule string that reads as a subjective wish or explicitly
     // disclaims specificity ("not yet provided" / "TBD" / "unspecified" /
     // wants / would like / prefers / hopes / seeks) is NOT an operative
-    // schedule; render an explicit [SCHEDULE — insert...] bracket so the
+    // schedule; render an explicit fill-in blank + Draft note so the
     // drafter fills it in before filing.
     const NON_OPERATIVE_RE = /(not yet (?:provided|specified|decided|agreed)|tbd|tba|unspecified|to be (?:decided|determined|agreed)|placeholder|\bwants?\b|\bwould like\b|\bprefers?\b|\bhopes?\b|\bseeks?\b|\bwishes?\b|\bwill request\b)/i;
     if (details.length > 50 && !NON_OPERATIVE_RE.test(details)) {
@@ -499,7 +496,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (details.length > 0) {
       // Non-operative content — surface the drafter's note as an in-line
       // comment (never as an operative order) and demand a real schedule.
-      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: [SCHEDULE — insert specific parenting schedule (weekday/weekend, holidays, exchanges) before filing]. (Drafter note: ${details})${nonAlienation}`;
+      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: __________________________ (Draft — insert specific parenting schedule (weekday/weekend, holidays, exchanges) before filing). (Drafter note: ${details})${nonAlienation}`;
     }
     return 'IT IS ORDERED that each party shall have parenting time with the child(ren) as agreed in writing by the parties, or, failing agreement, in accordance with a parenting schedule to be filed with this Court.' + nonAlienation;
   }

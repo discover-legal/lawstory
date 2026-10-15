@@ -3,6 +3,7 @@
 // Complies with Tex. R. Civ. P. 119a
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Texas Waiver of Service Template
@@ -92,7 +93,7 @@ class TexasWaiverOfServiceTemplate extends BaseAffidavitTemplate {
     const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
-    const caseNumber = data.caseNumber || '[CAUSE NUMBER]';
+    const caseNumber = caseNumberOrBlank(data.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const petitioner = (data.petitionerName || '[PETITIONER NAME]').toUpperCase();

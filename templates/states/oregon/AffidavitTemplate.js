@@ -4,6 +4,7 @@
 //                ORS §162.065 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Oregon Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -53,7 +54,7 @@ class OregonAffidavitTemplate extends BaseAffidavitTemplate {
     const county = affidavitData.county || '[COUNTY]';
     caption += `FOR THE COUNTY OF ${county.toUpperCase()}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

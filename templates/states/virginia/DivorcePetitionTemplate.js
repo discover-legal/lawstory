@@ -3,6 +3,7 @@
 // Complies with Va. Code § 20-91 et seq.
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Virginia Complaint for Divorce Template
@@ -144,7 +145,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `IN THE ${courtName.toUpperCase()}\n\n`;
 
     // Case number — Virginia uses "CASE NO."
-    caption += `CASE NO. ${divorceData.caseNumber || '____________________'}\n\n`;
+    caption += `CASE NO. ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // Virginia uses Complainant/Defendant (equity court tradition)
     const petitioner = (divorceData.petitionerName || '[COMPLAINANT NAME]').toUpperCase();
@@ -314,10 +315,11 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 
@@ -326,7 +328,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'During the marriage, the parties acquired marital property, including real property, personal property, and financial accounts. The parties may also have separate property from before the marriage or acquired by gift or inheritance.',
+      content: 'During the marriage, the parties acquired marital property. The parties may also have separate property from before the marriage or acquired by gift or inheritance.',
       type: 'property_info'
     });
 

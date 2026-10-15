@@ -3,6 +3,7 @@
 // Complies with Utah Code Title 81, Chapter 4 (formerly Title 30, Chapter 3) and Utah Rules of Civil Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
 const {
   resolveCustodyArrangement,
   resolvePrimaryResidenceName,
@@ -139,7 +140,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `${respondent},\n`;
     caption += `Respondent.`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `\n\nCase No. ${caseNumber}`;
     caption += `\nJudge: ${divorceData.judgeName || '________________'}`;
 
@@ -164,7 +165,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `The above-entitled matter came on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'}.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `${divorceData.petitionerName || 'Petitioner'} appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : 'pro se'}.\n\n`;
+      text += `${divorceData.petitionerName || 'Petitioner'} appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')}.\n\n`;
 
       if (divorceData.respondentAppeared === true) {
         text += `${respondent} appeared and stipulated to the entry of this Decree.\n\n`;
@@ -174,7 +175,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += `${respondent}: [APPEARANCE OR SIGNED STIPULATION — TO BE COMPLETED BY THE COURT].\n\n`;
       }
     } else {
-      text += `${divorceData.petitionerName || 'Petitioner'} appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : 'pro se'}.\n\n`;
+      text += `${divorceData.petitionerName || 'Petitioner'} appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')}.\n\n`;
       if (divorceData.respondentAppeared === true) {
         text += `${respondent} appeared.`;
       } else if (divorceData.defaultEntered === true || divorceData.appearanceType === 'default') {
@@ -333,7 +334,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${residenceName || divorceData.petitionerName || 'Petitioner'} is awarded primary physical custody of the minor child(ren).`,
+        content: `IT IS ORDERED that ${primaryResidenceOrBlank(residenceName)} is awarded primary physical custody of the minor child(ren).`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -352,7 +353,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * New Zealand Affidavit Template
@@ -80,7 +81,7 @@ class NewZealandAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT OF NEW ZEALAND';
     const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
-    const fileNo = affidavitData.caseNumber || '[FAM NUMBER]';
+    const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
     const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

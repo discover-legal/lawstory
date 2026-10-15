@@ -3,6 +3,7 @@
 // Complies with M.G.L. c. 208 (Massachusetts divorce statutes)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Massachusetts Complaint for Divorce Template
@@ -121,7 +122,7 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const courtName = divorceData.court || this.getDefaultCourt(divorceData.county);
     caption += `${courtName.toUpperCase()}\n\n`;
 
-    const docketNum = divorceData.caseNumber || '[DOCKET NUMBER]';
+    const docketNum = caseNumberOrBlank(divorceData.caseNumber);
     caption += `DOCKET NO. ${docketNum}\n\n`;
 
     const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
@@ -264,11 +265,20 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
-      return super.generatePropertySection(divorceData);
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
+      // The financial-disclosure recital is procedural — required whatever
+      // the property posture — so it survives the base property gate.
+      const section = super.generatePropertySection(divorceData);
+      section.items.push({
+        number: section.nextParagraphNumber++,
+        content: 'The parties are required to file a Financial Statement in this matter. Plaintiff\'s Financial Statement is being filed herewith.',
+        type: 'financial_disclosure'
+      });
+      return section;
     }
 
     const items = [];

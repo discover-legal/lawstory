@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 // The six sheriffdoms of Scotland (for the Form G1 "SHERIFFDOM OF ... AT ..." heading)
 const SCOTTISH_SHERIFFDOMS = [
@@ -135,7 +136,7 @@ class ScotlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[COURT REF. NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const pursuer = (divorceData.petitionerName || '[PURSUER NAME]').toUpperCase();
     const defender = (divorceData.respondentName || '[DEFENDER NAME]').toUpperCase();

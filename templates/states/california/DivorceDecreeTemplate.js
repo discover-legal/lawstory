@@ -3,6 +3,7 @@
 // Complies with California Family Code and California Rules of Court
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList, partitionByCharacter } = require('../../core/dataShapes');
 const { resolveSpousalSupportDecision } = require('../../core/spousalSupport');
@@ -158,7 +159,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const respondent = divorceData.respondentName ? captionUpper(divorceData.respondentName) : '[RESPONDENT NAME]';
     caption += `Respondent: ${respondent}`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `\n\nCase Number: ${caseNumber}`;
 
     return {
@@ -189,7 +190,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This proceeding came on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'} in Department ____.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Petitioner ${divorceData.petitionerName || '[PETITIONER NAME]'} appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'with counsel' : 'in pro per (self-represented)'}.\n\n`;
+      text += `Petitioner ${divorceData.petitionerName || '[PETITIONER NAME]'} appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'in pro per (self-represented)')}.\n\n`;
 
       if (divorceData.respondentAppeared) {
         text += `Respondent ${divorceData.respondentName || '[RESPONDENT NAME]'} appeared and submitted to the judgment.\n\n`;
@@ -197,7 +198,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += `Respondent ${divorceData.respondentName || '[RESPONDENT NAME]'} having been properly served, did not appear, and default was entered.\n\n`;
       }
     } else {
-      text += `Petitioner appeared ${divorceData.petitionerRepresentation === 'attorney' ? 'with counsel' : 'in pro per'}.\n\n`;
+      text += `Petitioner appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'in pro per')}.\n\n`;
       text += `Respondent ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -579,7 +580,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `Physical custody of the minor child(ren) is awarded to: [X] ${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'Petitioner'} as primary parent [  ] Joint`,
+        content: `Physical custody of the minor child(ren) is awarded to: [X] ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} as primary parent [  ] Joint`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -598,7 +599,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }

@@ -3,6 +3,7 @@
 // Governing Law: RCW 9A.72.085 (perjury/declarations), RCW 42.44 (notary)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Washington State Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -49,7 +50,7 @@ class WashingtonAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Washington uses "NO." as the case number label
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

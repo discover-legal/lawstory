@@ -105,7 +105,8 @@ describe('IllinoisAffidavitTemplate', () => {
       const caption = template.generateCaseCaption(data);
 
       expect(caption.formatted).toContain('[COURT NAME]');
-      expect(caption.formatted).toContain('[CASE NUMBER]');
+      expect(caption.formatted).toContain('____________________'); // unassigned case number → fill-in blank, never a [CASE NUMBER] token
+      expect(caption.formatted).not.toContain('[CASE NUMBER]');
     });
   });
 

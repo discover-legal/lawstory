@@ -4,6 +4,7 @@
 //                N.J. Court Rule 1:4-4(b) (certification), N.J.S.A. 52:7-10 et seq. (notary)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * New Jersey Affidavit Template - Legally Compliant v1.0
@@ -75,7 +76,7 @@ class NewJerseyAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `${courtName}\n\n`;
 
     // Case number — New Jersey uses "DOCKET NO."
-    const caseNumber = affidavitData.caseNumber || '[DOCKET NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names

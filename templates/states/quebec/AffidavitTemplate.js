@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Quebec Affidavit Template (Déclaration sous serment)
@@ -58,7 +59,7 @@ class QuebecAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const district = (affidavitData.county || affidavitData.city || '[JUDICIAL DISTRICT]').toUpperCase();
-    const fileNo = affidavitData.caseNumber || '[FILE NUMBER]';
+    const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
     const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || '[PLAINTIFF / DEMANDEUR]';
     const defendant = affidavitData.defendant || affidavitData.respondentName || '[DEFENDANT / DÉFENDEUR]';
 

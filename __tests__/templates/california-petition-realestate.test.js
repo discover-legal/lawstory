@@ -60,12 +60,20 @@ describe('CA petition — real estate items surface in property section', () => 
     expect(body).toMatch(/APN 123-456-789/);
   });
 
-  test('no realEstateItems → generic FL-160 fallback (no Poway mention)', () => {
+  test('hasProperty:true, no realEstateItems → generic FL-160 fallback (no Poway mention)', () => {
     const tpl = new CaliforniaDivorcePetitionTemplate();
-    const section = tpl.generatePropertySection(baseData());
+    const section = tpl.generatePropertySection(baseData({ hasProperty: true }));
     const body = section.items.map((i) => i.content).join('\n');
     expect(body).not.toMatch(/Poway/);
     expect(body).toMatch(/Property Declaration \(Form FL-160\)/);
+  });
+
+  test('silence on property → Draft note, never "There exists community property"', () => {
+    const tpl = new CaliforniaDivorcePetitionTemplate();
+    const section = tpl.generatePropertySection(baseData());
+    const body = section.items.map((i) => i.content).join('\n');
+    expect(body).not.toMatch(/There exists community property/);
+    expect(body).toMatch(/Draft — confirm whether you and your spouse have any/);
   });
 });
 

@@ -6,6 +6,7 @@
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
 const { asList, propertyAgreementProse } = require('../../core/dataShapes');
+const { caseNumberOrBlank, draftBlank, primaryResidenceOrBlank } = require('../../core/blanks');
 const {
   oneYearSeparationPleading,
   custodyDisputePosition,
@@ -126,7 +127,9 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[COURT FILE NUMBER]';
+    // Unassigned Court File No. renders the same fill-in blank in the
+    // preview as in the PDF (never a [COURT FILE NUMBER] token).
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
@@ -211,7 +214,7 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       return `The Applicant requests that ${divorceData.respondentName || 'the Respondent'} have sole decision-making responsibility for the child(ren) pursuant to section 16.1 of the Divorce Act.`;
     }
     if (custody.kind === 'legacy_sole') {
-      return `The Applicant requests that ${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'the Applicant'} have sole decision-making responsibility for the child(ren) pursuant to section 16.1 of the Divorce Act.`;
+      return `The Applicant requests that ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} have sole decision-making responsibility for the child(ren) pursuant to section 16.1 of the Divorce Act.`;
     }
     return null;
   }
@@ -276,10 +279,12 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
           type: 'property_agreement'
         });
       }
-    } else {
+    } else if (divorceData.hasProperty === true) {
+      // Affirmative "we have property" — allege only that property exists;
+      // its kinds (real property, accounts, …) are never assumed.
       items.push({
         number: paragraphNum++,
-        content: 'The parties acquired property during the marriage, including but not limited to real property, personal property, and financial accounts.',
+        content: 'The parties acquired property during the marriage.',
         type: 'property_info'
       });
 
@@ -288,9 +293,19 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         content: 'The Applicant requests an equalization of the parties\' net family property pursuant to Part I of the Family Law Act, RSO 1990, c. F.3.',
         type: 'property_request'
       });
+    } else {
+      // Silence — never allege an estate the filer did not describe. The
+      // equalization claim stays in the relief section.
+      items.push({
+        number: paragraphNum++,
+        content: draftBlank('confirm whether you and your spouse have net family property to equalize under the Family Law Act, RSO 1990, c. F.3, or a written agreement, before filing.'),
+        type: 'property_draft_note'
+      });
     }
 
-    if (divorceData.hasDebts !== false) {
+    // Debts are alleged only on an affirmative signal (hasDebts === true or
+    // an itemized debt list) — silence is not "the parties have debts".
+    if (this.hasAffirmativeDebtSignal(divorceData)) {
       items.push({
         number: paragraphNum++,
         content: 'The parties have accumulated debts during the marriage. The Applicant requests that the Court allocate responsibility for such debts in a just and equitable manner.',
@@ -359,9 +374,14 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const reliefItems = [
       'A divorce order pursuant to section 8 of the Divorce Act, RSC 1985, c. 3 (2nd Supp.);',
       'Division of net family property pursuant to sections 5-9 of the Family Law Act, RSO 1990, c. F.3;',
-      'An order for possession of the matrimonial home pursuant to section 24 of the Family Law Act;',
       'An order allocating responsibility for debts in an equitable manner;'
     ];
+
+    // Possession of the matrimonial home (FLA s.24) presupposes a home the
+    // filer has not told us about — claim it only on an explicit request.
+    if (divorceData.matrimonialHomePossessionRequested === true) {
+      reliefItems.splice(2, 0, 'An order for possession of the matrimonial home pursuant to section 24 of the Family Law Act;');
+    }
 
     if (divorceData.hasMinorChildren === true || (divorceData.children && divorceData.children.length > 0)) {
       reliefItems.push('A parenting order specifying parenting time and decision-making responsibility pursuant to section 16.1 of the Divorce Act;');

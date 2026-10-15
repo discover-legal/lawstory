@@ -3,6 +3,7 @@
 // Complies with 750 ILCS 5 (Illinois Marriage and Dissolution of Marriage Act)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Illinois Petition for Dissolution of Marriage Template
@@ -131,7 +132,7 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `     Respondent.\n\n`;
 
     // Case number
-    caption += `Case No. ${divorceData.caseNumber || '____________________'}\n\n`;
+    caption += `Case No. ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // Document title
     caption += this.documentTitle;
@@ -233,11 +234,20 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
-      return super.generatePropertySection(divorceData);
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
+      // The financial-disclosure recital is procedural — required whatever
+      // the property posture — so it survives the base property gate.
+      const section = super.generatePropertySection(divorceData);
+      section.items.push({
+        number: section.nextParagraphNumber++,
+        content: 'A Financial Affidavit is being filed with this Petition as required by 750 ILCS 5/501(a)(1).',
+        type: 'financial_disclosure'
+      });
+      return section;
     }
 
     const items = [];

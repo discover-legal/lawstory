@@ -1,6 +1,7 @@
 // templates/states/cross_river/AffidavitTemplate.js
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class CrossRiverAffidavitTemplate extends BaseAffidavitTemplate {
   constructor() {
@@ -34,7 +35,7 @@ class CrossRiverAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF CROSS RIVER STATE';
     const location = (affidavitData.county || affidavitData.city || '[JUDICIAL DIVISION]').toUpperCase();
-    const suitNo = affidavitData.caseNumber || '[SUIT NUMBER]';
+    const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
     const formatted = `IN THE ${court.toUpperCase()}\n${location} JUDICIAL DIVISION\n\nSuit No. ${suitNo}\n\n${petitioner.toUpperCase()}\nPetitioner\n\n— AND —\n\n${respondent.toUpperCase()}\nRespondent`;

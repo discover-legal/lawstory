@@ -3,6 +3,7 @@
 // Complies with 750 ILCS 5 (Illinois Marriage and Dissolution of Marriage Act)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -131,7 +132,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `${respondent},\n`;
     caption += `Respondent.`;
 
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `\n\nCase No. ${caseNumber}`;
 
     return {
@@ -154,7 +155,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This cause coming on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'},`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += ` Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'by and through counsel' : 'pro se'},`;
+      text += ` Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')},`;
 
       if (divorceData.respondentAppeared) {
         text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, appearing and agreeing to the entry of this Judgment,`;
@@ -162,7 +163,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, having been served and defaulting,`;
       }
     } else {
-      text += ` Petitioner appearing ${divorceData.petitionerRepresentation === 'attorney' ? 'by counsel' : 'pro se'},`;
+      text += ` Petitioner appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')},`;
       text += ` and Respondent ${divorceData.respondentAppeared ? 'appearing' : 'not appearing'},`;
     }
 
@@ -311,7 +312,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `${resolvePrimaryResidenceName(divorceData) || divorceData.petitionerName || 'Petitioner'} shall have the majority of Parenting Time with the minor child(ren).`,
+        content: `${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} shall have the majority of Parenting Time with the minor child(ren).`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -330,7 +331,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].',
+        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
         type: 'order'
       });
     }
@@ -462,7 +463,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       // Illinois formula duration
-      const marriageYears = divorceData.marriageLengthYears || '[YEARS]';
+      const marriageYears = divorceData.marriageLengthYears || '_____';
       if (marriageYears >= 20 || divorceData.indefiniteMaintenance) {
         items.push({
           content: 'Based on the duration of the marriage (20+ years), maintenance is ordered for a period equal to the length of the marriage or indefinitely.',

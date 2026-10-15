@@ -3,6 +3,7 @@
 // Complies with RCW 26.09 (Dissolution of Marriage, Legal Separation)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Washington State Petition for Dissolution of Marriage Template
@@ -116,7 +117,7 @@ class WashingtonDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `${caseLabel} ${caseNumber}\n\n`;
 
     const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
@@ -191,9 +192,11 @@ class WashingtonDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
       items.push({
         number: paragraphNum++,
-        content: 'There are no children born of or adopted during this marriage, and none are expected.',
+        content: 'There are no children born of or adopted during this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -238,10 +241,11 @@ class WashingtonDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 
@@ -250,7 +254,7 @@ class WashingtonDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'The parties have accumulated community property and debts during the marriage. Petitioner requests that the Court make a just and equitable disposition of the community property and liabilities pursuant to RCW 26.09.080.',
+      content: 'The parties have accumulated community property' + this.debtsClause(divorceData, ' and debts') + ' during the marriage. Petitioner requests that the Court make a just and equitable disposition of the community property and liabilities pursuant to RCW 26.09.080.',
       type: 'property_info'
     });
 

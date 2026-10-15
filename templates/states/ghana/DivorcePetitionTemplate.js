@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Ghana Divorce Petition Template
@@ -130,7 +131,7 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '[SUIT NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
@@ -171,7 +172,7 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Either party must be domiciled in Ghana or resident for 3 years.
    */
   getJurisdictionStatement(divorceData) {
-    return `The Petitioner (or the Respondent) is a citizen of Ghana, or is domiciled in Ghana, or has been ordinarily resident in Ghana for at least three years immediately preceding the filing of this Petition, as required by section 31 of the Matrimonial Causes Act 1971 (Act 367). The parties were married under ${divorceData.marriageType || '[MARRIAGE TYPE]'} law.`;
+    return `The Petitioner (or the Respondent) is a citizen of Ghana, or is domiciled in Ghana, or has been ordinarily resident in Ghana for at least three years immediately preceding the filing of this Petition, as required by section 31 of the Matrimonial Causes Act 1971 (Act 367). The parties were married under ${divorceData.marriageType || '______________'} law.`;
   }
 
   /**

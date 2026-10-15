@@ -67,6 +67,15 @@ class MissouriDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   /**
+   * RSMo § 452.310.2(5): the petition must state whether a party is
+   * pregnant. Cited in the Draft note when the answer is unknown.
+   * @returns {string}
+   */
+  getPregnancyAvermentAuthority() {
+    return 'RSMo § 452.310.2(5)';
+  }
+
+  /**
    * Get Missouri case number label — "CASE NO."
    * @returns {string} Case number label
    */
@@ -155,9 +164,11 @@ class MissouriDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
       items.push({
         number: paragraphNum++,
-        content: 'There are no children born of or adopted during this marriage, and the wife is not now pregnant.',
+        content: 'There are no children born of or adopted during this marriage.',
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -202,10 +213,11 @@ class MissouriDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 
@@ -214,7 +226,7 @@ class MissouriDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: 'The parties have accumulated marital property and debts during the marriage. Petitioner requests that the Court divide the marital property and debts in a just manner pursuant to RSMo 452.330.',
+      content: 'The parties have accumulated marital property' + this.debtsClause(divorceData, ' and debts') + ' during the marriage. Petitioner requests that the Court divide the marital property and debts in a just manner pursuant to RSMo 452.330.',
       type: 'property_info'
     });
 

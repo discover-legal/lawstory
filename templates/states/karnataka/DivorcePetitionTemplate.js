@@ -1,6 +1,7 @@
 // templates/states/karnataka/DivorcePetitionTemplate.js
 'use strict';
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 class KarnatakaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   // Indian terminology (see templates/core/terminology.js): the caption is the
@@ -29,7 +30,7 @@ class KarnatakaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county || divorceData.city)).toUpperCase();
-    const caseNumber = divorceData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
     const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
     // Mutual-consent petitions are presented jointly (HMA s.13B(1) / SMA s.28(1))

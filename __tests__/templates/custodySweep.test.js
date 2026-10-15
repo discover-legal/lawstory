@@ -125,7 +125,8 @@ describe('custody sweep — every jurisdiction decree with a custody section', (
       const { doc, text } = custodyText(Template, {
         custodyType: 'sole custody to mother',
       });
-      if (!planBased) expect(text).toContain('[ARRANGEMENT');
+      if (!planBased) expect(text).toContain('(Draft — set out the parties\' decision-making agreement)');
+      expect(text).not.toContain('[ARRANGEMENT');
       expect(text).not.toMatch(SOLE_RE);
       expect(
         doc.validation.warnings.some((w) => /was not recognized/.test(w))

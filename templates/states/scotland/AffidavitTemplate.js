@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Scotland Affidavit Template
@@ -74,7 +75,7 @@ class ScotlandAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'SHERIFF COURT';
     const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
-    const refNo = affidavitData.caseNumber || '[COURT REF. NUMBER]';
+    const refNo = caseNumberOrBlank(affidavitData.caseNumber);
     const pursuer = affidavitData.plaintiff || affidavitData.petitionerName || '[PURSUER NAME]';
     const defender = affidavitData.defendant || affidavitData.respondentName || '[DEFENDER NAME]';
 

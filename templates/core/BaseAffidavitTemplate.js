@@ -2,6 +2,7 @@
 // Base template class for affidavit generation
 // Provides common functionality across all states
 
+const { caseNumberOrBlank } = require('./blanks');
 /**
  * Escape HTML special characters to prevent XSS/injection
  * @param {string} str - String to escape
@@ -162,7 +163,7 @@ class BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number - default uses "CASE NO." (override in state-specific templates if needed)
-    const caseNumber = affidavitData.caseNumber || '____________________';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names if both are provided (style of cause format)

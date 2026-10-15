@@ -90,7 +90,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    */
   getDefaultCourt(county) {
     const countyUpper = (county || '[COUNTY]').toUpperCase();
-    return `IN THE [NUMBER] JUDICIAL CIRCUIT COURT FOR ${countyUpper} COUNTY, STATE OF MICHIGAN\nFAMILY DIVISION`;
+    return `IN THE _____ JUDICIAL CIRCUIT COURT FOR ${countyUpper} COUNTY, STATE OF MICHIGAN\nFAMILY DIVISION`;
   }
 
   /**
@@ -102,7 +102,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let caption = '';
 
     const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
-    const circuit = divorceData.judicialCircuit || '[NUMBER]';
+    const circuit = divorceData.judicialCircuit || '_____';
 
     caption += `IN THE ${circuit} JUDICIAL CIRCUIT COURT FOR ${countyUpper} COUNTY, STATE OF MICHIGAN\n`;
     caption += `FAMILY DIVISION\n\n`;
@@ -229,10 +229,11 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 

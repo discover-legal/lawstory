@@ -7,6 +7,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('./BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('./blanks');
 const BaseDivorcePetitionTemplate = require('./BaseDivorcePetitionTemplate');
 const BaseDivorceDecreeTemplate = require('./BaseDivorceDecreeTemplate');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('./parenting');
@@ -45,7 +46,7 @@ function createIndiaAffidavitTemplate(config) {
     generateCaseCaption(d) {
       const court = d.court || d.courtName || config.defaultCourt;
       const loc = (d.county || d.city || config.defaultCity).toUpperCase();
-      const caseNo = d.caseNumber || '[CASE NUMBER]';
+      const caseNo = caseNumberOrBlank(d.caseNumber);
       const p = d.plaintiff || d.petitionerName || '[PETITIONER NAME]';
       const r = d.defendant || d.respondentName || '[RESPONDENT NAME]';
       return {
@@ -105,7 +106,7 @@ function createIndiaDivorcePetitionTemplate(config) {
 
     generateCaseCaption(dd) {
       const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase();
-      const no = dd.caseNumber || '[CASE NUMBER]';
+      const no = caseNumberOrBlank(dd.caseNumber);
       const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase();
       const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
       // Mutual-consent petitions are presented jointly "by both the parties
@@ -199,7 +200,7 @@ function createIndiaDivorceDecreeTemplate(config) {
 
     generateCaseCaption(dd) {
       const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase();
-      const no = dd.caseNumber || '[CASE NUMBER]';
+      const no = caseNumberOrBlank(dd.caseNumber);
       const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase();
       const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
       // Mutual-consent matters carry the joint style through to the decree
@@ -256,7 +257,7 @@ function createIndiaDivorceDecreeTemplate(config) {
         items.push({ content: `IT IS ORDERED that ${soleCustodianName} has sole custody.`, type: 'order' });
         items.push({ content: `${otherParentName} shall have visitation rights.`, type: 'order' });
       } else {
-        items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: [ARRANGEMENT — set out the parties\' decision-making agreement].', type: 'order' });
+        items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).', type: 'order' });
       }
       if (custody.kind !== 'joint' && residenceName && residenceName !== soleCustodianName) {
         items.push({ content: `IT IS ORDERED that the child(ren) shall primarily reside with ${residenceName}.`, type: 'order' });

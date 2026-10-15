@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Federal Capital Territory (Abuja) Affidavit Template
@@ -54,7 +55,7 @@ class FCTAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF THE FEDERAL CAPITAL TERRITORY';
     const location = (affidavitData.county || affidavitData.city || 'ABUJA').toUpperCase();
-    const suitNo = affidavitData.caseNumber || '[SUIT NUMBER]';
+    const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
     const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
     const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
 

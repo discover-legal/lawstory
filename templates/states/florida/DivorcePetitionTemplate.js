@@ -3,6 +3,7 @@
 // Complies with Florida Statutes Chapter 61 and Florida Family Law Rules of Procedure
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { pregnancyStatus } = require('../../core/blanks');
 
 /**
  * Attorney round-5 (Tavita FL, 2026-08-30): LLM extraction occasionally
@@ -160,7 +161,7 @@ class FloridaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       'Duval': '4th',
       'Pinellas': '6th'
     };
-    return circuitMap[county] || '[CIRCUIT]';
+    return circuitMap[county] || '_____';
   }
 
   /**
@@ -341,13 +342,10 @@ class FloridaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         type: 'children_info'
       });
 
-      if (divorceData.wifePregnant === false) {
-        items.push({
-          number: paragraphNum++,
-          content: 'The wife is not pregnant.',
-          type: 'children_info'
-        });
-      }
+      // Pregnancy averment (simplified-dissolution eligibility turns on
+      // it): sworn only from a recorded answer, otherwise a gender-neutral
+      // Draft-note blank.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     } else {
       items.push({
         number: paragraphNum++,
@@ -622,8 +620,8 @@ Type of identification produced: ___________________`;
       if (divorceData.hasMinorChildren === true || (divorceData.children && divorceData.children.length > 0)) {
         errors.push('Simplified dissolution is not available when there are minor children');
       }
-      if (divorceData.wifePregnant === true) {
-        errors.push('Simplified dissolution is not available if the wife is pregnant');
+      if (pregnancyStatus(divorceData) === 'pregnant') {
+        errors.push('Simplified dissolution is not available if either party is pregnant');
       }
       if (divorceData.requestSpousalSupport) {
         errors.push('Simplified dissolution is not available when alimony is requested');

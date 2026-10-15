@@ -3,6 +3,7 @@
 // Complies with California Family Code and California Rules of Court
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
 /**
@@ -142,7 +143,7 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '______________________ COURT').toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumber = divorceData.caseNumber || '____________________';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
     const petitioner = divorceData.petitionerName
       ? captionUpper(divorceData.petitionerName)
@@ -488,9 +489,11 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       // True no-children case.
       items.push({
         number: paragraphNum++,
-        content: `No children were born or adopted of this marriage, and none are expected.`,
+        content: `No children were born or adopted of this marriage.`,
         type: 'children_info'
       });
+      // Pregnancy is its own averment, sworn only from a recorded answer.
+      items.push(this.pregnancyItem(divorceData, paragraphNum++));
     }
 
     // Agreed child arrangements (custody enum, primary residence, agreed
@@ -654,10 +657,11 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
-    // An agreed division (or an explicit no-property case) pleads the
-    // parties' actual agreement via the base hooks instead of the
-    // generic boilerplate.
-    if (divorceData.hasProperty === false || this.hasAgreedPropertyDivision(divorceData)) {
+    // The boilerplate below ALLEGES a marital estate — plead it only on an
+    // affirmative hasProperty === true. Silence, a no-property answer, or an
+    // agreed division go through the base gate (Draft note / nil finding /
+    // agreed-division pleadings).
+    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
       return super.generatePropertySection(divorceData);
     }
 

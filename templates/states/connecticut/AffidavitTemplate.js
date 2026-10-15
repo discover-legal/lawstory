@@ -4,6 +4,7 @@
 //                Conn. Gen. Stat. §53a-156 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Connecticut Affidavit Template — LEGALLY COMPLIANT v1.0
@@ -52,7 +53,7 @@ class ConnecticutAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `${courtName}\n\n`;
 
-    const caseNumber = affidavitData.caseNumber || '[DOCKET NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
     const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';

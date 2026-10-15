@@ -3,6 +3,7 @@
 // Governing Law: Utah Code § 46-1-6.5 (PRESCRIPTIVE STATUTORY FORM)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
  * Utah Affidavit Template - LEGALLY COMPLIANT v2.0
@@ -47,7 +48,7 @@ class UtahAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `IN THE ${courtName}\n\n`;
 
     // Case number - Utah uses "CASE NO."
-    const caseNumber = affidavitData.caseNumber || '[CASE NUMBER]';
+    const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names
