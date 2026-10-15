@@ -131,3 +131,31 @@ describe('Stripe.js loading', () => {
     expect(src).not.toMatch(/from '@stripe\/stripe-js'/);
   });
 });
+
+describe('Stripe.js load failure', () => {
+  const ORIGINAL_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  afterEach(() => {
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = ORIGINAL_KEY;
+  });
+
+  it('is not cached: the next open retries the load', async () => {
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = 'pk_test_123';
+    let modal;
+    let loadStripe;
+    jest.isolateModules(() => {
+      ({ loadStripe } = require('@stripe/stripe-js/pure'));
+      modal = require('@/components/app/PaymentModal');
+    });
+    loadStripe.mockReset();
+    loadStripe
+      .mockImplementationOnce(() => Promise.reject(new Error('Failed to load Stripe.js')))
+      .mockImplementationOnce(() => Promise.resolve({ stripe: true }));
+
+    await expect(modal.getStripePromise()).rejects.toThrow('Failed to load Stripe.js');
+    await expect(modal.getStripePromise()).resolves.toEqual({ stripe: true });
+    expect(loadStripe).toHaveBeenCalledTimes(2);
+    // ...and a successful load is reused.
+    await modal.getStripePromise();
+    expect(loadStripe).toHaveBeenCalledTimes(2);
+  });
+});

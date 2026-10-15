@@ -17,13 +17,21 @@ const API_BASE_URL = '';
 // Stripe.js is fetched lazily, the first time a payment form renders — which
 // only happens after the server created a payment intent, i.e. only when
 // PAYMENTS_ENABLED=true. The free/donation deployment (payments off, or no
-// publishable key) never contacts js.stripe.com. The promise is memoized:
-// <Elements> requires a stable `stripe` prop. <Elements> accepts null.
+// publishable key) never contacts js.stripe.com. The promise is memoized
+// while it is pending or succeeded (<Elements> requires a stable `stripe`
+// prop); a rejected load is forgotten so the next open retries.
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 let stripePromise;
 export const getStripePromise = () => {
   if (stripePromise === undefined) {
-    stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+    stripePromise = publishableKey
+      ? loadStripe(publishableKey).catch((err) => {
+        // A failed load (network, blocker) must not be cached forever: the
+        // next time the payment form opens, try again.
+        stripePromise = undefined;
+        throw err;
+      })
+      : null;
   }
   return stripePromise;
 };
