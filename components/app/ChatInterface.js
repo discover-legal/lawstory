@@ -71,6 +71,13 @@ export const divorceGreetingIntro = (jurisdiction) => {
   return `Hi! I'm here to help you create your divorce package, which includes drafts of your ${labels.petition} and ${labels.decree}.`;
 };
 
+export const divorceGreetingMessage = (jurisdiction) => ({
+  type: 'bot',
+  content: `${divorceGreetingIntro(jurisdiction)}
+
+To begin, tell me your full legal name, your spouse's full legal name, and where you live.`
+});
+
 // Within a few pixels of the bottom counts as "at the bottom" (sub-pixel
 // rounding on zoomed or high-DPI screens never lands exactly on zero).
 export const isScrolledToBottom = ({ scrollTop, scrollHeight, clientHeight }) =>
@@ -79,6 +86,9 @@ export const isScrolledToBottom = ({ scrollTop, scrollHeight, clientHeight }) =>
 const ChatInterface = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  // Latest messages for effects that must not re-run on every message.
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   // Gap-tap prefill from the profile page (?ask=<topic>): put the user's
   // "I want to add…" message in the input for them to edit and send.
@@ -121,6 +131,10 @@ const ChatInterface = () => {
   // Use split contexts to prevent unnecessary re-renders
   const { currentDocument } = useDocumentData();
   const { updateDocumentData } = useDocumentActions();
+  const documentReady = Boolean(currentDocument.documentId);
+  // True once the single-active-jurisdiction lookup below has finished (or
+  // was not needed), so the greeting can name the right documents.
+  const [jurisdictionLookupDone, setJurisdictionLookupDone] = useState(false);
 
   // No jurisdiction picker. The server surfaces the active jurisdictions
   // (JURISDICTION_ALLOWLIST); when exactly one is active it is the document's
@@ -129,6 +143,7 @@ const ChatInterface = () => {
   useEffect(() => {
     if (currentDocument.state || !currentDocument.documentId) return;
     let cancelled = false;
+    setJurisdictionLookupDone(false);
     (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/templates/states`);
@@ -139,6 +154,8 @@ const ChatInterface = () => {
         if (only?.stateCode) updateDocumentData({ state: only.stateCode });
       } catch {
         /* the interview can still establish the jurisdiction */
+      } finally {
+        if (!cancelled) setJurisdictionLookupDone(true);
       }
     })();
     return () => { cancelled = true; };
@@ -192,7 +209,16 @@ const ChatInterface = () => {
     const newDocId = currentDocument.documentId;
     const prevDocId = currentDocumentIdRef.current;
 
-    // If documentId changed (including null -> value, value -> null, or value -> different value)
+    // A new document's id arrives a moment after the editor opens. That is
+    // the SAME conversation getting its id, not a switch to another
+    // document: keep anything already on screen and don't greet over it.
+    if (prevDocId == null && newDocId != null && messagesRef.current.length > 0) {
+      currentDocumentIdRef.current = newDocId;
+      welcomeMessageShownRef.current = true;
+      return;
+    }
+
+    // If documentId changed (value -> value, value -> null, or first load)
     if (newDocId !== prevDocId) {
       console.log('📄 Document ID changed, clearing messages', {
         from: prevDocId,
@@ -271,13 +297,13 @@ const ChatInterface = () => {
           const isDivorcePackage = currentDocument.documentType === 'divorce_package' || currentDocument.documentType === 'divorce_petition' || currentDocument.documentType === 'divorce_decree';
 
           if (isDivorcePackage) {
-            greetingAwaitsJurisdictionRef.current = !currentDocument.state;
-            setMessages([{
-              type: 'bot',
-              content: `${divorceGreetingIntro(currentDocument.state)}
-
-To begin, tell me your full legal name, your spouse's full legal name, and where you live.`
-            }]);
+            // The greeting names the jurisdiction's documents, so it waits
+            // for the jurisdiction lookup instead of flashing generic text.
+            if (currentDocument.state) {
+              setMessages([divorceGreetingMessage(currentDocument.state)]);
+            } else {
+              greetingAwaitsJurisdictionRef.current = true;
+            }
           } else {
             setMessages([{
               type: 'bot',
@@ -291,19 +317,14 @@ Start with your full legal name, then tell me what happened in your own words.`
     }
   }, [currentDocument.documentId, currentDocument.conversationHistory, currentDocument.facts, currentDocument.affiantName, currentDocument.documentType, currentDocument.firstName, currentDocument.state, generateFactSummary]);
 
-  // The single active jurisdiction is often set a moment after a new
-  // document opens. If the greeting went out before it was known, re-word
-  // it in that jurisdiction's document names — but only while it is still
-  // the only message, so nothing the person has seen in context changes.
+  // Deferred divorce greeting: sent once the jurisdiction is known (or the
+  // lookup finished without one), unless the conversation already started.
   useEffect(() => {
-    if (!greetingAwaitsJurisdictionRef.current || !currentDocument.state) return;
+    if (!greetingAwaitsJurisdictionRef.current) return;
+    if (!currentDocument.state && !jurisdictionLookupDone) return;
     greetingAwaitsJurisdictionRef.current = false;
-    setMessages((prev) => {
-      if (prev.length !== 1 || prev[0].type !== 'bot') return prev;
-      const [, ...rest] = prev[0].content.split('\n\n');
-      return [{ ...prev[0], content: [divorceGreetingIntro(currentDocument.state), ...rest].join('\n\n') }];
-    });
-  }, [currentDocument.state]);
+    setMessages((prev) => (prev.length > 0 ? prev : [divorceGreetingMessage(currentDocument.state)]));
+  }, [currentDocument.state, jurisdictionLookupDone]);
 
   // Follow new messages while the reader is at the bottom. The auto-follow
   // scroll is instant on purpose: a smooth scroll emits intermediate scroll
@@ -338,7 +359,10 @@ Start with your full legal name, then tell me what happened in your own words.`
   const sendMessage = async (e) => {
     e.preventDefault();
     
-    if (!message.trim() || isLoading) return;
+    // Nothing is sent until the document exists: a turn sent earlier went
+    // out without the document's type (so the wrong interview answered it)
+    // and was overwritten when the new document's data arrived.
+    if (!message.trim() || isLoading || !documentReady) return;
 
     const userMessage = message.trim();
     setMessage('');
@@ -636,16 +660,17 @@ Start with your full legal name, then tell me what happened in your own words.`
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={documentReady ? 'Type your message...' : 'Preparing your document…'}
+            aria-label="Message"
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={isLoading}
+            disabled={isLoading || !documentReady}
           />
           <button
             type="submit"
             aria-label="Send message"
-            disabled={isLoading || !message.trim()}
+            disabled={isLoading || !documentReady || !message.trim()}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              isLoading || !message.trim()
+              isLoading || !documentReady || !message.trim()
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}

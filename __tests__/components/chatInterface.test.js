@@ -89,6 +89,23 @@ describe('auto-scroll', () => {
   });
 });
 
+describe('new document', () => {
+  it('holds the chat input until the document exists', () => {
+    mockDocument = { ...mockDocument, documentId: null };
+    render(<ChatInterface />);
+    const input = screen.getByRole('textbox', { name: 'Message' });
+    expect(input.disabled).toBe(true);
+    expect(input.getAttribute('placeholder')).toBe('Preparing your document…');
+  });
+
+  it('enables the input once the document has an id', () => {
+    render(<ChatInterface />);
+    const input = screen.getByRole('textbox', { name: 'Message' });
+    expect(input.disabled).toBe(false);
+    expect(input.getAttribute('placeholder')).toBe('Type your message...');
+  });
+});
+
 describe('divorce greeting', () => {
   it('names Ontario documents in Ontario terms', () => {
     const text = divorceGreetingIntro('ON');
@@ -105,14 +122,25 @@ describe('divorce greeting', () => {
     expect(divorceGreetingIntro('')).not.toMatch(/Petition|Decree|Application|Order\b/);
   });
 
-  it('re-words a greeting sent before the jurisdiction was set', () => {
+  it('waits for the jurisdiction instead of flashing a generic greeting', async () => {
+    let resolveStates;
+    global.fetch = jest.fn(() => new Promise((r) => { resolveStates = r; }));
     mockDocument = { ...mockDocument, state: '' };
     const { rerender } = render(<ChatInterface />);
-    expect(screen.getByText(/document that starts your divorce case/)).toBeTruthy();
+    expect(screen.queryByText(/I'm here to help/)).toBeNull();
 
+    // The single active jurisdiction arrives: the first greeting already
+    // names Ontario's documents (no generic text was ever shown).
     mockDocument = { ...mockDocument, state: 'ON' };
-    act(() => { rerender(<ChatInterface />); });
+    await act(async () => { rerender(<ChatInterface />); });
     expect(screen.getByText(/Application for Divorce and Divorce Order/)).toBeTruthy();
-    expect(screen.queryByText(/Petition/)).toBeNull();
+    expect(screen.queryByText(/document that starts your divorce case/)).toBeNull();
+    resolveStates({ ok: false, json: async () => [] });
+  });
+
+  it('greets neutrally when no single jurisdiction can be resolved', async () => {
+    mockDocument = { ...mockDocument, state: '' };
+    await act(async () => { render(<ChatInterface />); });
+    expect(await screen.findByText(/document that starts your divorce case/)).toBeTruthy();
   });
 });
