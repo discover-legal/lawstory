@@ -187,7 +187,7 @@ const DocumentMetadata = () => {
             className="form-input"
             value={currentDocument.courtName || ''}
             onChange={(e) => handleChange('courtName', e.target.value)}
-            placeholder={isDivorce ? 'e.g., Family Court of Travis County' : 'e.g., District Court of Travis County'}
+            placeholder="As it appears on your court papers"
           />
           <p className="form-help">The full name of the court where this will be filed</p>
         </div>

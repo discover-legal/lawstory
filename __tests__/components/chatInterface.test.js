@@ -114,8 +114,8 @@ describe('divorce greeting', () => {
     expect(text).not.toMatch(/Petition|Decree/);
   });
 
-  it('keeps US terms for Utah', () => {
-    expect(divorceGreetingIntro('UT')).toContain('Divorce Petition and Divorce Decree');
+  it('uses Utah\'s own document names', () => {
+    expect(divorceGreetingIntro('UT')).toContain('Verified Petition for Divorce and Decree of Divorce');
   });
 
   it('names neither before the jurisdiction is known', () => {

@@ -99,3 +99,17 @@ describe('reopening a saved divorce package', () => {
     expect(reopenSubDocumentOverride(null)).toEqual({});
   });
 });
+
+describe('download button name', () => {
+  const { getDownloadButtonLabel } = require('@/components/app/EditorView');
+
+  it('names the draft in the jurisdiction\'s vocabulary (also the phone aria-label)', () => {
+    expect(getDownloadButtonLabel({ documentType: 'divorce_package', state: 'ON', activeSubDocument: 'divorce_decree' }))
+      .toBe('Download Divorce Order draft');
+    expect(getDownloadButtonLabel({ documentType: 'divorce_package', state: 'ON' }))
+      .toBe('Download Application draft');
+    expect(getDownloadButtonLabel({ documentType: 'divorce_package', state: 'GA', activeSubDocument: 'divorce_petition' }))
+      .toBe('Download Complaint draft');
+    expect(getDownloadButtonLabel({ documentType: 'general', state: 'UT' })).toBe('Download PDF');
+  });
+});

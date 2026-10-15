@@ -119,6 +119,26 @@ const Resizer = ({ onResize, isResizing, setIsResizing, position = 'between-chat
 };
 
 // Main Editor View Component with 35/35/30 proportions
+// Download button name, in the jurisdiction's vocabulary for the core
+  // drafts ("Download Application draft" in Ontario).
+export const getDownloadButtonLabel = (currentDocument) => {
+  if (currentDocument.documentType !== 'divorce_package') return 'Download PDF';
+  const jurisdictionLabel = divorceSubDocLabel(currentDocument.activeSubDocument || 'divorce_petition', currentDocument.state, { short: true });
+  if (jurisdictionLabel) return `Download ${jurisdictionLabel} draft`;
+  const LABELS = {
+    judgment_dissolution: 'Download Decree draft',
+    final_judgment: 'Download Judgment draft', proposed_judgment: 'Download Proposed Judgment draft',
+    waiver_of_service: 'Download Waiver draft', acknowledgment_of_service: 'Download Acknowledgment draft',
+    acknowledgment_of_receipt: 'Download Acknowledgment draft', cert_last_known_address: 'Download Certificate draft',
+    prove_up_affidavit: 'Download Prove-Up draft', military_status_affidavit: 'Download Military Affidavit draft',
+    indigency_affidavit: 'Download Indigency Affidavit draft', parenting_plan: 'Download Parenting Plan draft',
+    child_support_worksheet: 'Download Worksheet draft', child_support_order: 'Download Support Order draft',
+    spousal_support_order: 'Download Support Order draft', child_custody_order: 'Download Custody Order draft',
+    summons_with_notice: 'Download Summons draft', verified_complaint: 'Download Complaint draft',
+  };
+  return LABELS[currentDocument.activeSubDocument] || 'Download Document draft';
+};
+
 const EditorView = ({ isNew = false, onBack }) => {
   const { isAuthenticated } = useAuth0();
   const params = useParams();
@@ -169,6 +189,7 @@ const EditorView = ({ isNew = false, onBack }) => {
   const activeDocumentLabel = currentDocument.documentType === 'divorce_package'
     ? (divorceSubDocLabel(currentDocument.activeSubDocument || 'divorce_petition', currentDocument.state) || 'document')
     : 'document';
+  const downloadButtonLabel = getDownloadButtonLabel(currentDocument);
   const { isSaving, lastSaved, hasUnsavedChanges, justSaved, saveConflict } = useSaveMetadata();
   const { sessionInitialized, isLoading, error } = useUIState();
   const { saveDocument, loadDocument, initializeNewDocument } = useDocumentActions();
@@ -827,28 +848,12 @@ const EditorView = ({ isNew = false, onBack }) => {
 
               <button
                 onClick={handleDownload}
-                aria-label={isCheckingPayment ? 'Checking payment status' : 'Download document'}
+                aria-label={isCheckingPayment ? 'Checking payment status' : downloadButtonLabel}
                 disabled={!currentDocument.documentId || isCheckingPayment}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">{isCheckingPayment ? 'Checking...' : (() => {
-                  if (currentDocument.documentType !== 'divorce_package') return 'Download PDF';
-                  const jurisdictionLabel = divorceSubDocLabel(currentDocument.activeSubDocument, currentDocument.state, { short: true });
-                  if (jurisdictionLabel) return `Download ${jurisdictionLabel} draft`;
-                  const LABELS = {
-                    judgment_dissolution: 'Download Decree draft',
-                    final_judgment: 'Download Judgment draft', proposed_judgment: 'Download Proposed Judgment draft',
-                    waiver_of_service: 'Download Waiver draft', acknowledgment_of_service: 'Download Acknowledgment draft',
-                    acknowledgment_of_receipt: 'Download Acknowledgment draft', cert_last_known_address: 'Download Certificate draft',
-                    prove_up_affidavit: 'Download Prove-Up draft', military_status_affidavit: 'Download Military Affidavit draft',
-                    indigency_affidavit: 'Download Indigency Affidavit draft', parenting_plan: 'Download Parenting Plan draft',
-                    child_support_worksheet: 'Download Worksheet draft', child_support_order: 'Download Support Order draft',
-                    spousal_support_order: 'Download Support Order draft', child_custody_order: 'Download Custody Order draft',
-                    summons_with_notice: 'Download Summons draft', verified_complaint: 'Download Complaint draft',
-                  };
-                  return LABELS[currentDocument.activeSubDocument] || 'Download Document draft';
-                })()}</span>
+                <span className="hidden sm:inline">{isCheckingPayment ? 'Checking...' : downloadButtonLabel}</span>
               </button>
             </div>
           </div>

@@ -16,8 +16,22 @@ describe('divorceDocLabels', () => {
     expect(divorceSubDocLabel('divorce_decree', 'ON')).toBe('Divorce Order');
   });
 
-  it('keeps US vocabulary for UT and unknown jurisdictions', () => {
-    for (const code of ['UT', '', null, undefined, 'ZZ']) {
+  it('uses each US jurisdiction\'s own vocabulary', () => {
+    expect(divorceDocLabels('UT')).toMatchObject({ petitionShort: 'Petition', decreeShort: 'Decree', filingParty: 'Petitioner' });
+    for (const code of ['GA', 'NY', 'AL', 'MI', 'NJ', 'PA', 'MD', 'NC']) {
+      expect(divorceDocLabels(code)).toMatchObject({
+        petitionShort: 'Complaint',
+        filingParty: 'Plaintiff',
+        respondingParty: 'Defendant',
+      });
+    }
+    expect(divorceSubDocLabel('divorce_decree', 'CA', { short: true })).toBe('Judgment');
+    expect(divorceSubDocLabel('judgment_dissolution', 'CA', { short: true })).toBe('Judgment');
+    expect(divorceSubDocLabel('divorce_decree', 'GA')).toBe('Final Judgment and Decree of Divorce');
+  });
+
+  it('falls back to generic terms for unknown jurisdictions', () => {
+    for (const code of ['', null, undefined, 'ZZ']) {
       expect(divorceSubDocLabel('divorce_petition', code, { short: true })).toBe('Petition');
       expect(divorceSubDocLabel('divorce_decree', code, { short: true })).toBe('Decree');
     }
@@ -33,21 +47,13 @@ describe('divorceDocLabels', () => {
     expect(labelSlug('Divorce Petition')).toBe('divorce-petition');
   });
 
-  // The UI names must match what the drafts themselves are titled.
-  it.each([
-    ['ON', 'ontario'],
-    ['AB', 'alberta'],
-    ['BC', 'british_columbia'],
-    ['MB', 'manitoba'],
-    ['YT', 'yukon'],
-    ['NL', 'newfoundland'],
-  ])('%s labels match the %s templates\' document titles', (code, dir) => {
-    const read = (file: string) =>
-      fs.readFileSync(path.join(process.cwd(), 'templates/states', dir, file), 'utf8');
-    const title = (src: string) => /this\.documentTitle\s*=\s*'([^']+)'/.exec(src)?.[1];
-    const labels = divorceDocLabels(code);
-    expect(title(read('DivorcePetitionTemplate.js'))).toBe(labels.petition.toUpperCase());
-    expect(title(read('DivorceDecreeTemplate.js'))).toBe(labels.decree.toUpperCase());
+  // The data is derived from the templates; re-derive and compare so a
+  // template title change cannot silently desync the UI.
+  it('matches a fresh derivation from the templates (run node scripts/buildDivorceDocLabels.js)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { build } = require('../../scripts/buildDivorceDocLabels.js');
+    const committed = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'lib/divorceDocLabels.data.json'), 'utf8'));
+    expect(build()).toEqual(committed);
   });
 });
 

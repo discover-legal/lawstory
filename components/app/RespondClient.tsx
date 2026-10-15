@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { getInitialLang, setLang, type Lang } from '@/lib/i18n';
 import { detectPerspective, isCanadianJurisdiction } from '@/lib/api/procedure';
+import { divorceDocLabels } from '@/lib/divorceDocLabels';
 import { officialFormsLink } from '@/lib/officialForms';
 
 type Position = 'admit' | 'deny' | 'lack_knowledge';
@@ -118,7 +119,7 @@ const STRINGS: Record<Lang, Record<string, string>> = {
 
     'role.title': 'Mark me as the respondent',
     'role.body':
-      'In court papers, the person who filed is the “Petitioner” and the person responding is the “Respondent.” Marking yourself as the respondent helps your documents put your name on the right line.',
+      'In court papers, the person who filed is the “{filer}” and the person responding is the “{responder}.” Marking yourself as the respondent helps your documents put your name on the right line.',
     'role.button': 'I’m the respondent',
     'role.saving': 'Saving…',
     'role.done': 'You’re marked as the respondent.',
@@ -220,7 +221,7 @@ const STRINGS: Record<Lang, Record<string, string>> = {
 
     'role.title': 'Márcame como la parte demandada',
     'role.body':
-      'En los papeles del tribunal, quien presentó el caso es el “Peticionario” (Petitioner) y quien responde es el “Demandado” (Respondent). Marcarte como demandado ayuda a que tus documentos pongan tu nombre en la línea correcta.',
+      'En los papeles del tribunal, quien presentó el caso aparece como “{filer}” y quien responde como “{responder}”. Marcarte como demandado ayuda a que tus documentos pongan tu nombre en la línea correcta.',
     'role.button': 'Soy el demandado',
     'role.saving': 'Guardando…',
     'role.done': 'Quedaste marcado como la parte demandada.',
@@ -757,7 +758,12 @@ export default function RespondClient() {
           <UserCheck className="h-5 w-5 text-brand" aria-hidden="true" />
           {tt(lang, 'role.title')}
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-gray-700">{tt(lang, 'role.body')}</p>
+        <p className="mt-2 text-sm leading-relaxed text-gray-700">{tt(lang, 'role.body', {
+            // The parties as THIS jurisdiction's papers name them
+            // (Ontario: Applicant / Respondent; Georgia: Plaintiff / Defendant).
+            filer: divorceDocLabels(stateCode).filingParty,
+            responder: divorceDocLabels(stateCode).respondingParty,
+          })}</p>
         {roleStatus === 'saved' ? (
           <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-green-700">
             <Check className="h-4 w-4" aria-hidden="true" />

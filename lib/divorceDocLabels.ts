@@ -1,17 +1,17 @@
 /**
- * Jurisdiction-aware names for the two core divorce drafts and the filing
- * party, for UI chrome (chat greeting, preview tabs, download button and
- * filename, form labels).
+ * Jurisdiction-aware names for the two core divorce drafts and the parties,
+ * for UI chrome (chat greeting, preview tabs, download button and filename,
+ * form labels, placeholders).
  *
- * The vocabulary mirrors what the jurisdiction's templates actually title
- * the documents (`templates/states/<jurisdiction>/Divorce{Petition,Decree}Template.js`
- * `documentTitle`) and how they name the filing party, so the UI never
- * promises a "Petition" the draft calls an "Application". Templates are the
- * source of truth; keep this table in step when a template title changes.
- *
- * Everything not listed uses the US vocabulary (Petition / Decree /
- * Petitioner), which is what the US templates say.
+ * The data is DERIVED from the templates (`scripts/buildDivorceDocLabels.js`
+ * reads each jurisdiction's DivorcePetitionTemplate / DivorceDecreeTemplate
+ * `documentTitle` and party vocabulary) into `divorceDocLabels.data.json`,
+ * so the UI calls a document exactly what the draft calls it — Ontario:
+ * Application for Divorce / Divorce Order / Applicant; Georgia: Complaint
+ * for Divorce / Final Judgment and Decree of Divorce / Plaintiff v.
+ * Defendant. A test re-derives the data and fails on drift.
  */
+import DATA from './divorceDocLabels.data.json';
 
 export interface DivorceDocLabels {
   /** Full name of the originating document, e.g. "Application for Divorce". */
@@ -22,85 +22,42 @@ export interface DivorceDocLabels {
   decree: string;
   /** Short tab label for the final order, e.g. "Divorce Order". */
   decreeShort: string;
-  /** The party who files, e.g. "Applicant". */
+  /** The party who files, e.g. "Applicant" / "Plaintiff". */
   filingParty: string;
+  /** The other party, e.g. "Respondent" / "Defendant". */
+  respondingParty: string;
+  /** The caption's case-number label, e.g. "Court File No."; null when unknown. */
+  caseNumberLabel: string | null;
+  /** Jurisdiction display name ("Ontario"); null when unknown. */
+  name: string | null;
+  /** ISO country code ("CA", "US"); null when unknown. */
+  country: string | null;
 }
 
-const US: DivorceDocLabels = {
+/** Used when the jurisdiction is unknown or has no divorce templates. */
+const DEFAULT: DivorceDocLabels = {
   petition: 'Divorce Petition',
   petitionShort: 'Petition',
   decree: 'Divorce Decree',
   decreeShort: 'Decree',
   filingParty: 'Petitioner',
+  respondingParty: 'Respondent',
+  caseNumberLabel: null,
+  name: null,
+  country: null,
 };
 
-// Divorce Act provinces whose templates keep "Petition for Divorce" but whose
-// final document is a "Divorce Order".
-const CA_PETITION: DivorceDocLabels = {
-  petition: 'Petition for Divorce',
-  petitionShort: 'Petition',
-  decree: 'Divorce Order',
-  decreeShort: 'Divorce Order',
-  filingParty: 'Petitioner',
-};
+const BY_JURISDICTION = DATA as Record<string, Omit<DivorceDocLabels, 'caseNumberLabel'> & { caseNumberLabel: string | null }>;
 
-const BY_JURISDICTION: Readonly<Record<string, DivorceDocLabels>> = {
-  // Ontario: Family Law Rules — Application (Divorce), Divorce Order, Applicant.
-  ON: {
-    petition: 'Application for Divorce',
-    petitionShort: 'Application',
-    decree: 'Divorce Order',
-    decreeShort: 'Divorce Order',
-    filingParty: 'Applicant',
-  },
-  QC: {
-    petition: 'Application for Divorce',
-    petitionShort: 'Application',
-    decree: 'Divorce Judgment',
-    decreeShort: 'Judgment',
-    filingParty: 'Applicant',
-  },
-  AB: {
-    petition: 'Statement of Claim for Divorce',
-    petitionShort: 'Statement of Claim',
-    decree: 'Divorce Judgment',
-    decreeShort: 'Judgment',
-    filingParty: 'Plaintiff',
-  },
-  BC: {
-    petition: 'Notice of Family Claim',
-    petitionShort: 'Notice of Family Claim',
-    decree: 'Divorce Order',
-    decreeShort: 'Divorce Order',
-    filingParty: 'Claimant',
-  },
-  NL: {
-    ...CA_PETITION,
-    petition: 'Originating Application (Family Law)',
-    petitionShort: 'Application',
-  },
-  YT: {
-    ...CA_PETITION,
-    petition: 'Statement of Claim (Divorce)',
-    petitionShort: 'Statement of Claim',
-  },
-  MB: CA_PETITION,
-  NB: CA_PETITION,
-  NS: CA_PETITION,
-  NT: CA_PETITION,
-  NU: CA_PETITION,
-  PE: CA_PETITION,
-  SK: CA_PETITION,
-};
-
-/** Labels for a jurisdiction code ("ON", "ut", …); US vocabulary otherwise. */
+/** Labels for a jurisdiction code ("ON", "ut", …); generic US terms otherwise. */
 export function divorceDocLabels(jurisdiction?: string | null): DivorceDocLabels {
   const code = typeof jurisdiction === 'string' ? jurisdiction.trim().toUpperCase() : '';
-  return BY_JURISDICTION[code] ?? US;
+  const found = code ? BY_JURISDICTION[code] : undefined;
+  return found ? { ...DEFAULT, ...found } : DEFAULT;
 }
 
 const PETITION_KINDS = new Set(['divorce_petition', 'petition_dissolution']);
-const DECREE_KINDS = new Set(['divorce_decree']);
+const DECREE_KINDS = new Set(['divorce_decree', 'judgment_dissolution']);
 
 /**
  * Jurisdiction-aware label for a divorce sub-document key, or null when the

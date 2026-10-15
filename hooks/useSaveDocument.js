@@ -3,6 +3,7 @@
 // client/src/hooks/useSaveDocument.js
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth0 } from '@/lib/auth0-client';
+import { divorceSubDocLabel } from '@/lib/divorceDocLabels';
 
 // Use relative URLs in production (empty string), localhost in development
 const API_BASE_URL = '';
@@ -136,12 +137,10 @@ const useSaveDocument = () => {
   const generateTitle = (affidavitData) => {
     const isDivorce = ['divorce_package', 'divorce_petition', 'divorce_decree']
       .includes(affidavitData.documentType);
+    // The jurisdiction's own document names (Ontario: Application for
+    // Divorce / Divorce Order), not hard-coded US terms.
     const typeLabel = isDivorce
-      ? (affidavitData.documentType === 'divorce_petition'
-          ? 'Divorce Petition'
-          : affidavitData.documentType === 'divorce_decree'
-            ? 'Divorce Decree'
-            : 'Divorce Package')
+      ? (divorceSubDocLabel(affidavitData.documentType, affidavitData.state) || 'Divorce Package')
       : 'Affidavit';
 
     if (affidavitData.affiantName) {

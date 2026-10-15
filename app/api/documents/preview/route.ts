@@ -136,6 +136,8 @@ function createFallbackPreview(data: AffidavitData) {
   };
 }
 
+const DECREE_SUBDOCS = new Set(['divorce_decree', 'judgment_dissolution']);
+
 function createDivorceFallbackPreview(data: AffidavitData) {
   const petitionerName =
     data.petitionerName ||
@@ -149,22 +151,31 @@ function createDivorceFallbackPreview(data: AffidavitData) {
   // Name the placeholder the way the jurisdiction names the document
   // (Ontario: APPLICATION FOR DIVORCE / DIVORCE ORDER, Applicant).
   const labels = divorceDocLabels(data.state);
-  const docTitle = (activeDoc === 'divorce_decree' ? labels.decree : labels.petition).toUpperCase();
+  const docTitle = (DECREE_SUBDOCS.has(String(activeDoc)) ? labels.decree : labels.petition).toUpperCase();
   const filingParty = labels.filingParty;
+  const respondingParty = labels.respondingParty;
+  // Caption vocabulary from the jurisdiction too: US states have a county
+  // and a "STATE OF"; Canadian provinces have neither ("Court File No.").
+  const isUS = labels.country === 'US' || labels.country === null;
+  const placeName = (labels.name || getStateName(data.state)).toUpperCase();
+  const caseLabel = (labels.caseNumberLabel || 'Case No.').replace(/:$/, '');
+  const venue = isUS
+    ? `COUNTY OF ${(data.county || '[COUNTY]').toUpperCase()}`
+    : (data.county ? String(data.county).toUpperCase() : '');
 
   return {
     sections: {
-      header: `STATE OF ${getStateName(data.state).toUpperCase()}`,
-      venue: `COUNTY OF ${(data.county || '[COUNTY]').toUpperCase()}`,
+      header: isUS ? `STATE OF ${placeName}` : placeName,
+      venue,
       caseCaption: {
-        formatted: `CAUSE NO. ${data.caseNumber || '[CAUSE NUMBER]'}\n\nIN THE MATTER OF THE MARRIAGE OF:\n\n${petitionerName.toUpperCase()}, ${filingParty}\n\nAND\n\n${respondentName.toUpperCase()}, Respondent`,
+        formatted: `${caseLabel} ${data.caseNumber || `[${caseLabel.replace(/[.:]/g, '').toUpperCase()}]`}\n\nIN THE MATTER OF THE MARRIAGE OF:\n\n${petitionerName.toUpperCase()}, ${filingParty}\n\nAND\n\n${respondentName.toUpperCase()}, ${respondingParty}`,
       },
       title: docTitle,
       parties: {
         title: 'I. PARTIES',
         items: [
           { number: 1, content: `${filingParty}: ${petitionerName}`, type: 'party_identification' },
-          { number: 2, content: `Respondent: ${respondentName}`, type: 'party_identification' },
+          { number: 2, content: `${respondingParty}: ${respondentName}`, type: 'party_identification' },
         ],
       },
       jurisdiction: {

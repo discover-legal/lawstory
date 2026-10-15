@@ -88,6 +88,12 @@ describe('POST /api/documents/preview with CORE_ENGINE=v2', () => {
     expect(body.preview.sections.title).toBe('APPLICATION FOR DIVORCE');
     expect(body.preview.sections.title).not.toBe('AFFIDAVIT');
     expect(body.preview.metadata.documentType).toBe('divorce_petition');
+    // Ontario caption vocabulary, not Texas's.
+    const caption = body.preview.sections.caseCaption.formatted;
+    expect(caption).toMatch(/^Court File No\. /);
+    expect(caption).not.toMatch(/CAUSE NO|Petitioner/);
+    expect(body.preview.sections.header).toBe('ONTARIO');
+    expect(body.preview.sections.venue).not.toMatch(/COUNTY OF/);
     // Flagged so the editor says this is an outline, not the draft.
     expect(body.preview.metadata.degraded).toBe(true);
   });
