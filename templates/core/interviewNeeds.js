@@ -16,8 +16,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const Module = require('node:module');
 
-const STATES_DIR = path.join(__dirname, '..', 'states');
+// Same loading discipline as templates/core/TemplateLoader.js: the state
+// directories are discovered at runtime, so they are required through
+// createRequire from a cwd-rooted path the bundler is told to ignore
+// (Next/Turbopack cannot statically resolve a dynamic template path).
+const nodeRequire = Module.createRequire(__filename);
+const STATES_DIR = path.resolve(path.join(/* turbopackIgnore: true */ process.cwd(), 'templates', 'states'));
 
 let dirByCode = null;
 function templateDirFor(stateCode) {
@@ -25,7 +31,7 @@ function templateDirFor(stateCode) {
     dirByCode = new Map();
     for (const dir of fs.readdirSync(STATES_DIR)) {
       for (const file of ['divorce-metadata.json', 'metadata.json']) {
-        const p = path.join(STATES_DIR, dir, file);
+        const p = path.join(/* turbopackIgnore: true */ STATES_DIR, dir, file);
         if (!fs.existsSync(p)) continue;
         try {
           const code = JSON.parse(fs.readFileSync(p, 'utf8')).stateCode;
@@ -53,11 +59,10 @@ const PROBE_VARIANTS = [
 ];
 
 function render(dir, kind, data) {
-  const file = path.join(STATES_DIR, dir, `${kind}.js`);
-  if (!fs.existsSync(file)) return '';
+  const file = path.resolve(/* turbopackIgnore: true */ STATES_DIR, dir, `${kind}.js`);
+  if (path.relative(STATES_DIR, file).startsWith('..') || !fs.existsSync(file)) return '';
   try {
-    // eslint-disable-next-line global-require
-    const Template = require(file);
+    const Template = nodeRequire(/* turbopackIgnore: true */ file);
     const doc = new Template().generateDocument({ ...data });
     return String(doc.fullText || '');
   } catch {
