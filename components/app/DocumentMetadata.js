@@ -4,6 +4,7 @@
 import React from 'react';
 import { useDocumentData, useDocumentActions } from '@/contexts/DocumentContext';
 import '@/styles/DocumentMetadata.css';
+import { divorceDocLabels } from '@/lib/divorceDocLabels';
 
 /**
  * Component for collecting document metadata including case caption information.
@@ -23,6 +24,8 @@ const DocumentMetadata = () => {
 
   // When the user is the respondent, the petitioner caption is the SPOUSE —
   // these inputs then edit the caption only, never the user's own identity.
+  // "Applicant" in Ontario, "Petitioner" in Utah — the drafts' own word.
+  const filingParty = divorceDocLabels(currentDocument.state).filingParty;
   const isRespondentDoc = String(currentDocument.role || '').toLowerCase() === 'respondent';
 
   // When changing name fields for divorce, also keep affiantName in sync
@@ -84,7 +87,7 @@ const DocumentMetadata = () => {
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="firstName" className="form-label">
-              {isDivorce ? 'Petitioner First Name' : 'First Name'} <span className="required">*</span>
+              {isDivorce ? `${filingParty} First Name` : 'First Name'} <span className="required">*</span>
             </label>
             <input
               type="text"
@@ -94,13 +97,13 @@ const DocumentMetadata = () => {
                 ? (currentDocument.petitionerFirstName || '')
                 : (currentDocument.firstName || currentDocument.petitionerFirstName || '')}
               onChange={(e) => handleNameChange('firstName', e.target.value)}
-              placeholder={isDivorce ? "Petitioner's legal first name" : 'Your legal first name'}
+              placeholder={isDivorce ? `${filingParty}'s legal first name` : 'Your legal first name'}
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="lastName" className="form-label">
-              {isDivorce ? 'Petitioner Last Name' : 'Last Name'} <span className="required">*</span>
+              {isDivorce ? `${filingParty} Last Name` : 'Last Name'} <span className="required">*</span>
             </label>
             <input
               type="text"
@@ -110,7 +113,7 @@ const DocumentMetadata = () => {
                 ? (currentDocument.petitionerLastName || '')
                 : (currentDocument.lastName || currentDocument.petitionerLastName || '')}
               onChange={(e) => handleNameChange('lastName', e.target.value)}
-              placeholder={isDivorce ? "Petitioner's legal last name" : 'Your legal last name'}
+              placeholder={isDivorce ? `${filingParty}'s legal last name` : 'Your legal last name'}
             />
           </div>
         </div>

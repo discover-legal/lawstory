@@ -11,13 +11,14 @@
 // gives no legal advice and makes no judgment about the content.
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { divorceDocLabels } from '@/lib/divorceDocLabels';
 
 // Key document fields worth re-confirming, in display order.
 const FIELD_LABELS = [
   ['affiantName', 'Your name (affiant)'],
   ['petitionerName', 'Petitioner'],
   ['respondentName', 'Respondent'],
-  ['state', 'State'],
+  ['state', 'Jurisdiction'],
   ['county', 'County'],
   ['marriageDate', 'Date of marriage'],
   ['separationDate', 'Date of separation'],
@@ -40,8 +41,15 @@ const ReviewGate = ({ isOpen, affidavitData, onConfirm, onCancel }) => {
   if (!isOpen) return null;
 
   const data = affidavitData || {};
+  // The filing party is named in the jurisdiction's own word (Ontario:
+  // Applicant), matching what the draft itself says.
+  const filingParty = divorceDocLabels(data.state).filingParty;
   const fields = FIELD_LABELS
-    .map(([key, label]) => ({ key, label, value: data[key] }))
+    .map(([key, label]) => ({
+      key,
+      label: key === 'petitionerName' ? filingParty : label,
+      value: data[key],
+    }))
     .filter(({ value }) => hasValue(value));
   const children = Array.isArray(data.children) ? data.children : [];
   const facts = Array.isArray(data.facts) ? data.facts : [];

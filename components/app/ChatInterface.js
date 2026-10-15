@@ -20,6 +20,7 @@ import { useDocumentData, useDocumentActions } from '@/contexts/DocumentContext'
 import { fullName as partyDisplayName, spouseName as spouseDisplayName } from './lifeStory';
 import DocumentMetadata from './DocumentMetadata';
 import EvidenceUploadModal from './EvidenceUploadModal';
+import { divorceDocLabels } from '@/lib/divorceDocLabels';
 
 // Divorce phase metadata shared by the state orchestrators. State-specific
 // labels keep the progress trail accurate without hiding it outside Texas.
@@ -59,6 +60,22 @@ const DIVORCE_PHASE_NAMES_BY_STATE = {
 // Use relative URLs in production (empty string), localhost in development
 const API_BASE_URL = '';
 
+// Opening line for a new divorce package, in the jurisdiction's own document
+// names (Ontario: Application for Divorce + Divorce Order). Before the
+// jurisdiction is known it names neither, rather than guess the US terms.
+export const divorceGreetingIntro = (jurisdiction) => {
+  if (!jurisdiction) {
+    return "Hi! I'm here to help you create your divorce package: drafts of the document that starts your divorce case and of the final order that ends it.";
+  }
+  const labels = divorceDocLabels(jurisdiction);
+  return `Hi! I'm here to help you create your divorce package, which includes drafts of your ${labels.petition} and ${labels.decree}.`;
+};
+
+// Within a few pixels of the bottom counts as "at the bottom" (sub-pixel
+// rounding on zoomed or high-DPI screens never lands exactly on zero).
+export const isScrolledToBottom = ({ scrollTop, scrollHeight, clientHeight }) =>
+  scrollHeight - scrollTop - clientHeight < 10;
+
 const ChatInterface = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
@@ -96,10 +113,10 @@ const ChatInterface = () => {
   const [showEvidenceUpload, setShowEvidenceUpload] = useState(false);
   const [currentEvidence, setCurrentEvidence] = useState(null);
 
-  const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const currentDocumentIdRef = useRef(null);
   const welcomeMessageShownRef = useRef(false);
+  const greetingAwaitsJurisdictionRef = useRef(false);
 
   // Use split contexts to prevent unnecessary re-renders
   const { currentDocument } = useDocumentData();
@@ -185,6 +202,7 @@ const ChatInterface = () => {
       // Clear messages and reset welcome flag
       setMessages([]);
       welcomeMessageShownRef.current = false;
+      greetingAwaitsJurisdictionRef.current = false;
 
       // Update the ref to track the new documentId
       currentDocumentIdRef.current = newDocId;
@@ -253,9 +271,10 @@ const ChatInterface = () => {
           const isDivorcePackage = currentDocument.documentType === 'divorce_package' || currentDocument.documentType === 'divorce_petition' || currentDocument.documentType === 'divorce_decree';
 
           if (isDivorcePackage) {
+            greetingAwaitsJurisdictionRef.current = !currentDocument.state;
             setMessages([{
               type: 'bot',
-              content: `Hi! I'm here to help you create your divorce package, which includes both your Divorce Petition and Divorce Decree.
+              content: `${divorceGreetingIntro(currentDocument.state)}
 
 To begin, tell me your full legal name, your spouse's full legal name, and where you live.`
             }]);
@@ -270,26 +289,49 @@ Start with your full legal name, then tell me what happened in your own words.`
         }
       }
     }
-  }, [currentDocument.documentId, currentDocument.conversationHistory, currentDocument.facts, currentDocument.affiantName, currentDocument.documentType, currentDocument.firstName, generateFactSummary]);
+  }, [currentDocument.documentId, currentDocument.conversationHistory, currentDocument.facts, currentDocument.affiantName, currentDocument.documentType, currentDocument.firstName, currentDocument.state, generateFactSummary]);
 
-  // Scroll to bottom when new messages arrive
+  // The single active jurisdiction is often set a moment after a new
+  // document opens. If the greeting went out before it was known, re-word
+  // it in that jurisdiction's document names — but only while it is still
+  // the only message, so nothing the person has seen in context changes.
+  useEffect(() => {
+    if (!greetingAwaitsJurisdictionRef.current || !currentDocument.state) return;
+    greetingAwaitsJurisdictionRef.current = false;
+    setMessages((prev) => {
+      if (prev.length !== 1 || prev[0].type !== 'bot') return prev;
+      const [, ...rest] = prev[0].content.split('\n\n');
+      return [{ ...prev[0], content: [divorceGreetingIntro(currentDocument.state), ...rest].join('\n\n') }];
+    });
+  }, [currentDocument.state]);
+
+  // Follow new messages while the reader is at the bottom. The auto-follow
+  // scroll is instant on purpose: a smooth scroll emits intermediate scroll
+  // events, and when a second message lands mid-animation those events read
+  // as "the user scrolled up" (the bottom moved away), which switched
+  // following off during fast bursts. An instant jump lands exactly on the
+  // bottom, so the scroll handler only ever sees the reader's own scrolling.
   useEffect(() => {
     if (isAtBottom) {
-      scrollToBottom();
+      scrollToBottom('auto');
     }
-  }, [messages, isAtBottom]);
+  }, [messages, isLoading, isAtBottom]);
 
   // Check scroll position
   const handleScroll = () => {
     if (chatContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-      const isBottom = scrollHeight - scrollTop - clientHeight < 10;
-      setIsAtBottom(isBottom);
+      setIsAtBottom(isScrolledToBottom(chatContainerRef.current));
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior = 'smooth') => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    if (typeof container.scrollTo === 'function') {
+      container.scrollTo({ top: container.scrollHeight, behavior });
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
   };
 
   // Send message to API
@@ -463,18 +505,24 @@ Start with your full legal name, then tell me what happened in your own words.`
         </button>
       </div>
 
+      {/* Chat area. The positioning context is this non-scrolling wrapper,
+          so the details overlay and the jump-to-latest button stay pinned to
+          the visible chat area instead of the top of the scrolled content. */}
+      <div className="relative flex-1 min-h-0 flex flex-col">
+      {/* Document Metadata Overlay - covers the visible chat area when open */}
+      {showMetadata && (
+        <div id="document-metadata-panel" className="absolute inset-0 bg-white z-10 overflow-y-auto p-3 shadow-lg">
+          <DocumentMetadata />
+        </div>
+      )}
+
       {/* Chat Messages */}
       <div
         ref={chatContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+        data-testid="chat-messages"
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
       >
-        {/* Document Metadata Overlay - Takes full chat area when open */}
-        {showMetadata && (
-          <div id="document-metadata-panel" className="absolute inset-0 bg-white z-10 overflow-y-auto p-3 shadow-lg">
-            <DocumentMetadata />
-          </div>
-        )}
         {messages.map((msg, index) => (
           <div
             key={index}
@@ -535,21 +583,22 @@ Start with your full legal name, then tell me what happened in your own words.`
             </div>
           </div>
         )}
-        
-        <div ref={messagesEndRef} />
+
       </div>
-      
+
       {/* Scroll to bottom button */}
-      {!isAtBottom && (
-        <button 
-          onClick={scrollToBottom}
+      {!isAtBottom && !showMetadata && (
+        <button
+          type="button"
+          onClick={() => scrollToBottom('smooth')}
           aria-label="Scroll to latest message"
-          className="absolute bottom-20 right-4 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-colors"
+          className="absolute bottom-4 right-4 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-colors"
         >
           <ArrowDown className="h-5 w-5 text-gray-600" />
         </button>
       )}
-      
+      </div>
+
       {/* Input Area */}
       <div className="border-t bg-white p-4">
         {/* Document Status */}

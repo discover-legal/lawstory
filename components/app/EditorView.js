@@ -19,6 +19,8 @@ import CoffeeLink from './CoffeeLink';
 import QuickExit from './QuickExit';
 import { advisorFlags, fullName as partyDisplayName } from './lifeStory';
 import { trackEvent } from '@/lib/utils/analytics';
+import { divorceSubDocLabel, labelSlug } from '@/lib/divorceDocLabels';
+import { describeGenerateFailure } from '@/lib/downloadError';
 
 // Use relative URLs in production (empty string), localhost in development
 const API_BASE_URL = '';
@@ -162,6 +164,11 @@ const EditorView = ({ isNew = false, onBack }) => {
 
   // Use split contexts to prevent unnecessary re-renders
   const { currentDocument, preview } = useDocumentData();
+  // What the active download is called, in the jurisdiction's vocabulary —
+  // used to word download errors ("Your Divorce Order draft …").
+  const activeDocumentLabel = currentDocument.documentType === 'divorce_package'
+    ? (divorceSubDocLabel(currentDocument.activeSubDocument || 'divorce_petition', currentDocument.state) || 'document')
+    : 'document';
   const { isSaving, lastSaved, hasUnsavedChanges, justSaved, saveConflict } = useSaveMetadata();
   const { sessionInitialized, isLoading, error } = useUIState();
   const { saveDocument, loadDocument, initializeNewDocument } = useDocumentActions();
@@ -377,8 +384,10 @@ const EditorView = ({ isNew = false, onBack }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Download failed' }));
-        throw new Error(errorData.error || 'Failed to generate PDF');
+        const reason = await describeGenerateFailure(response, activeDocumentLabel);
+        const failure = new Error(reason);
+        failure.userMessage = reason;
+        throw failure;
       }
 
       const blob = await response.blob();
@@ -389,9 +398,13 @@ const EditorView = ({ isNew = false, onBack }) => {
       let downloadName;
       if (currentDocument.documentType === 'divorce_package') {
         const subDoc = currentDocument.activeSubDocument || 'divorce_petition';
-        // Role-aware: name the file after the user, not the petitioner caption
+        // Role-aware: name the file after the user, not the petitioner caption.
+        // The core drafts take the jurisdiction's own name (Ontario:
+        // application-for-divorce / divorce-order).
         const partyName = partyDisplayName(currentDocument);
-        downloadName = `${subDoc.replace(/_/g, '-')}-${safe(partyName) || 'document'}.pdf`;
+        const subDocLabel = divorceSubDocLabel(subDoc, currentDocument.state);
+        const stem = subDocLabel ? labelSlug(subDocLabel) : subDoc.replace(/_/g, '-');
+        downloadName = `${stem}-${safe(partyName) || 'document'}.pdf`;
       } else {
         downloadName = `affidavit-${safe(currentDocument.affiantName) || 'document'}.pdf`;
       }
@@ -412,7 +425,7 @@ const EditorView = ({ isNew = false, onBack }) => {
       console.error('❌ PDF download failed:', error);
       setEditorNotice({
         type: 'error',
-        message: `Failed to download PDF: ${error.message}`,
+        message: error.userMessage || `Failed to download PDF: ${error.message}`,
       });
       throw error;
     }
@@ -821,9 +834,10 @@ const EditorView = ({ isNew = false, onBack }) => {
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">{isCheckingPayment ? 'Checking...' : (() => {
                   if (currentDocument.documentType !== 'divorce_package') return 'Download PDF';
+                  const jurisdictionLabel = divorceSubDocLabel(currentDocument.activeSubDocument, currentDocument.state, { short: true });
+                  if (jurisdictionLabel) return `Download ${jurisdictionLabel} draft`;
                   const LABELS = {
-                    divorce_petition: 'Download Petition draft', petition_dissolution: 'Download Petition draft',
-                    divorce_decree: 'Download Decree draft', judgment_dissolution: 'Download Decree draft',
+                    judgment_dissolution: 'Download Decree draft',
                     final_judgment: 'Download Judgment draft', proposed_judgment: 'Download Proposed Judgment draft',
                     waiver_of_service: 'Download Waiver draft', acknowledgment_of_service: 'Download Acknowledgment draft',
                     acknowledgment_of_receipt: 'Download Acknowledgment draft', cert_last_known_address: 'Download Certificate draft',
@@ -856,7 +870,7 @@ const EditorView = ({ isNew = false, onBack }) => {
           <div className="flex items-center gap-2 min-w-0">
             <span className="hidden sm:inline">Document:</span>
             <span className="font-medium truncate">
-              {partyDisplayName(currentDocument) || 'Unnamed'}{currentDocument.state && ` - ${currentDocument.state}`}
+              {currentDocument.documentTitle || partyDisplayName(currentDocument) || 'Unnamed'}{currentDocument.state && ` - ${currentDocument.state}`}
             </span>
           </div>
 

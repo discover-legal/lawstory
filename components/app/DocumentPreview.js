@@ -16,6 +16,7 @@ import {
 import { useDocumentData, useDocumentActions } from '@/contexts/DocumentContext';
 import { makeSectionPrefixer } from '@/utils/sectionNumbering';
 import { isEvidence } from '@/lib/utils/factNormalizer';
+import { divorceSubDocLabel } from '@/lib/divorceDocLabels';
 
 // Metadata for all divorce sub-document tabs across all supported states.
 // Orchestrators return `requiredDocuments` — only those keys present here are shown.
@@ -63,6 +64,13 @@ const getDownloadableDivorceDocs = (requiredDocuments) => {
   );
   return supported.length > 0 ? supported : ['divorce_petition', 'divorce_decree'];
 };
+
+// Tab label in the jurisdiction's own vocabulary for the core drafts
+// (Ontario: "Application" / "Divorce Order"); the static table otherwise.
+export const divorceTabLabel = (docType, jurisdiction) =>
+  divorceSubDocLabel(docType, jurisdiction, { short: true }) ||
+  DIVORCE_DOC_TABS[docType]?.label ||
+  null;
 
 // Page configuration for US Letter (8.5" x 11" with 1" margins)
 const PAGE_CONFIG = {
@@ -1165,7 +1173,7 @@ const DocumentPreview = () => {
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5" />
-                      {tab.label}
+                      {divorceTabLabel(docType, currentDocument.state)}
                     </button>
                   );
                 })}
@@ -1182,7 +1190,7 @@ const DocumentPreview = () => {
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <FileText className="h-5 w-5" />
               {isDivorcePackage
-                ? `${DIVORCE_DOC_TABS[activeSubDocument]?.label || 'Document'} Preview`
+                ? `${divorceTabLabel(activeSubDocument, currentDocument.state) || 'Document'} Preview`
                 : 'Document Preview'}
             </h2>
             <div className="flex items-center gap-4">
@@ -1220,6 +1228,16 @@ const DocumentPreview = () => {
             </div>
           </div>
         </div>
+
+        {preview?.metadata?.degraded && (
+          <div
+            role="status"
+            className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900"
+          >
+            Your draft could not be rendered just now, so this is only an outline. Your answers are
+            saved; use Refresh to try again.
+          </div>
+        )}
 
         {/* Document preview area */}
         <div

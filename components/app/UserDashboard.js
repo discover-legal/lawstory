@@ -16,16 +16,17 @@ import { getInitialLang } from '@/lib/i18n';
 import { useFirm } from '@/contexts/FirmContext';
 import { trackEvent } from '@/lib/utils/analytics';
 import ConfirmDialog from './ConfirmDialog';
+import { divorceSubDocLabel } from '@/lib/divorceDocLabels';
 
 // Use relative URLs in production (empty string), localhost in development
 const API_BASE = '';
 
 // Human-readable label for a document's underlying type
-const getDocTypeLabel = (docType) => {
+const getDocTypeLabel = (docType, jurisdiction) => {
   switch (docType) {
     case 'divorce_package': return 'Divorce Package';
-    case 'divorce_petition': return 'Divorce Petition';
-    case 'divorce_decree': return 'Divorce Decree';
+    case 'divorce_petition':
+    case 'divorce_decree': return divorceSubDocLabel(docType, jurisdiction);
     case 'affidavit':
     case 'general':
     default: return 'Affidavit';
@@ -58,7 +59,7 @@ const DocumentRow = ({
 }) => {
   const docTypeLabel = (doc.document_type || doc.documentType);
   const isDivorce = ['divorce_package', 'divorce_petition', 'divorce_decree'].includes(docTypeLabel);
-  const typeName = getDocTypeLabel(docTypeLabel);
+  const typeName = getDocTypeLabel(docTypeLabel, doc.state);
   // Role-aware: title rows with the USER's name (never the petitioner
   // caption when the user is the respondent).
   const partyName = partyDisplayName(doc);
@@ -166,7 +167,7 @@ const UserDashboard = ({ onNewDocument, onContinueDocument }) => {
   // Use split contexts to prevent unnecessary re-renders
   const { documents, isDocumentsLoading } = useDocumentList();
   const { error } = useUIState();
-  const { loadDocuments } = useDocumentActions();
+  const { loadDocuments, applyRename } = useDocumentActions();
 
   const [renamingDocId, setRenamingDocId] = useState(null);
   const [newName, setNewName] = useState('');
@@ -381,7 +382,7 @@ const UserDashboard = ({ onNewDocument, onContinueDocument }) => {
   // Rename handlers
   const startRename = (doc) => {
     const docType = doc.document_type || doc.documentType;
-    const typeName = getDocTypeLabel(docType);
+    const typeName = getDocTypeLabel(docType, doc.state);
     setRenamingDocId(doc.id);
     setNewName(doc.documentTitle || doc.title || partyDisplayName(doc) || `${typeName} #${doc.id}`);
   };
@@ -401,6 +402,9 @@ const UserDashboard = ({ onNewDocument, onContinueDocument }) => {
         body: JSON.stringify({ newName: newName.trim() }),
       });
       if (response.ok) {
+        // Keep an already-open copy of this document (editor state survives
+        // client navigation) in step with the saved name.
+        applyRename(docId, newName.trim());
         await loadDocuments();
         cancelRename();
       } else {
@@ -725,9 +729,9 @@ const UserDashboard = ({ onNewDocument, onContinueDocument }) => {
                   </span>
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-1">Divorce Package</h4>
-                <p className="text-sm text-gray-600">A guided divorce interview that prepares petition and proposed decree drafts tailored to your jurisdiction.</p>
+                <p className="text-sm text-gray-600">A guided divorce interview that prepares drafts of the document that starts your case and the proposed final order, named the way your jurisdiction names them.</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {['Petition', 'Proposed Decree'].map(tag => (
+                  {['Petition / Application', 'Proposed Decree / Order'].map(tag => (
                     <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">
                       {tag}
                     </span>
