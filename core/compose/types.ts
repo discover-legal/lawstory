@@ -101,6 +101,7 @@ export interface ComposerDeps {
 export const DISPOSITIVE_CLAUSES: Record<string, ConfirmationKey> = {
   no_property_to_divide: 'no_property',
   no_debts_to_divide: 'no_debts',
+  neither_party_pregnant: 'not_pregnant',
   spousal_support_waived: 'support_waived',
   no_children_of_the_marriage: 'no_children',
 };

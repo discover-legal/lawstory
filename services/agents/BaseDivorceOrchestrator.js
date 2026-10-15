@@ -34,6 +34,7 @@ const {
   SUPERSEDED_FACTS_DESCRIPTION,
 } = require('./extractionQuality');
 const { retireFacts, sanitizeSupersededStatements } = require('./factRetirement');
+const { interviewNeeds } = require('../../templates/core/interviewNeeds');
 
 // v23: canonical statutory-ground name tokens. Mirrors STATUTORY_GROUND_TOKENS
 // in lib/api/profile.ts. Used by the companion promoter's isGroundsTag so a
@@ -224,7 +225,11 @@ function buildPhaseTool(stateCode, { nameMissing = false } = {}) {
             description: 'MACHINE-READ code for the property-division posture: "we have a separation agreement" / "we\'ve worked it all out" → agreed; "we disagree" / "fighting over the house" → contested; "still working on it" → pending. Put the user\'s exact wording in a fact, not here.'
           },
           has_property: { type: 'boolean', description: 'true if the parties accumulated community/marital property during the marriage, false if none' },
-          has_debts:    { type: 'boolean', description: 'true if the parties accumulated community/marital debts during the marriage, false if none' },
+          has_debts:    { type: 'boolean', description: 'true if the parties accumulated community/marital debts during the marriage, false ONLY when the user explicitly says there are no debts (an explicit "no debts" answer is recorded as a confirmed statement the draft will swear to — never emit false from silence).' },
+          matrimonial_home_possession_requested: {
+            type: 'boolean',
+            description: 'Ontario/Alberta only: true when the user asks the court for possession (exclusive possession) of the matrimonial/family home; false when the user says they are not asking for it. OMIT when the user has not answered — the draft then makes no claim.'
+          },
           petitioner_property: { type: 'array', items: { type: 'string' }, description: `Assets the petitioner keeps. Extract ONLY assets the user explicitly assigned to the petitioner. ${PROPERTY_ITEM_DESCRIPTION}` },
           respondent_property: { type: 'array', items: { type: 'string' }, description: `Assets the respondent keeps. Extract ONLY assets the user explicitly assigned to the respondent. ${PROPERTY_ITEM_DESCRIPTION}` },
           petitioner_debts: { type: 'array', items: { type: 'string' }, description: `Debts the petitioner takes responsibility for. Extract ONLY debts the user explicitly assigned to the petitioner. ${DEBT_ITEM_DESCRIPTION}` },
@@ -264,6 +269,16 @@ function buildPhaseTool(stateCode, { nameMissing = false } = {}) {
           prenup_governs_after_divorce: {
             type: 'boolean',
             description: 'true when the user states the prenuptial agreement continues to govern the characterization or disposition of property after the divorce (e.g. "the prenup still applies", "we\'re dividing property per the prenup"). Signals the decree to add the "continues to govern" recital.'
+          },
+
+          // ── PREGNANCY / REPRESENTATION (asked only where the drafts use them) ──
+          either_party_pregnant: {
+            type: 'boolean',
+            description: 'Whether EITHER spouse is currently pregnant, from the user\'s explicit answer: true = a party is pregnant; false = the user says neither party is pregnant. OMIT when the user has not answered — the draft then leaves a blank for this sworn statement. Never infer from silence, age or gender.'
+          },
+          user_represented_by_lawyer: {
+            type: 'boolean',
+            description: 'Whether the USER has a lawyer acting for them in this divorce: true = represented by a lawyer; false = the user is representing themselves. OMIT until the user answers.'
           },
 
           // ── SPOUSAL SUPPORT ──
@@ -443,6 +458,10 @@ const FIELD_MAP = {
   property_agreement:          'propertyAgreement',
   has_property:                'hasProperty',
   has_debts:                   'hasDebts',
+  matrimonial_home_possession_requested: 'matrimonialHomePossessionRequested',
+  either_party_pregnant:       'eitherPartyPregnant',
+  // user_represented_by_lawyer maps role-aware in _applyFieldUpdates
+  // (the USER's side → petitionerRepresentation or respondentRepresentation).
   petitioner_property:         'petitionerProperty',
   respondent_property:         'respondentProperty',
   petitioner_debts:            'petitionerDebts',
@@ -904,6 +923,12 @@ class BaseDivorceOrchestrator {
       }
     }
 
+    // Questions only some jurisdictions' drafts need (measured from the
+    // templates by templates/core/interviewNeeds.js), asked centrally so
+    // ~110 prompt files stay untouched.
+    const addendum = this._phaseAddendum(state.currentPhase, divorceData);
+    if (addendum) parts.push(addendum);
+
     // Military phase: DMDC search is a soft gate — a "before I file"
     // commitment satisfies it (state prompt files say the date is required;
     // this central rule overrides them without touching ~60 prompt files).
@@ -923,6 +948,37 @@ class BaseDivorceOrchestrator {
     }
 
     return parts.join('\n');
+  }
+
+  /**
+   * Extra COLLECT items for this jurisdiction's drafts, by phase. Each is
+   * asked only where the jurisdiction's documents use the answer and only
+   * until it is recorded.
+   * @param {string} phase
+   * @param {Object} data - Collected divorce data
+   * @returns {string|null}
+   */
+  _phaseAddendum(phase, data) {
+    const needs = interviewNeeds(this.stateCode);
+    const ask = [];
+    if (phase === 'CHILDREN' && needs.pregnancy && typeof data.eitherPartyPregnant !== 'boolean') {
+      ask.push('Ask whether either spouse is currently pregnant (the petition must state this). Record either_party_pregnant: true or false from the user\'s explicit answer only; ask in neutral words, never assuming which spouse.');
+    }
+    if (phase === 'PROPERTY') {
+      if (typeof data.hasDebts !== 'boolean') {
+        ask.push('Ask whether the spouses owe any debts together or separately (mortgage, loans, credit cards). Record has_debts: false ONLY when the user explicitly says there are none.');
+      }
+      if (needs.matrimonialHome && data.hasProperty !== false && typeof data.matrimonialHomePossessionRequested !== 'boolean') {
+        ask.push('Ask whether the user is asking the court for possession (exclusive possession) of the matrimonial home. Record matrimonial_home_possession_requested from the explicit answer only.');
+      }
+    }
+    if (phase === 'SERVICE' && needs.representation) {
+      const own = String(data.role || '').toLowerCase() === 'respondent' ? data.respondentRepresentation : data.petitionerRepresentation;
+      if (!own) ask.push('Ask whether the user has a lawyer acting for them or is representing themselves. Record user_represented_by_lawyer from the explicit answer only.');
+    }
+    return ask.length > 0
+      ? `ALSO COLLECT IN THIS PHASE (one question at a time, like the list above):\n${ask.map((a, i) => `${i + 1}. ${a}`).join('\n')}`
+      : null;
   }
 
   _initState(divorceData) {
@@ -1022,6 +1078,17 @@ class BaseDivorceOrchestrator {
       items.push(`Minor children: ${d.hasMinorChildren ? 'yes' : 'no'}`);
     }
     if (d.custodyArrangement)   items.push(`Custody arrangement: ${d.custodyArrangement}`);
+    if (typeof d.eitherPartyPregnant === 'boolean') {
+      items.push(`Either party currently pregnant: ${d.eitherPartyPregnant ? 'yes' : 'no'}`);
+    }
+    if (typeof d.hasDebts === 'boolean') items.push(`Marital debts: ${d.hasDebts ? 'yes' : 'none'}`);
+    if (typeof d.matrimonialHomePossessionRequested === 'boolean') {
+      items.push(`Possession of the matrimonial home requested: ${d.matrimonialHomePossessionRequested ? 'yes' : 'no'}`);
+    }
+    {
+      const ownRep = String(d.role || '').toLowerCase() === 'respondent' ? d.respondentRepresentation : d.petitionerRepresentation;
+      if (ownRep) items.push(`User represented by a lawyer: ${ownRep === 'lawyer' ? 'yes' : 'no (self-represented)'}`);
+    }
     if (d.propertyAgreement)    items.push(`Property agreement: ${d.propertyAgreement}`);
     if (typeof d.spousalSupportRequested === 'boolean') {
       items.push(`Spousal support requested: ${d.spousalSupportRequested ? 'yes' : 'no'}`);
@@ -1173,6 +1240,21 @@ class BaseDivorceOrchestrator {
     if (typeof roleIncome[spouseRole] === 'number') {
       updated.spouseMonthlyIncome = roleIncome[spouseRole];
     }
+
+    // Representation is the USER's own answer, recorded on the user's
+    // caption side; the decree recites it only from this recorded value.
+    if (typeof fields.user_represented_by_lawyer === 'boolean') {
+      updated[`${userRole}Representation`] = fields.user_represented_by_lawyer ? 'lawyer' : 'self';
+    }
+
+    // An explicit interview "no debts" answer is the user's own statement
+    // (provenance: this turn's message, recorded as a fact by _buildFacts),
+    // so it confirms the nil statement the drafts may then render — the
+    // same promotion lib/api/profile.ts applies to a "no property/no debts"
+    // fact. Silence never reaches here (the field is omitted), and a later
+    // "yes, we have debts" withdraws the confirmation.
+    if (fields.has_debts === false) updated.noDebtsConfirmed = true;
+    if (fields.has_debts === true) updated.noDebtsConfirmed = false;
 
     // Itemized money is the source of truth for the totals once present —
     // but only the USER's own person-tagged entries feed monthlyIncome
@@ -1738,9 +1820,10 @@ class BaseDivorceOrchestrator {
           (data.marriageLocation || data.marriageCity)
         );
       case 'CHILDREN':
-        return data.hasMinorChildren === false ||
+        return (data.hasMinorChildren === false ||
           data.childrenConfirmed === true ||
-          this._factsExplicitlySayNoMinorChildren(data.facts);
+          this._factsExplicitlySayNoMinorChildren(data.facts)) &&
+          (!interviewNeeds(this.stateCode).pregnancy || typeof data.eitherPartyPregnant === 'boolean');
       case 'PROPERTY':
         return has(data.propertyAgreement) || data.propertyConfirmed === true;
       case 'SUPPORT':

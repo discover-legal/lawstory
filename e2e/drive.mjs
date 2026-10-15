@@ -89,6 +89,10 @@ try {
   await sendChat(page, 'Our oldest is Emma, born April 2, 2015.');
   await sendChat(page, 'Then Liam, born June 15, 2017.');
   await sendChat(page, 'Wait — you forgot our youngest, Ava, born September 9, 2019.');
+  // Sworn-statement answers: each fills a draft blank only from the user's words.
+  await sendChat(page, 'Neither of us is pregnant.');
+  await sendChat(page, 'We have no debts, and I am not asking for the house.');
+  await sendChat(page, 'I am representing myself, no lawyer.');
   await page.waitForTimeout(1500); // let autosave settle
   await page.screenshot({ path: `${SHOTS}/2-interview.png`, fullPage: true });
 
@@ -107,6 +111,51 @@ try {
     childNames.join(' | '),
   );
   ok('facts accumulated with provenance', docState.facts.some((f) => f.sourceQuote));
+
+  // The three sworn-statement answers land as structured fields, and the
+  // explicit "no debts" answer confirms the nil statement.
+  const sworn = await page.evaluate(async () => {
+    const doc = (await fetch('/api/documents').then((r) => r.json())).data.documents[0];
+    const c = doc.content || {};
+    const preview = async (documentType) => {
+      const res = await fetch('/api/documents/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ affidavitData: { ...c, documentType } }),
+      });
+      return JSON.stringify((await res.json())?.preview?.sections ?? {});
+    };
+    return {
+      fields: {
+        eitherPartyPregnant: c.eitherPartyPregnant,
+        hasDebts: c.hasDebts,
+        noDebtsConfirmed: c.noDebtsConfirmed,
+        petitionerRepresentation: c.petitionerRepresentation,
+        matrimonialHomePossessionRequested: c.matrimonialHomePossessionRequested,
+      },
+      petition: await preview('divorce_petition'),
+      decree: await preview('divorce_decree'),
+    };
+  });
+  ok(
+    'sworn answers recorded (pregnancy, no debts confirmed, self-represented, home not claimed)',
+    sworn.fields.eitherPartyPregnant === false &&
+      sworn.fields.hasDebts === false &&
+      sworn.fields.noDebtsConfirmed === true &&
+      sworn.fields.petitionerRepresentation === 'self' &&
+      sworn.fields.matrimonialHomePossessionRequested === false,
+    JSON.stringify(sworn.fields),
+  );
+  ok(
+    'petition preview pleads the answers instead of blanks, and shows no [TOKEN]',
+    sworn.petition.includes('Neither party is currently pregnant.') &&
+      sworn.petition.includes('no marital debts') &&
+      !/\[[A-Z][A-Z ]{2,}/.test(sworn.petition),
+  );
+  ok(
+    'decree preview recites the recorded representation',
+    sworn.decree.includes('appeared pro se') && !/confirm representation before filing/.test(sworn.decree),
+  );
 
   // ── 3. Fresh context = "log back in" — profile must remember ────────────
   const ctx2 = await seededContext();

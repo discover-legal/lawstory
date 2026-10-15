@@ -35,6 +35,7 @@ const CONFIRMATION_KEY_SET: Record<ConfirmationKey, true> = {
   no_children: true,
   no_property: true,
   no_debts: true,
+  not_pregnant: true,
   support_waived: true,
   no_safety_concerns: true,
   not_military: true,

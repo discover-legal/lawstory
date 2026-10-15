@@ -44,7 +44,8 @@ export const JUDGE = {
   INTERVIEW_REPLY_LANGUAGE: 'interview.replyLanguage',
   /**
    * state: { message, confirmation }  questions: affirmed — yesno:
-   * the user explicitly and unambiguously stated the condition (e.g. that there is no property to divide).
+   * the user explicitly and unambiguously stated the condition (e.g. that there is no property to divide,
+   * or that neither party is currently pregnant — ConfirmationKey `not_pregnant`).
    */
   INTERVIEW_AFFIRMATION: 'interview.affirmation',
   /** state: { earlier_statement, new_statement, because }  questions: supersedes — yesno */

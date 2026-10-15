@@ -59,6 +59,9 @@ function divorceFields(profile: JurisdictionProfile): FieldSpec[] {
     { key: 'number_of_children', target: 'numberOfChildren', schema: { type: 'integer', description: 'Number of children of the marriage, including adult children.' } },
     { key: 'custody_arrangement', target: 'custodyArrangement', schema: string('The current or proposed parenting arrangement, in the user’s words.') },
     { key: 'child_support_requested', target: 'childSupportRequested', schema: boolean('Whether child support is sought.') },
+    // "Neither party is pregnant" is dispositive and lives in the `not_pregnant`
+    // Confirmation; this field records only the affirmative case.
+    { key: 'either_party_pregnant', target: 'eitherPartyPregnant', schema: boolean('True only when the user says a spouse is currently pregnant. A "no" is an affirmation (not_pregnant), never this field.') },
     // Property and debts
     { key: 'has_property', target: 'hasProperty', schema: boolean('Whether the spouses own property to divide.') },
     { key: 'has_debts', target: 'hasDebts', schema: boolean('Whether the spouses owe debts to divide.') },
@@ -66,6 +69,7 @@ function divorceFields(profile: JurisdictionProfile): FieldSpec[] {
     { key: 'debt_items', target: 'debtItems', schema: { type: 'array', items: { type: 'string' }, description: 'The main debts, one per entry.' } },
     { key: 'property_division_agreed', target: 'propertyDivisionAgreed', schema: boolean('Whether the spouses have agreed how to divide property and debts.') },
     { key: 'prenup_signed', target: 'prenupSigned', schema: boolean('Whether a marriage contract or prenuptial agreement was signed.') },
+    { key: 'matrimonial_home_possession_requested', target: 'matrimonialHomePossessionRequested', schema: boolean('Whether the user asks the court for (exclusive) possession of the matrimonial home.') },
     // Support
     { key: 'spousal_support_requested', target: 'spousalSupportRequested', schema: boolean('Whether the user asks for spousal support.') },
     { key: 'spousal_support_agreed', target: 'spousalSupportAgreed', schema: boolean('Whether the spouses have agreed on spousal support.') },
@@ -74,6 +78,9 @@ function divorceFields(profile: JurisdictionProfile): FieldSpec[] {
     { key: 'spouse_monthly_income', target: 'spouseMonthlyIncome', schema: number('The spouse’s monthly income, as far as the user knows.') },
     // Service
     { key: 'service_method', target: 'serviceMethod', schema: string('How the other spouse was or will be served.') },
+    // The legacy bridge writes the user's side as the petitioner side, so the
+    // user's representation is recorded under that v1 key.
+    { key: 'user_representation', target: 'petitionerRepresentation', schema: { type: 'string', enum: ['lawyer', 'self'], description: 'Whether the user has a lawyer acting for them (lawyer) or represents themselves (self).' } },
     { key: 'service_date', target: 'serviceDate', schema: isoDate('Date the user was served, when the spouse filed') },
     { key: 'respondent_address', target: 'respondentAddress', schema: string('The spouse’s current residential address, only when the user can swear to it.') },
     { key: 'respondent_address_unknown', target: 'respondentAddressUnknown', schema: boolean('True only when the user says they do not know where the spouse lives.'), binds: 'other.whereaboutsUnknown' },
@@ -133,10 +140,11 @@ function divorcePhases(profile: JurisdictionProfile): PhaseSpec[] {
       guidance:
         'Ask whether there are children of the marriage, including adult children. For each child collect the name, date of birth or age, and who the child lives with. ' +
         'Adult children only means no parenting or child-support orders are requested. Where a child is a minor, collect the current arrangement, the proposed arrangement, whether child support is sought, and where the child has lived for the past five years (the court needs it to decide parenting matters). ' +
-        'A statement that there are no children is dispositive only when the user says so explicitly.',
+        'A statement that there are no children is dispositive only when the user says so explicitly. ' +
+        'Ask, in neutral words that assume neither spouse, whether either spouse is currently pregnant: the petition states it. A yes is recorded as the fact; a no is dispositive only when the user says it explicitly.',
       requiredFields: ['hasMinorChildren'],
       factCategory: 'children',
-      confirmations: ['no_children'],
+      confirmations: ['no_children', 'not_pregnant'],
     },
     {
       id: 'PROPERTY',
@@ -162,6 +170,7 @@ function divorcePhases(profile: JurisdictionProfile): PhaseSpec[] {
       id: 'SERVICE',
       displayName: 'Service',
       guidance:
+        'Ask whether the user has a lawyer acting for them or represents themselves. ' +
         'Establish how the other spouse was or will be served and the spouse’s current residential address. When the user does not know where the spouse lives, record that explicitly, with any suspected location kept separate as a non-sworn guess; a sworn address is never inferred from a hedge such as “maybe” or “I think”. ' +
         'When the user is the respondent, collect the date of service and any deadline to respond.',
       requiredFields: [],
@@ -203,6 +212,9 @@ function divorcePhases(profile: JurisdictionProfile): PhaseSpec[] {
 
 // ─── Overlay ────────────────────────────────────────────────────────────────
 
+/** Jurisdictions whose application carries a matrimonial-home possession claim. */
+const MATRIMONIAL_HOME_JURISDICTIONS = new Set<string>(['ON', 'AB']);
+
 /** Jurisdiction rules that change the questions, read from the profile's data. */
 function overlayFor(profile: JurisdictionProfile): Partial<Record<string, string>> {
   const { divorce, name, lexicon } = profile;
@@ -237,6 +249,11 @@ function overlayFor(profile: JurisdictionProfile): Partial<Record<string, string
     RESIDENCY: residency.filter(Boolean).join(' '),
     GROUNDS: grounds.join('\n'),
     ...(children ? { CHILDREN: children } : {}),
-    PROPERTY: `Use the terms “${lexicon.maritalProperty}” and “${lexicon.maritalDebts}”.`,
+    PROPERTY: [
+      `Use the terms “${lexicon.maritalProperty}” and “${lexicon.maritalDebts}”.`,
+      MATRIMONIAL_HOME_JURISDICTIONS.has(profile.code)
+        ? 'Ask whether the user is asking the court for possession of the matrimonial home; the application claims it only on an explicit yes.'
+        : '',
+    ].filter(Boolean).join(' '),
   };
 }

@@ -40,6 +40,7 @@ const OTHER_LAST = ['respondentLastName', 'defendantLastName'];
 const CONFIRMATION_FLAGS: Array<[string, ConfirmationKey]> = [
   ['noPropertyConfirmed', 'no_property'],
   ['noDebtsConfirmed', 'no_debts'],
+  ['notPregnantConfirmed', 'not_pregnant'],
   ['spousalSupportWaived', 'support_waived'],
   ['noChildrenConfirmed', 'no_children'],
   ['userConfirmedReview', 'review_confirmed'],

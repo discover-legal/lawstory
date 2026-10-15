@@ -484,6 +484,7 @@ const CONFIRMATION_MEANING: Record<ConfirmationKey, string> = {
   no_children: 'There are no children of this relationship.',
   no_property: 'The parties own no property to divide.',
   no_debts: 'The parties owe no debts to divide.',
+  not_pregnant: 'Neither party to the marriage is currently pregnant.',
   support_waived: 'The person gives up (waives) any claim to spousal support now and in the future — not merely that they are not asking for it at this time.',
   no_safety_concerns: 'There are no safety concerns involving the other party.',
   not_military: 'The other party is not in active military service.',

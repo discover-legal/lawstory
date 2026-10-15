@@ -19,6 +19,8 @@ export function reliefSection(ctx: DivorceContext): Section {
   if (file.children.length > 0) items.push('orders for the parenting, decision-making and support of the children of the marriage as set out above;');
   if (listField(file, 'propertyItems')) items.push(`a division of the ${maritalProperty};`);
   if (listField(file, 'debtItems')) items.push(`an allocation of the ${maritalDebts};`);
+  // Claimed only on the user's explicit request (asked in ON/AB).
+  if (booleanField(file, 'matrimonialHomePossessionRequested') === true) items.push('an order for possession of the matrimonial home;');
   if (booleanField(file, 'spousalSupportRequested') === true) items.push(`an order for spousal support payable by ${labels.other} to ${labels.self};`);
   else if (confirmed(file, 'support_waived')) items.push('an order recording that both parties waive spousal support;');
   items.push('such further relief as the Court considers just.');

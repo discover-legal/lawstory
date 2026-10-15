@@ -146,6 +146,7 @@ describe('BaseDivorceOrchestrator returning-user phase routing', () => {
       marriageDate: '2018-09-15',
       marriageCity: 'Salt Lake City',
       hasMinorChildren: false,
+      eitherPartyPregnant: false,
       propertyAgreement: 'agreed',
       spousalSupportRequested: false,
       serviceMethod: 'waiver',
@@ -170,6 +171,7 @@ describe('BaseDivorceOrchestrator returning-user phase routing', () => {
     const orch = makePhaseOrchestrator();
     expect(orch._getNextPhase('GROUNDS', {
       ...nameSeed(),
+      eitherPartyPregnant: false,
       facts: [{ content: 'Morgan Avery and I have no children together who are under 18.' }],
     })).toBe('PROPERTY');
     expect(orch._getNextPhase('GROUNDS', {
@@ -180,6 +182,12 @@ describe('BaseDivorceOrchestrator returning-user phase routing', () => {
       ...nameSeed(),
       facts: [{ content: 'I have no children from a previous relationship, but we have a child together.' }],
     })).toBe('CHILDREN');
+  });
+
+  test('CHILDREN is not skipped until the pregnancy question is answered where the petition needs it', () => {
+    const orch = makePhaseOrchestrator();
+    expect(orch._getNextPhase('GROUNDS', { ...nameSeed(), hasMinorChildren: false })).toBe('CHILDREN');
+    expect(orch._getNextPhase('GROUNDS', { ...nameSeed(), hasMinorChildren: false, eitherPartyPregnant: false })).toBe('PROPERTY');
   });
 
   test('recognizes a completed military check stored as older narrative facts', () => {
@@ -654,5 +662,56 @@ describe('pending-question pacing guidance', () => {
     expect(prompt).toContain('AT MOST once every other turn');
     expect(prompt).toContain('vary the phrasing');
     expect(prompt).toContain('never repeat a question word-for-word');
+  });
+});
+
+describe('BaseDivorceOrchestrator — pregnancy / representation / matrimonial home / no-debts answers', () => {
+  const makeOrch = (stateCode) => {
+    const order = ['INTAKE', 'RESIDENCY', 'GROUNDS', 'CHILDREN', 'PROPERTY', 'SUPPORT', 'SERVICE', 'REVIEW'];
+    return new BaseDivorceOrchestrator({
+      stateCode,
+      stateName: stateCode,
+      phases: Object.fromEntries(order.map((name) => [name, { prompt: name, displayName: name }])),
+      phaseOrder: order,
+    });
+  };
+
+  test('either_party_pregnant and matrimonial_home_possession_requested map straight through', () => {
+    const out = makeOrch('ON')._applyFieldUpdates({}, { either_party_pregnant: false, matrimonial_home_possession_requested: true });
+    expect(out.eitherPartyPregnant).toBe(false);
+    expect(out.matrimonialHomePossessionRequested).toBe(true);
+  });
+
+  test('user_represented_by_lawyer lands on the USER\'s caption side', () => {
+    expect(makeOrch('UT')._applyFieldUpdates({}, { user_represented_by_lawyer: false }).petitionerRepresentation).toBe('self');
+    const resp = makeOrch('UT')._applyFieldUpdates({ role: 'respondent' }, { user_represented_by_lawyer: true });
+    expect(resp.respondentRepresentation).toBe('lawyer');
+    expect(resp.petitionerRepresentation).toBeUndefined();
+  });
+
+  test('an explicit "no debts" answer confirms the nil statement; "yes" withdraws it; silence sets nothing', () => {
+    const orch = makeOrch('UT');
+    expect(orch._applyFieldUpdates({}, { has_debts: false })).toMatchObject({ hasDebts: false, noDebtsConfirmed: true });
+    expect(orch._applyFieldUpdates({ noDebtsConfirmed: true }, { has_debts: true })).toMatchObject({ hasDebts: true, noDebtsConfirmed: false });
+    expect(orch._applyFieldUpdates({}, {}).noDebtsConfirmed).toBeUndefined();
+  });
+
+  test('questions are asked only where the jurisdiction\'s drafts use the answer, and only until answered', () => {
+    const on = makeOrch('ON');
+    const tx = makeOrch('TX');
+    expect(on._phaseAddendum('PROPERTY', {})).toMatch(/matrimonial_home_possession_requested/);
+    expect(tx._phaseAddendum('PROPERTY', {})).not.toMatch(/matrimonial_home_possession_requested/);
+    expect(on._phaseAddendum('PROPERTY', { hasDebts: false, matrimonialHomePossessionRequested: false })).toBeNull();
+    expect(makeOrch('UT')._phaseAddendum('CHILDREN', {})).toMatch(/either_party_pregnant/);
+    expect(makeOrch('UT')._phaseAddendum('CHILDREN', { eitherPartyPregnant: false })).toBeNull();
+    expect(makeOrch('UT')._phaseAddendum('SERVICE', {})).toMatch(/user_represented_by_lawyer/);
+    expect(makeOrch('UT')._phaseAddendum('SERVICE', { petitionerRepresentation: 'self' })).toBeNull();
+  });
+
+  test('the tool schema carries the three new fields', () => {
+    const props = makeOrch('ON').tool.function.parameters.properties;
+    expect(props).toHaveProperty('either_party_pregnant');
+    expect(props).toHaveProperty('user_represented_by_lawyer');
+    expect(props).toHaveProperty('matrimonial_home_possession_requested');
   });
 });

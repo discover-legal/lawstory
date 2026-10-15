@@ -102,6 +102,7 @@ export type ConfirmationKey =
   | 'no_children'
   | 'no_property'
   | 'no_debts'
+  | 'not_pregnant'
   | 'support_waived'
   | 'no_safety_concerns'
   | 'not_military'

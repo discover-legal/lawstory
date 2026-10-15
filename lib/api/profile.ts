@@ -100,6 +100,12 @@ const FAMILY_FIELDS: readonly string[] = [
   // template gates on these structured fields; add them to the whitelist
   // so a fact-derived promotion below survives into the render.
   'noPropertyConfirmed', 'noDebtsConfirmed', 'propertyAgreementConfirmed',
+  // Interview answers that fill sworn-statement blanks (asked only where the
+  // jurisdiction's drafts use them — templates/core/interviewNeeds.js):
+  // pregnancy averment, matrimonial-home claim (ON/AB), and how each side is
+  // represented (decree appearances).
+  'eitherPartyPregnant', 'matrimonialHomePossessionRequested',
+  'petitionerRepresentation', 'respondentRepresentation',
   'settlementAgreement', 'settlementAgreementDate', 'mediatedChildSupport',
   // Attorney round-4 (Sarah AB, 2026-08-30): AB Statement of Claim needs
   // s.19 Federal Child Support Guidelines imputation gates on the profile.

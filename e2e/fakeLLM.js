@@ -95,6 +95,39 @@ function scriptTurn(userText) {
       ],
     };
   }
+  // Sworn-statement answers that fill the draft's blanks (pregnancy averment,
+  // no-debts confirmation, representation recital, matrimonial-home claim).
+  if (t.includes('neither of us is pregnant')) {
+    return {
+      response: 'Thank you — noted that neither of you is pregnant. Do you and Alex owe any debts?',
+      phase_complete: false,
+      either_party_pregnant: false,
+      extracted_facts: [
+        { content: 'Neither Alex nor I am currently pregnant.', category: 'children' },
+      ],
+    };
+  }
+  if (t.includes('we have no debts')) {
+    return {
+      response: 'Understood — no debts. Are you asking the court for possession of the home?',
+      phase_complete: false,
+      has_debts: false,
+      matrimonial_home_possession_requested: false,
+      extracted_facts: [
+        { content: 'Alex and I have no debts, and I am not asking for possession of the home.', category: 'debts' },
+      ],
+    };
+  }
+  if (t.includes('representing myself')) {
+    return {
+      response: 'Thanks — you are representing yourself.',
+      phase_complete: false,
+      user_represented_by_lawyer: false,
+      extracted_facts: [
+        { content: 'I do not have a lawyer; I am representing myself.', category: 'general' },
+      ],
+    };
+  }
   return {
     response: 'Understood. Tell me more when you are ready.',
     phase_complete: false,

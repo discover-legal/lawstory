@@ -9,7 +9,7 @@ import type { Child } from '../../model/types';
 import type { Block, Section } from '../types';
 import type { DivorceContext } from '../context';
 import { formatDate, isRenderableDate } from '../dates';
-import { blank, confirmed, note, paragraph, section } from '../record';
+import { blank, booleanField, confirmed, note, paragraph, section } from '../record';
 import type { Labels } from '../record';
 
 export const CHILDREN_SECTION = 'children';
@@ -54,10 +54,32 @@ export function childrenSection(ctx: DivorceContext): Section {
     );
   } else if (confirmed(file, 'no_children')) {
     // Dispositive: only the confirmation supports it.
-    blocks.push(paragraph('There are no children of the marriage, born or adopted, and none are expected.', ['no_children']));
+    blocks.push(paragraph('There are no children of the marriage, born or adopted.', ['no_children']));
   } else {
     blocks.push(blank('children', `Draft — list every child of the marriage (name, date of birth, who they live with), or confirm in the interview that there are none. Nothing about children has been assumed.`, 'Children', 'The children of the marriage are ___.'));
   }
 
+  blocks.push(...pregnancyBlocks(ctx));
   return section(CHILDREN_SECTION, 'Children', blocks);
+}
+
+/**
+ * Whether either spouse is pregnant — its own averment, never folded into
+ * "no children" (a child born during the marriage is presumed a child of
+ * it). "Neither party is pregnant" is dispositive and renders ONLY from the
+ * `not_pregnant` confirmation; a recorded yes renders the fact; silence is
+ * a blank.
+ */
+function pregnancyBlocks(ctx: DivorceContext): Block[] {
+  const { file } = ctx;
+  if (confirmed(file, 'not_pregnant')) {
+    return [paragraph('Neither party is currently pregnant.', ['not_pregnant'])];
+  }
+  if (booleanField(file, 'eitherPartyPregnant') === true) {
+    return [
+      paragraph('A party to the marriage is currently pregnant.', ['eitherPartyPregnant']),
+      note('Draft — name the pregnant party and the expected date of birth; a child born during the marriage may need parenting and support orders.'),
+    ];
+  }
+  return [blank('pregnancy', 'Draft — state whether either party is currently pregnant, or confirm in the interview that neither is. Nothing has been assumed.', 'Pregnancy', 'Neither party is currently pregnant / ___ is pregnant, with the child expected on ___.')];
 }
