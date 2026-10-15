@@ -84,6 +84,7 @@ describe('server-bound payment products', () => {
 
   it('revokes paid status when saved document content materially changes', () => {
     const source = fs.readFileSync('app/api/documents/save/route.ts', 'utf8');
-    expect(source).toContain("content IS DISTINCT FROM $1::jsonb THEN 'unpaid'");
+    // documentTitle (a rename) is excluded: it is never a material edit.
+    expect(source).toContain("(content - 'documentTitle') IS DISTINCT FROM ($1::jsonb - 'documentTitle') THEN 'unpaid'");
   });
 });
