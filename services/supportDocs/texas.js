@@ -134,7 +134,7 @@ function renderExpenseBlock(data, declarantSide) {
       `(no itemized expenses on file) ${BLANK_LINE}`,
       ...EXPENSE_SCAFFOLD_CATEGORIES.map(scaffoldRow),
     ];
-    totalText = '[MONTHLY EXPENSES]';
+    totalText = `$${BLANK_SHORT}`;
   }
   // Expose the numeric total so callers can compute a Rule 145 qualification
   // check (income minus expenses); null when nothing is on file.
@@ -370,7 +370,7 @@ function statementOfInability(data = {}, opts = {}) {
         `(myself${kids > 0 ? ` + ${kids} minor ${kids === 1 ? 'child' : 'children'}` : ''}).`;
     } else {
       dependentsLine =
-        'Number of persons financially dependent on me (including myself): [NUMBER].';
+        'Number of persons financially dependent on me (including myself): _____.';
       warnings.push(
         'Dependents count is not on file — the dependents line is a placeholder. ' +
           'Fill it in before signing this sworn statement.',

@@ -390,7 +390,7 @@ describe('financialDeclaration — persona regression (sworn income attribution)
     expect(sections.signatureBlock.name).toBe("Kathleen O'Brien-Hatch");
   });
 
-  test('unknowable income → [MONTHLY INCOME] placeholder plus a validation warning', () => {
+  test('unknowable income → fill-in blank (never a [MONTHLY INCOME] token) plus a validation warning', () => {
     const structure = utah.financialDeclaration({
       petitionerName: 'Jane Q. Example',
       // scalar merely echoes the spouse's itemized income — not the declarant's
@@ -400,7 +400,8 @@ describe('financialDeclaration — persona regression (sworn income attribution)
       ],
     });
     const text = textOf(structure);
-    expect(text).toContain('TOTAL MONTHLY INCOME: [MONTHLY INCOME]');
+    expect(text).toContain('TOTAL MONTHLY INCOME: $______________');
+    expect(text).not.toContain('[MONTHLY INCOME]');
     expect(text).not.toContain('TOTAL MONTHLY INCOME: $5,200');
     expect(text).toContain('fill this in before signing');
     expect(structure.metadata.warnings.length).toBeGreaterThan(0);
@@ -410,7 +411,8 @@ describe('financialDeclaration — persona regression (sworn income attribution)
   test('no income data at all → placeholder, never $0 or a blank number', () => {
     const structure = utah.financialDeclaration({ petitionerName: 'Jane Q. Example' });
     const text = textOf(structure);
-    expect(text).toContain('TOTAL MONTHLY INCOME: [MONTHLY INCOME]');
+    expect(text).toContain('TOTAL MONTHLY INCOME: $______________');
+    expect(text).not.toContain('[MONTHLY INCOME]');
     expect(text).not.toContain('TOTAL MONTHLY INCOME: $0');
     expect(structure.metadata.warnings.join(' ')).toMatch(/placeholder/i);
   });
@@ -644,7 +646,8 @@ describe('texas statement of inability — Rule 145 form fields (Mari)', () => {
       dependentsCount: 0,
     });
     const text = textOf(structure);
-    expect(text).toContain('TOTAL MONTHLY INCOME: [MONTHLY INCOME]');
+    expect(text).toContain('TOTAL MONTHLY INCOME: $______________');
+    expect(text).not.toContain('[MONTHLY INCOME]');
     expect(text).not.toContain('TOTAL MONTHLY INCOME: $0');
     expect(structure.metadata.warnings.length).toBeGreaterThan(0);
     expect(structure.metadata.warnings.join(' ')).toMatch(/not on file/i);
@@ -659,7 +662,7 @@ describe('texas statement of inability — Rule 145 form fields (Mari)', () => {
       monthlyExpenses: 2400,
     });
     const text = textOf(structure);
-    expect(text).toContain('financially dependent on me (including myself): [NUMBER]');
+    expect(text).toContain('financially dependent on me (including myself): _____');
     expect(structure.metadata.warnings.join(' ')).toMatch(/dependents/i);
   });
 
@@ -724,7 +727,7 @@ describe('texas statement of inability — expense rendering (breakdown vs scala
   test('missing both breakdown and scalar → placeholder + warning (blank beats wrong number)', () => {
     const structure = texas.statementOfInability({ ...marisBase });
     const text = textOf(structure);
-    expect(text).toContain('TOTAL MONTHLY EXPENSES: [MONTHLY EXPENSES]');
+    expect(text).toContain('TOTAL MONTHLY EXPENSES: $______________');
     expect(text).toContain('(no itemized expenses on file)');
     expect((structure.metadata.warnings || []).join(' ')).toMatch(/expenses are not on file/i);
   });
@@ -820,8 +823,9 @@ describe("texas Petitioner's Financial Information Statement", () => {
       county: 'Travis',
     });
     const text = textOf(structure);
-    expect(text).toContain('TOTAL MONTHLY INCOME: [MONTHLY INCOME]');
-    expect(text).toContain('TOTAL MONTHLY EXPENSES: [MONTHLY EXPENSES]');
+    expect(text).toContain('TOTAL MONTHLY INCOME: $______________');
+    expect(text).not.toContain('[MONTHLY INCOME]');
+    expect(text).toContain('TOTAL MONTHLY EXPENSES: $______________');
     expect(structure.metadata.warnings.length).toBeGreaterThan(0);
   });
 });
@@ -992,7 +996,7 @@ describe('TX Rule 145 — attorney-review polish (surplus, scaffold, mandatory f
     expect(text).toMatch(/Debt payments/);
     // The scaffold coexists with the "not on file" marker + placeholder total
     expect(text).toContain('(no itemized expenses on file)');
-    expect(text).toContain('TOTAL MONTHLY EXPENSES: [MONTHLY EXPENSES]');
+    expect(text).toContain('TOTAL MONTHLY EXPENSES: $______________');
   });
 
   test('itemization scaffold: no incomeBreakdown renders each Rule 145 income category', () => {
@@ -1006,7 +1010,8 @@ describe('TX Rule 145 — attorney-review polish (surplus, scaffold, mandatory f
     expect(text).toMatch(/Self-employment \/ gig \/ tips/);
     expect(text).toMatch(/Public benefits \(SNAP/);
     expect(text).toMatch(/Other income/);
-    expect(text).toContain('TOTAL MONTHLY INCOME: [MONTHLY INCOME]');
+    expect(text).toContain('TOTAL MONTHLY INCOME: $______________');
+    expect(text).not.toContain('[MONTHLY INCOME]');
   });
 
   test('mandatory field: attorney representation defaults to "self-represented (pro se)"', () => {

@@ -8,6 +8,7 @@ const fs = require('fs').promises;
 const fssync = require('fs');
 const path = require('path');
 const previewRenderer = require('./previewRenderer');
+const { blankPlaceholders } = require('../templates/core/placeholders');
 const { makeSectionPrefixer } = require('../utils/sectionNumbering');
 const { prepareFactsForDisplay, isEvidence, evidenceHasFile, getEvidenceItems } = require('../utils/factNormalizer');
 const { validatePath } = require('../utils/pathSecurity');
@@ -93,16 +94,14 @@ class PDFService {
 
   /**
    * A filed document must never show template placeholder tokens
-   * ("[CASE NUMBER]", "[BIRTH DATE]", …) — the ~110 jurisdiction templates
-   * carry dozens of token vocabularies as missing-data fallbacks, and this
-   * choke point converts every one to a fill-in-by-hand blank in the final
-   * PDF/DOCX. Editor previews keep the tokens as "what's missing" hints.
+   * ("[CASE NUMBER]", "[PRIMARY RESIDENCE — set out …]", …). This choke
+   * point converts every token-shaped bracket (templates/core/placeholders.js,
+   * the same generic grammar the generate route's guard uses) to a
+   * fill-in-by-hand blank, keeping any instruction as a Draft note.
    */
-  static PLACEHOLDER_TOKEN = /\[(?:[A-Z][A-Z /_-]{2,40})\]/g;
-
   sanitizeForFiling(value) {
     if (typeof value === 'string') {
-      return value.replace(PDFService.PLACEHOLDER_TOKEN, '______________');
+      return blankPlaceholders(value);
     }
     if (Array.isArray(value)) return value.map((v) => this.sanitizeForFiling(v));
     if (value && typeof value === 'object') {
@@ -591,10 +590,45 @@ class PDFService {
       doc.text(sections.verification.title || 'VERIFICATION', { align: 'center' });
       doc.moveDown(0.8);
 
+      // Keep the signature + jurat block (signature rule through "Notary
+      // Public / My Commission Expires") on ONE page: rendering the jurat as
+      // part of one flowing paragraph let a page break strand "Notary
+      // Public" alone on the last page (live Utah petition QA).
+      const { body, jurat } = PDFService.splitJurat(verificationText);
       doc.fontSize(12).font('Times-Roman');
-      doc.text(verificationText, { align: 'justify', indent: 36, lineGap: 6 });
+      if (body) {
+        doc.text(body, { align: 'justify', indent: 36, lineGap: 6 });
+      }
+      if (jurat) {
+        if (body) doc.moveDown(1);
+        const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+        const juratHeight = doc.heightOfString(jurat, { width: width - 36, lineGap: 6 });
+        this.checkPageBreak(doc, juratHeight + 12);
+        doc.text(jurat, { align: 'left', indent: 36, lineGap: 6 });
+      }
       doc.moveDown(1.5);
     }
+  }
+
+  /**
+   * Split a verification text into its sworn statement and the trailing
+   * signature/jurat block, which must never break across pages. The jurat
+   * starts at the first signature rule ("_____") paragraph, or failing
+   * that at the "subscribed / sworn … before me" paragraph.
+   * @param {string} text
+   * @returns {{body: string, jurat: string}}
+   */
+  static splitJurat(text) {
+    const paragraphs = String(text || '').split(/\n{2,}/);
+    let start = paragraphs.findIndex((p) => /^_{5,}/.test(p.trim()));
+    if (start === -1) {
+      start = paragraphs.findIndex((p) => /\b(subscribed|sworn|affirmed)\b[\s\S]*\bbefore me\b/i.test(p));
+    }
+    if (start <= 0) return { body: String(text || ''), jurat: '' };
+    return {
+      body: paragraphs.slice(0, start).join('\n\n'),
+      jurat: paragraphs.slice(start).join('\n\n'),
+    };
   }
 
   // ─── DECREE PDF BUILDER ────────────────────────────────────────────────────

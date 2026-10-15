@@ -37,10 +37,11 @@
 //      this side.
 //   4. An amount is NEVER attributed to a person the data does not tie it
 //      to. A party with nothing attributable resolves to `amount: null` —
-//      callers render a placeholder ([MONTHLY INCOME]) or blank plus a
+//      callers render a fill-in blank ($______) plus a
 //      warning, because a blank on a sworn form beats a wrong number.
 
-const INCOME_PLACEHOLDER = '[MONTHLY INCOME]';
+// A fill-in blank, never a [MONTHLY INCOME] token (templates/core/placeholders.js).
+const INCOME_PLACEHOLDER = '$______________';
 
 function str(value) {
   return value === undefined || value === null ? '' : String(value).trim();

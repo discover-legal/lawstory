@@ -74,90 +74,15 @@ function sanitizeFilename(input: string | undefined, fallback: string): string {
   return trimmed || fallback;
 }
 
-/**
- * Placeholder tokens the templates print verbatim when data is missing.
- * A rendered PDF that still carries any of these is unusable — the user
- * would file a document that says literally "[PETITIONER NAME]" where a
- * name belongs. Task blocker: TX Mari's petition rendered with
- * `[PETITIONER NAME]` and `[RESPONDENT NAME]` because the interview never
- * asked for her name.
- *
- * Explicit denylist (not a regex sweep) so the legitimate `[…]` tokens the
- * templates use for "the court fills this in" — `[DATE]`, `[NOTARY SEAL]`,
- * `[SEAL]`, `[JUDGE SIGNATURE]`, `[LABEL]` (exhibit label filled by the
- * builder at render time) — never trigger a false 422.
- *
- * Human-readable labels (used in the error message) map to the underlying
- * missing field(s) so the UI can prompt the user for the specific gap.
- */
-const PLACEHOLDER_DENYLIST: ReadonlyArray<{ token: string; missing: string }> = [
-  { token: '[PETITIONER NAME]',   missing: 'petitioner name' },
-  { token: '[RESPONDENT NAME]',   missing: 'respondent name' },
-  { token: '[PLAINTIFF NAME]',    missing: 'plaintiff name' },
-  { token: '[DEFENDANT NAME]',    missing: 'defendant name' },
-  { token: '[APPLICANT NAME]',    missing: 'applicant name' },
-  { token: '[MOVANT]',            missing: 'movant name' },
-  { token: '[DECLARANT]',         missing: 'declarant name' },
-  { token: '[RECIPIENT NAME]',    missing: 'recipient name' },
-  { token: '[SENDER NAME]',       missing: 'sender name' },
-  { token: '[NAME]',              missing: 'name' },
-  { token: '[CHILD NAME]',        missing: 'child name' },
-  { token: '[BIRTH DATE]',        missing: 'child birth date' },
-  { token: '[DOB]',               missing: 'date of birth' },
-  { token: '[COURT NAME]',        missing: 'court name' },
-  { token: '[COURT]',             missing: 'court name' },
-  { token: '[CASE NUMBER]',       missing: 'case number' },
-  { token: '[DOCKET NUMBER]',     missing: 'docket number' },
-  { token: '[SUIT NUMBER]',       missing: 'suit number' },
-  { token: '[FILE NUMBER]',       missing: 'file number' },
-  { token: '[COUNTY]',            missing: 'county' },
-  { token: '[CITY]',              missing: 'city' },
-  { token: '[STATE]',             missing: 'state' },
-  { token: '[DISTRICT]',          missing: 'judicial district' },
-  { token: '[JUDICIAL DISTRICT]', missing: 'judicial district' },
-  { token: '[JUDICIAL DIVISION]', missing: 'judicial division' },
-  { token: '[REGISTRY]',          missing: 'registry' },
-  { token: '[REGISTRY LOCATION]', missing: 'registry location' },
-  { token: '[DATE OF MARRIAGE]',  missing: 'marriage date' },
-  { token: '[DATE OF SEPARATION]', missing: 'separation date' },
-  { token: '[MARRIAGE DATE]',     missing: 'marriage date' },
-  { token: '[SEPARATION DATE]',   missing: 'separation date' },
-  { token: '[COUNTY NAME]',       missing: 'county' },
-  { token: '[LENGTH]',            missing: 'marriage length' },
-  { token: '[AMOUNT]',            missing: 'support amount' },
-  { token: '[DURATION]',          missing: 'support duration' },
-  { token: '[PERIOD]',            missing: 'separation period' },
-  { token: '[SUBJECT]',           missing: 'subject line' },
-  { token: '[RECIPIENT ADDRESS]', missing: 'recipient address' },
-  { token: '[SENDER ADDRESS]',    missing: 'sender address' },
-];
-
-/**
- * Serialize the built document structure and look for denylisted placeholder
- * tokens the templates leave behind when required data is missing. Returns
- * the set of human-readable missing-field labels (dedup'd, sorted for a
- * stable error body), empty when the rendered content is clean.
- *
- * JSON.stringify covers every nested paragraph/section field regardless of
- * which template class emitted it — cheaper and more defensive than walking
- * an ever-growing set of section shapes.
- */
-function findUnfilledPlaceholders(structure: unknown): string[] {
-  let serialized: string;
-  try {
-    serialized = JSON.stringify(structure);
-  } catch {
-    // A structure that can't serialize (unlikely for template output) can't
-    // be scanned — fail open rather than reject an otherwise valid render.
-    return [];
-  }
-  if (!serialized) return [];
-  const hit = new Set<string>();
-  for (const { token, missing } of PLACEHOLDER_DENYLIST) {
-    if (serialized.includes(token)) hit.add(missing);
-  }
-  return Array.from(hit).sort();
-}
+// Placeholder detection is generic (templates/core/placeholders.js): any
+// bracketed ALL-CAPS token — "[PETITIONER NAME]", "[PRIMARY RESIDENCE —
+// set out …]" — except court-completed marks ([SEAL], [NOTARY SEAL],
+// [JUDGE SIGNATURE], [DATE], [LABEL], "… TO BE COMPLETED BY THE COURT").
+// Templates render optional unknowns as fill-in blanks, so a token that
+// survives to here means required data is missing.
+const { findUnfilledPlaceholders } = require('@/templates/core/placeholders') as {
+  findUnfilledPlaceholders: (structure: unknown) => string[];
+};
 
 type PdfServiceResult = {
   success: boolean;

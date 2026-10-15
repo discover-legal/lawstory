@@ -311,7 +311,8 @@ describe('feeWaiverMotion', () => {
     expect(text).not.toContain('federal poverty guideline');
     // Unknown totals render as a placeholder rather than $0 — a blank on a
     // sworn form beats a wrong number.
-    expect(text).toContain('TOTAL MONTHLY GROSS INCOME: [MONTHLY INCOME]');
+    expect(text).toContain('TOTAL MONTHLY GROSS INCOME: $______________');
+    expect(text).not.toContain('[MONTHLY INCOME]');
     expect(text).toContain('fill this in before signing');
   });
 

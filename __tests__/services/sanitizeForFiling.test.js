@@ -33,4 +33,21 @@ describe('sanitizeForFiling', () => {
       expect(svc.sanitizeForFiling(text)).toBe(text);
     }
   });
+
+  it('blanks instruction-style tokens too, keeping the instruction as a Draft note', () => {
+    // "[PRIMARY RESIDENCE — set out …]" slipped past the old [A-Z /_-] regex
+    // and printed verbatim into the Ontario/Alberta decree PDF.
+    expect(svc.sanitizeForFiling('with this Court: [PRIMARY RESIDENCE — set out the parent with whom the child(ren) primarily reside].'))
+      .toBe('with this Court: ______________ (Draft — set out the parent with whom the child(ren) primarily reside).');
+    expect(svc.sanitizeForFiling('No. [COURT REF. NUMBER] of [NUMBER]/[YEAR]')).toBe('No. ______________ of ______________/______________');
+  });
+
+  it('keeps checkbox marks and court-completed recitals', () => {
+    for (const text of [
+      'awarded to: [X] Petitioner',
+      'Respondent: [APPEARANCE OR SIGNED STIPULATION — TO BE COMPLETED BY THE COURT].',
+    ]) {
+      expect(svc.sanitizeForFiling(text)).toBe(text);
+    }
+  });
 });

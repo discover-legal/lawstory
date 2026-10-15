@@ -106,6 +106,49 @@ describe('POST /api/documents/generate denylist (CA v7 replay tokens)', () => {
     expect(body.missingFields).toEqual(expect.arrayContaining([label]));
   });
 
+  // Generic detection (templates/core/placeholders.js): tokens that were
+  // never on the old hand-maintained denylist are caught by shape.
+  test.each([
+    ['[PRIMARY RESIDENCE — set out the parent with whom the child(ren) primarily reside]', 'primary residence'],
+    ['[ARRANGEMENT — set out the parties\' decision-making agreement]', 'arrangement'],
+    ['[COMPLAINANT NAME]', 'complainant name'],
+    ['[SOMETHING NEW]', 'something new'],
+  ])('generic guard rejects %s', async (token, label) => {
+    currentBuilder = () => ({
+      documentType: 'divorce_decree',
+      sections: { body: [{ text: `IT IS ORDERED that ${token}.` }] },
+    });
+    mockQuery.mockResolvedValueOnce(paidRow());
+    const res = await post({
+      documentId: 42,
+      affidavitData: { state: 'ON', documentType: 'divorce_decree' },
+    });
+    expect(res.status).toBe(422);
+    expect(mockGeneratePDF).not.toHaveBeenCalled();
+    expect((await res.json()).missingFields).toEqual([label]);
+  });
+
+  test('legitimately bracketed text never trips the generic guard', async () => {
+    currentBuilder = () => ({
+      documentType: 'divorce_decree',
+      sections: {
+        body: [
+          { text: 'Physical custody of the minor child(ren) is awarded to: [X] Petitioner' },
+          { text: '[Print, type, or stamp commissioned name of notary or deputy clerk.]' },
+          { text: 'Respondent: [APPEARANCE, SERVICE, AND DEFAULT STATUS — TO BE COMPLETED BY THE COURT].' },
+          { text: '[NOTARY SEAL] [SEAL] [JUDGE SIGNATURE] Signed on [DATE].' },
+          { text: '[ ] SNAP (food stamps)' },
+        ],
+      },
+    });
+    mockQuery.mockResolvedValueOnce(paidRow());
+    const res = await post({
+      documentId: 42,
+      affidavitData: { state: 'UT', documentType: 'divorce_decree' },
+    });
+    expect(res.status).toBe(200);
+  });
+
   test('renders when structure contains none of the denylisted tokens', async () => {
     currentBuilder = () => ({
       documentType: 'divorce_petition',
