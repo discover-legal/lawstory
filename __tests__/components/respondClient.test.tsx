@@ -140,4 +140,18 @@ describe('RespondClient deadline safety rail', () => {
     expect(screen.getByText(/\d+ days left/)).toBeInTheDocument();
     expect(screen.queryByTestId('deadline-stale-warning')).not.toBeInTheDocument();
   });
+
+  it('names the parties the way this jurisdiction\'s papers do (Ontario: Applicant)', async () => {
+    mockFetchSequence([
+      (url) => (url.includes('/api/profile')
+        ? { success: true, data: { profile: { state: 'ON', serviceDate: isoDaysAgo(10) } } }
+        : undefined),
+      (url) => (url.includes('/api/procedure/') ? procedureResponse(30, 60) : undefined),
+    ]);
+    render(<RespondClient />);
+    const body = await screen.findByText(/In court papers, the person who filed/);
+    expect(body).toHaveTextContent('“Applicant”');
+    expect(body).toHaveTextContent('“Respondent.”');
+    expect(body).not.toHaveTextContent('Petitioner');
+  });
 });
