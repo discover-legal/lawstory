@@ -34,12 +34,29 @@ describe('ContactCta without JavaScript', () => {
     expect(html).not.toContain('@');
   });
 
-  it('the contact page exists, carries the #contact anchor and no address', () => {
-    const html = renderToString(<ContactPage />);
+  it('the contact page exists, carries the #contact anchor and no address', async () => {
+    const html = renderToString(await ContactPage({}));
     expect(html).toContain('id="contact"');
     expect(html).not.toContain('mailto');
     expect(html).not.toMatch(/h@|@discover/);
     expect(sitemap().map((e) => e.url)).toContain('https://discover.legal/contact');
+  });
+
+  it('offers a plain-HTML form that works without JavaScript', async () => {
+    const html = renderToString(await ContactPage({}));
+    const formTag = html.match(/<form[^>]*>/)?.[0] ?? "";
+    expect(formTag).toContain('method="post"');
+    expect(formTag).toContain('action="/api/contact"');
+    for (const name of ['name', 'email', 'message']) expect(html).toContain(`name="${name}"`);
+    // The page's own button must not link to the page itself.
+    expect(html).toContain('href="#contact-form"');
+    expect(html.match(/<main[\s\S]*<\/main>/)?.[0]).not.toContain('href="/contact"');
+  });
+
+  it('confirms a sent message and hides the form', async () => {
+    const html = renderToString(await ContactPage({ searchParams: Promise.resolve({ status: 'sent' }) }));
+    expect(html).toContain('Your message is with us');
+    expect(html).not.toContain('<form');
   });
 });
 

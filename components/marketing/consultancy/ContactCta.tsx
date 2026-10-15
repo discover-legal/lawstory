@@ -44,14 +44,17 @@ function mailto(): string {
 export default function ContactCta({
   variant = 'hero',
   children,
+  fallbackHref = CONTACT_PAGE,
 }: {
   variant?: keyof typeof VARIANTS;
   children?: React.ReactNode;
+  /** Pre-hydration / no-JS destination; the contact page passes its own form. */
+  fallbackHref?: string;
 }) {
   const scheduler = BOOKING_URL.length > 0;
   // Before hydration (or with scripting off) the link goes to the contact
   // page, which works without the address being in any served HTML.
-  const [href, setHref] = useState<string>(scheduler ? BOOKING_URL : CONTACT_PAGE);
+  const [href, setHref] = useState<string>(scheduler ? BOOKING_URL : fallbackHref);
   useEffect(() => {
     if (!scheduler) setHref(mailto());
   }, [scheduler]);
