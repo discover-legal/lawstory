@@ -53,7 +53,7 @@ export const PUT = withAuth<{ id: string | string[] }>(async (req: NextRequest, 
     // (migration 019: a rename is metadata, not a content edit).
     const updated = await query<{ id: number }>(
       `UPDATE documents
-          SET title = $1,
+          SET title = $1::text,
               content = CASE
                 WHEN jsonb_typeof(content) = 'object'
                   THEN jsonb_set(content, '{documentTitle}', to_jsonb($1::text), true)

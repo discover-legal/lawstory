@@ -35,7 +35,9 @@ describe('PUT /api/documents/:id/rename', () => {
     expect(await res.json()).toEqual({ success: true, id: 5, title: 'Jordan — final' });
 
     const [sql, params] = mockQuery.mock.calls[0];
-    expect(sql).toMatch(/SET title = \$1/);
+    // Same parameter for both targets: typed explicitly so Postgres does not
+    // deduce varchar for one use and text for the other.
+    expect(sql).toMatch(/SET title = \$1::text/);
     expect(sql).toMatch(/jsonb_set\(content, '\{documentTitle\}', to_jsonb\(\$1::text\)/);
     expect(sql).toMatch(/WHERE id = \$2 AND user_id = \$3/);
     // A rename is metadata, never a content edit (migration 019).
