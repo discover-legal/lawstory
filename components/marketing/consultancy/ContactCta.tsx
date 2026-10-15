@@ -18,6 +18,8 @@ import { ArrowRight, CalendarCheck, Mail } from 'lucide-react';
 const BOOKING_URL = process.env.NEXT_PUBLIC_BOOKING_URL || '';
 const LOCAL_PART = 'h';
 const APEX = ['discover', 'legal'];
+/** No-JS / pre-hydration destination. */
+export const CONTACT_PAGE = '/contact';
 
 const VARIANTS = {
   hero: 'group inline-flex items-center justify-center px-6 py-3.5 bg-slate-900 text-white text-base font-semibold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 hover:shadow-xl hover:-translate-y-0.5',
@@ -47,7 +49,9 @@ export default function ContactCta({
   children?: React.ReactNode;
 }) {
   const scheduler = BOOKING_URL.length > 0;
-  const [href, setHref] = useState<string>(scheduler ? BOOKING_URL : '#contact');
+  // Before hydration (or with scripting off) the link goes to the contact
+  // page, which works without the address being in any served HTML.
+  const [href, setHref] = useState<string>(scheduler ? BOOKING_URL : CONTACT_PAGE);
   useEffect(() => {
     if (!scheduler) setHref(mailto());
   }, [scheduler]);

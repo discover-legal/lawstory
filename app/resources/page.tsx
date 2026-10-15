@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import MarketingHeader from '@/components/marketing/MarketingHeader';
+import ConsultancyNav from '@/components/marketing/consultancy/ConsultancyNav';
 import ResourcesContent from '@/components/marketing/ResourcesContent';
 import { jsonLd } from '@/lib/json-ld';
 import {
@@ -82,7 +82,7 @@ export default function ResourcesPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
       />
-      <MarketingHeader />
+      <ConsultancyNav />
       <ResourcesContent articles={articles} featured={featured} categories={categories} />
     </div>
   );
