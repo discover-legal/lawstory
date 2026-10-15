@@ -9,12 +9,11 @@ import { readJsonBody } from '@/lib/api/requestBody';
 import { isCoreEngineEnabled } from '@/lib/api/coreChat';
 import { draftPreview } from '@/lib/api/coreDocuments';
 
-// The preview shows exactly what the download will: every bracketed
-// placeholder token ("[PETITIONER NAME]", "[COURT FILE NUMBER]") becomes the
-// same fill-in blank pdfService prints (templates/core/placeholders.js).
-const { blankPlaceholdersDeep } = require('@/templates/core/placeholders') as {
-  blankPlaceholdersDeep: <T>(value: T) => T;
-};
+import { blankPlaceholdersDeep, placeholder } from '@/templates/core/placeholders';
+import { isAllowedJurisdiction } from '@/config/jurisdictions';
+// The preview shows exactly what the download will: every placeholder marker
+// a template emitted (templates/core/placeholders.js) becomes the same
+// fill-in blank pdfService prints. User text is never rewritten.
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -94,11 +93,33 @@ function getStateName(stateCode: string | undefined): string {
   return STATE_NAMES[stateCode.toUpperCase()] || stateCode;
 }
 
+/**
+ * A clear "no draft" preview for a named jurisdiction the deployment does
+ * not serve (or whose template could not render). Never a generic US
+ * caption under the wrong jurisdiction.
+ */
+function jurisdictionNoticePreview(stateCode: string, reason: 'unavailable' | 'failed') {
+  const name = getStateName(stateCode);
+  const text = reason === 'unavailable'
+    ? `Drafts for ${name} are not available on this site yet, so no draft has been prepared. Nothing shown here is a court document for ${name}.`
+    : `A draft for ${name} could not be prepared from the current answers. Keep answering the interview questions and the draft will appear here.`;
+  return {
+    // Keys every preview layout renders (title + a text section), so the
+    // notice shows whichever document type the editor has open.
+    sections: {
+      title: `${name} — no draft available`,
+      jurisdiction: { title: 'NOTICE', text, type: 'notice' },
+      introduction: text,
+    },
+    metadata: { jurisdiction: stateCode, unavailable: reason === 'unavailable' },
+  };
+}
+
 function resolveAffiantName(data: AffidavitData): string {
   if (data.affiantName) return data.affiantName;
   const parts = [data.firstName, data.lastName].filter(Boolean);
   if (parts.length) return parts.join(' ');
-  return '[YOUR NAME]';
+  return placeholder('YOUR NAME');
 }
 
 /**
@@ -121,7 +142,7 @@ function createFallbackPreview(data: AffidavitData) {
   return {
     sections: {
       header: `STATE OF ${getStateName(data.state).toUpperCase()}`,
-      venue: `STATE OF ${getStateName(data.state).toUpperCase()}\nCOUNTY OF ${(data.county || '[COUNTY]').toUpperCase()}`,
+      venue: `STATE OF ${getStateName(data.state).toUpperCase()}\nCOUNTY OF ${(data.county || placeholder('COUNTY')).toUpperCase()}`,
       title: 'AFFIDAVIT',
       introduction: `I, ${affiantName}, being first duly sworn, depose and state as follows:`,
       facts: {
@@ -146,11 +167,11 @@ function createDivorceFallbackPreview(data: AffidavitData) {
   const petitionerName =
     data.petitionerName ||
     [data.petitionerFirstName, data.petitionerLastName].filter(Boolean).join(' ') ||
-    '[PETITIONER NAME]';
+    placeholder('PETITIONER NAME');
   const respondentName =
     data.respondentName ||
     [data.respondentFirstName, data.respondentLastName].filter(Boolean).join(' ') ||
-    '[RESPONDENT NAME]';
+    placeholder('RESPONDENT NAME');
   const activeDoc = data.activeSubDocument || 'divorce_petition';
   const docTitle =
     activeDoc === 'divorce_decree' ? 'FINAL DECREE OF DIVORCE' : 'ORIGINAL PETITION FOR DIVORCE';
@@ -158,9 +179,9 @@ function createDivorceFallbackPreview(data: AffidavitData) {
   return {
     sections: {
       header: `STATE OF ${getStateName(data.state).toUpperCase()}`,
-      venue: `COUNTY OF ${(data.county || '[COUNTY]').toUpperCase()}`,
+      venue: `COUNTY OF ${(data.county || placeholder('COUNTY')).toUpperCase()}`,
       caseCaption: {
-        formatted: `CAUSE NO. ${data.caseNumber || '[CAUSE NUMBER]'}\n\nIN THE MATTER OF THE MARRIAGE OF:\n\n${petitionerName.toUpperCase()}, Petitioner\n\nAND\n\n${respondentName.toUpperCase()}, Respondent`,
+        formatted: `CAUSE NO. ${data.caseNumber || placeholder('CAUSE NUMBER')}\n\nIN THE MATTER OF THE MARRIAGE OF:\n\n${petitionerName.toUpperCase()}, Petitioner\n\nAND\n\n${respondentName.toUpperCase()}, Respondent`,
       },
       title: docTitle,
       parties: {
@@ -297,6 +318,17 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
       });
     }
 
+    // A jurisdiction this deployment does not serve (JURISDICTION_ALLOWLIST /
+    // ENABLE_INTERNATIONAL) gets a clear notice — never another
+    // jurisdiction's caption from the generic fallback generator.
+    if (!isAllowedJurisdiction(state)) {
+      return NextResponse.json({
+        success: true,
+        preview: jurisdictionNoticePreview(state, 'unavailable'),
+        metadata: { generatedAt: new Date().toISOString(), fallback: true, unavailable: true },
+      });
+    }
+
     const { templateManager } = (await getServices()) as { templateManager: TemplateManager };
 
     let document: { sections: unknown; htmlContent?: string } | null = null;
@@ -332,7 +364,7 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
 
     if (!document) {
       const preview = isDivorce
-        ? createDivorceFallbackPreview(affidavitData)
+        ? jurisdictionNoticePreview(state, 'failed')
         : createFallbackPreview(affidavitData);
       return NextResponse.json({
         success: true,
