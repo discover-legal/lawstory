@@ -37,6 +37,7 @@ const COVERS = [
   'Briefing, docketing and billing',
   'Collaboration through Teams and Slack via the Big Michael agent',
   'An MCP server so other tools can call the bench',
+  'Full-service by default, with practice presets for corporate and M&A, litigation, employment, intellectual property, real estate, regulatory, private client and family law',
 ] as const;
 
 const RUNS = [
