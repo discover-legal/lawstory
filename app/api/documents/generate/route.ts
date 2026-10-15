@@ -357,7 +357,15 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
       try {
         const profile = await getUserProfile(user.id);
         divorcePayload = { ...profile.profile, ...affidavitData };
-        divorcePayload.facts = profile.facts;
+        // Saved wins for facts too: an affidavit's own facts ARE its body
+        // (replacing them with the profile's dropped the document's facts
+        // from the PDF); the profile's facts fill in only when the document
+        // has none. Templates that read facts as signals also get
+        // profileFacts.
+        const ownFacts = Array.isArray(affidavitData.facts) && affidavitData.facts.length > 0
+          ? affidavitData.facts
+          : null;
+        divorcePayload.facts = ownFacts ?? profile.facts;
         divorcePayload.profileFacts = profile.facts;
       } catch (profileErr) {
         logger.warn('document_generate_profile_load_failed_divorce', {

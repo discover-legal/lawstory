@@ -13,6 +13,7 @@ import { NextRequest } from 'next/server';
 import { placeholder } from '@/templates/core/placeholders';
 
 const mockQuery = jest.fn();
+let mockProfile: () => unknown = () => ({ profile: {}, facts: [] });
 
 let currentBuilder: (...args: unknown[]) => unknown = () => ({});
 
@@ -40,7 +41,7 @@ jest.mock('@/lib/api/services', () => ({
 }));
 jest.mock('@/lib/api/stripe', () => ({ paymentsEnabled: () => true }));
 jest.mock('@/lib/api/profile', () => ({
-  getUserProfile: async () => ({ profile: {}, facts: [] }),
+  getUserProfile: async () => mockProfile(),
 }));
 
 const written: string[] = [];
@@ -173,5 +174,24 @@ describe('POST /api/documents/generate denylist (CA v7 replay tokens)', () => {
     expect(res.status).toBe(200);
     expect(mockGeneratePDF).toHaveBeenCalledTimes(1);
     expect(res.headers.get('content-type')).toBe('application/pdf');
+  });
+
+  test("a document's own facts win over the profile's (saved wins) and print verbatim", async () => {
+    let received: Record<string, unknown> | null = null;
+    mockProfile = () => ({ profile: {}, facts: [{ content: 'profile fact' }] });
+    currentBuilder = (_state: unknown, data: unknown) => {
+      received = data as Record<string, unknown>;
+      return { documentType: 'affidavit', sections: { facts: { items: [{ number: 1, content: 'The account is [REDACTED].' }] } } };
+    };
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ content: { state: 'CA', facts: [{ content: 'The account is [REDACTED].' }] }, document_type: 'affidavit', payment_status: 'paid' }],
+    });
+    const res = await post({
+      documentId: 42,
+      affidavitData: { state: 'CA', documentType: 'affidavit', facts: [{ content: 'The account is [REDACTED].' }] },
+    });
+    expect(res.status).toBe(200);
+    expect((received as unknown as { facts: Array<{ content: string }> }).facts[0].content).toBe('The account is [REDACTED].');
+    mockProfile = () => ({ profile: {}, facts: [] });
   });
 });

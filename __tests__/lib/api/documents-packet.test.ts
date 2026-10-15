@@ -62,6 +62,7 @@ jest.mock('@/services/courtPacket', () => ({
 }));
 
 import { POST } from '@/app/api/documents/packet/route';
+import { placeholder } from '@/templates/core/placeholders';
 
 const documentRow = {
   content: { state: 'UT', facts: [] },
@@ -193,5 +194,25 @@ describe('POST /api/documents/packet divorce package expansion', () => {
     expect(call.documents).toBeUndefined();
     expect(Buffer.isBuffer(call.mainPdfBuffer)).toBe(true);
     expect(call.mainTitle).toBe('Verified Petition for Divorce');
+  });
+
+  it('refuses (422) a packet whose template still carries a placeholder marker, before rendering', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [documentRow] });
+    mockTemplateManager.generateAffidavit.mockImplementationOnce(() => ({
+      sections: { caseCaption: { formatted: `${placeholder('PETITIONER NAME')} v. Devin` }, facts: { items: [{ content: 'The account is [REDACTED].' }] } },
+    }));
+    const res = await post();
+    expect(res.status).toBe(422);
+    expect((await res.json()).missingFields).toEqual(['petitioner name']);
+    expect(mockGeneratePDF).not.toHaveBeenCalled();
+  });
+
+  it("the user's own bracketed text never blocks a packet", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [documentRow] });
+    mockTemplateManager.generateAffidavit.mockImplementationOnce(() => ({
+      sections: { facts: { items: [{ content: 'The account is [REDACTED]; see Smith v. Jones [ONCA].' }] } },
+    }));
+    const res = await post();
+    expect(res.status).toBe(200);
   });
 });
