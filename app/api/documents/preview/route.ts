@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 import { readJsonBody } from '@/lib/api/requestBody';
 import { isCoreEngineEnabled } from '@/lib/api/coreChat';
 import { draftPreview } from '@/lib/api/coreDocuments';
+import { divorceDocLabels } from '@/lib/divorceDocLabels';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -145,21 +146,24 @@ function createDivorceFallbackPreview(data: AffidavitData) {
     [data.respondentFirstName, data.respondentLastName].filter(Boolean).join(' ') ||
     '[RESPONDENT NAME]';
   const activeDoc = data.activeSubDocument || 'divorce_petition';
-  const docTitle =
-    activeDoc === 'divorce_decree' ? 'FINAL DECREE OF DIVORCE' : 'ORIGINAL PETITION FOR DIVORCE';
+  // Name the placeholder the way the jurisdiction names the document
+  // (Ontario: APPLICATION FOR DIVORCE / DIVORCE ORDER, Applicant).
+  const labels = divorceDocLabels(data.state);
+  const docTitle = (activeDoc === 'divorce_decree' ? labels.decree : labels.petition).toUpperCase();
+  const filingParty = labels.filingParty;
 
   return {
     sections: {
       header: `STATE OF ${getStateName(data.state).toUpperCase()}`,
       venue: `COUNTY OF ${(data.county || '[COUNTY]').toUpperCase()}`,
       caseCaption: {
-        formatted: `CAUSE NO. ${data.caseNumber || '[CAUSE NUMBER]'}\n\nIN THE MATTER OF THE MARRIAGE OF:\n\n${petitionerName.toUpperCase()}, Petitioner\n\nAND\n\n${respondentName.toUpperCase()}, Respondent`,
+        formatted: `CAUSE NO. ${data.caseNumber || '[CAUSE NUMBER]'}\n\nIN THE MATTER OF THE MARRIAGE OF:\n\n${petitionerName.toUpperCase()}, ${filingParty}\n\nAND\n\n${respondentName.toUpperCase()}, Respondent`,
       },
       title: docTitle,
       parties: {
         title: 'I. PARTIES',
         items: [
-          { number: 1, content: `Petitioner: ${petitionerName}`, type: 'party_identification' },
+          { number: 1, content: `${filingParty}: ${petitionerName}`, type: 'party_identification' },
           { number: 2, content: `Respondent: ${respondentName}`, type: 'party_identification' },
         ],
       },
@@ -179,6 +183,17 @@ function createDivorceFallbackPreview(data: AffidavitData) {
       documentType: activeDoc,
     },
   };
+}
+
+/**
+ * Placeholder outline for when rendering FAILED (as opposed to "no
+ * jurisdiction yet"). Same document kind as requested, and flagged
+ * `metadata.degraded` so the editor tells the person this is an outline,
+ * not their draft.
+ */
+function degradedPreview(isDivorce: boolean, data: AffidavitData) {
+  const preview = isDivorce ? createDivorceFallbackPreview(data) : createFallbackPreview(data);
+  return { ...preview, metadata: { ...preview.metadata, degraded: true } };
 }
 
 /**
@@ -238,6 +253,10 @@ type DivorceDocumentGenerator = {
  */
 export const POST = withAuth(async (req: NextRequest, { user }) => {
   let affidavitData: AffidavitData = {};
+  // Hoisted so the last-resort fallback below stays the same KIND of
+  // document the person is editing (a divorce draft never degrades into an
+  // affidavit placeholder).
+  let isDivorce = false;
   try {
     const limit = await checkRateLimit('documents-preview', user.id, RATE_LIMITS.standard);
     if (!limit.ok) {
@@ -254,15 +273,30 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
     const activeSub = (affidavitData.activeSubDocument || '').toLowerCase();
     const effectiveDocType =
       docType === 'divorce_package' ? activeSub || 'divorce_petition' : docType;
-    const isDivorce =
+    isDivorce =
       docType === 'divorce_package' || DIVORCE_DOCUMENT_TYPES.has(effectiveDocType);
     const state = (affidavitData.state || '').toUpperCase();
 
     // v2 engine (core/): typed document tree adapted to the same `sections`
     // shape the editor paginates. Falls through to v1 when there is no
-    // jurisdiction yet.
+    // jurisdiction yet — and when v2 fails. v1 is the default engine and
+    // renders the same document type, so a v2 failure degrades to the v1
+    // draft of THIS document (as /api/documents/generate does for anything
+    // v2 cannot draft), never to a different document's placeholder.
+    let v2Failed = false;
     if (isCoreEngineEnabled()) {
-      const v2 = await draftPreview({ userId: user.id, affidavitData: affidavitData as Record<string, unknown> });
+      let v2: Awaited<ReturnType<typeof draftPreview>> = null;
+      try {
+        v2 = await draftPreview({ userId: user.id, affidavitData: affidavitData as Record<string, unknown> });
+      } catch (v2Err) {
+        v2Failed = true;
+        logger.error('preview_v2_failed_falling_back_to_v1', {
+          userId: user.id,
+          state,
+          effectiveDocType,
+          error: v2Err instanceof Error ? v2Err.message : String(v2Err),
+        });
+      }
       if (v2) {
         const totalFacts = Array.isArray(affidavitData.facts) ? affidavitData.facts.length : 0;
         return NextResponse.json({
@@ -324,13 +358,10 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
     }
 
     if (!document) {
-      const preview = isDivorce
-        ? createDivorceFallbackPreview(affidavitData)
-        : createFallbackPreview(affidavitData);
       return NextResponse.json({
         success: true,
-        preview,
-        metadata: { generatedAt: new Date().toISOString(), fallback: true },
+        preview: degradedPreview(isDivorce, affidavitData),
+        metadata: { generatedAt: new Date().toISOString(), fallback: true, degraded: true },
       });
     }
 
@@ -353,6 +384,7 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
       metadata: {
         generatedAt: new Date().toISOString(),
         factCount: facts.length,
+        ...(v2Failed ? { engine: 'v1', v2Failed: true } : {}),
       },
     });
   } catch (err) {
@@ -368,7 +400,7 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
     }
     return NextResponse.json({
       success: true,
-      preview: createFallbackPreview(affidavitData),
+      preview: degradedPreview(isDivorce, affidavitData),
       metadata: { generatedAt: new Date().toISOString(), fallback: true, degraded: true },
     });
   }
