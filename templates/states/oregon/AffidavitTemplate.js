@@ -4,6 +4,7 @@
 //                ORS §162.065 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -51,14 +52,14 @@ class OregonAffidavitTemplate extends BaseAffidavitTemplate {
 
     caption += `${courtName}\n`;
 
-    const county = affidavitData.county || '[COUNTY]';
+    const county = affidavitData.county || placeholder('COUNTY');
     caption += `FOR THE COUNTY OF ${county.toUpperCase()}\n\n`;
 
     const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -91,7 +92,7 @@ class OregonAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `FOR THE COUNTY OF ${countyName.toUpperCase()}`;
   }
 
@@ -152,7 +153,7 @@ My commission expires: ___________
       labelStyle: 'letters',
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

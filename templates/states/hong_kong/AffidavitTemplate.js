@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -42,7 +43,7 @@ class HongKongAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -83,8 +84,8 @@ class HongKongAffidavitTemplate extends BaseAffidavitTemplate {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT';
     const location = (affidavitData.county || affidavitData.city || 'HONG KONG').toUpperCase();
     const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `IN THE ${court.toUpperCase()}\n` +

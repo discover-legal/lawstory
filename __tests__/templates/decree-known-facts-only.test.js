@@ -56,8 +56,15 @@ describe.each(DIRS)('%s decree — property/debt orders from known facts only', 
       petitionerProperty: ['2018 Honda Civic'],
       respondentDebts: ['Visa card'],
     });
-    expect(doc.sections.propertyDivision.items.some((i) => i.type === 'property_draft_note')).toBe(false);
-    expect(doc.sections.debtAllocation.items.some((i) => i.type === 'debts_draft_note')).toBe(false);
+    // The jurisdiction's order renders (a side with no list may still get
+    // its own fill-in line, never a default award).
+    expect(doc.sections.propertyDivision.items.some((i) => i.type !== 'property_draft_note')).toBe(true);
+    expect(doc.sections.debtAllocation.items.some((i) => i.type !== 'debts_draft_note')).toBe(true);
+  });
+
+  test('no custody arrangement on the record → no joint/sole custody order', () => {
+    const text = decree(dir).fullText;
+    expect(text).not.toMatch(/awarded joint (legal )?custody|shall have joint custody|joint managing conservators/i);
   });
 
   test('legacy custody "sole" with no named custodian is never a sole order to the petitioner', () => {

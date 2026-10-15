@@ -10,7 +10,8 @@
 // dropped every divorce decree from the registry. `node:crypto` is a
 // built-in and always resolvable.
 const { randomUUID: uuidv4 } = require('node:crypto');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, draftBlank } = require('./blanks');
+const { draftBlank, inlineDraftBlank, caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('./blanks');
+const { placeholder } = require('./placeholders');
 const { normalizeCountyName } = require('./countyName');
 const { asList, partitionByCharacter, propertyAgreementProse } = require('./dataShapes');
 const { DEFAULT_TERMS } = require('./terminology');
@@ -414,7 +415,7 @@ class BaseDivorceDecreeTemplate {
    * @returns {string} Default court name
    */
   getDefaultCourt(county) {
-    return `COURT OF ${(county || '[COUNTY]').toUpperCase()} COUNTY`;
+    return `COURT OF ${(county || placeholder('COUNTY')).toUpperCase()} COUNTY`;
   }
 
   /**
@@ -646,7 +647,7 @@ class BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.hasProperty === false) {
       items.push({
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have any marital/community property to divide, or a written agreement dividing it, before filing. Silence on this line may be treated as no property, waiving your claim.)',
+        content: draftBlank('confirm whether you and your spouse have any marital/community property to divide, or a written agreement dividing it, before filing. Silence on this line may be treated as no property, waiving your claim.'),
         type: 'property_draft_note'
       });
     } else {
@@ -728,7 +729,7 @@ class BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.hasDebts === false) {
       items.push({
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have any marital/community debts to allocate, or a written agreement dividing them, before filing. Silence on this line may leave you solely responsible for any unallocated debt.)',
+        content: draftBlank('confirm whether you and your spouse have any marital/community debts to allocate, or a written agreement dividing them, before filing. Silence on this line may leave you solely responsible for any unallocated debt.'),
         type: 'debts_draft_note'
       });
     } else {
@@ -892,7 +893,7 @@ class BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -1011,7 +1012,7 @@ class BaseDivorceDecreeTemplate {
 
     if (decision.outcome === 'award') {
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${decision.amount || '[AMOUNT]'} per month for a period of ${decision.duration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${decision.amount || placeholder('AMOUNT')} per month for a period of ${decision.duration || placeholder('DURATION')}.`,
         type: 'order'
       });
     } else if (decision.outcome === 'reserve') {

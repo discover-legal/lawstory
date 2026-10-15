@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -33,7 +34,7 @@ class VictoriaAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Registry',
-      districtPlaceholder: '[REGISTRY]',
+      districtPlaceholder: placeholder('REGISTRY'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -55,16 +56,16 @@ class VictoriaAffidavitTemplate extends BaseAffidavitTemplate {
   }
 
   generateVenue(county) {
-    const location = (county || '[CITY/LOCALITY]').toUpperCase();
+    const location = (county || placeholder('CITY/LOCALITY')).toUpperCase();
     return `AT ${location}`;
   }
 
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA';
-    const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('LOCATION')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n` +
@@ -102,7 +103,7 @@ class VictoriaAffidavitTemplate extends BaseAffidavitTemplate {
       `on the _____ day of _________________, _______.\n\n` +
       `Before me:\n\n` +
       `________________________________\n` +
-      `[Name]\n` +
+      `${placeholder('Name')}\n` +
       `Justice of the Peace / Solicitor / Commissioner for Oaths`
     );
   }

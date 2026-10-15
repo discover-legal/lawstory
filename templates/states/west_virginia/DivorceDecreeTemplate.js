@@ -3,7 +3,8 @@
 // Complies with W. Va. Code §48-5-101 et seq. (Divorce)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -66,7 +67,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `Family Court of ${countyName} County, West Virginia`;
   }
 
@@ -84,7 +85,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     const countyFormatted = countyName.charAt(0).toUpperCase() + countyName.slice(1).toLowerCase();
     return `County of ${countyFormatted}`;
   }
@@ -116,10 +117,10 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court for hearing.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se (self-represented)')}.\n\n`;
-      text += `Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
+      text += `Petitioner, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se (self-represented)', 'did not appear')}.\n\n`;
+      text += `Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
     } else {
-      text += `Petitioner appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')}.\n\n`;
+      text += `Petitioner ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se', 'did not appear')}.\n\n`;
       text += `Respondent ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -144,7 +145,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     return {
       title: 'JURISDICTION',
-      text: `The Court finds that it has jurisdiction over this proceeding and the parties. At least one party has been an actual bona fide resident of the State of West Virginia for at least one (1) year immediately preceding the filing of the petition. (W. Va. Code §48-5-105) The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. ${groundsText}`,
+      text: `The Court finds that it has jurisdiction over this proceeding and the parties. At least one party has been an actual bona fide resident of the State of West Virginia for at least one (1) year immediately preceding the filing of the petition. (W. Va. Code §48-5-105) The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. ${groundsText}`,
       type: 'jurisdiction'
     };
   }
@@ -157,7 +158,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DIVORCE GRANTED',
-      text: `IT IS ORDERED, ADJUDGED, AND DECREED that the marriage of ${divorceData.petitionerName || '[PETITIONER NAME]'} and ${divorceData.respondentName || '[RESPONDENT NAME]'} is hereby dissolved, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
+      text: `IT IS ORDERED, ADJUDGED, AND DECREED that the marriage of ${divorceData.petitionerName || placeholder('PETITIONER NAME')} and ${divorceData.respondentName || placeholder('RESPONDENT NAME')} is hereby dissolved, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
       type: 'dissolution'
     };
   }
@@ -234,7 +235,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({
         content: `${index + 1}. ${childInfo}`,
         type: 'child_item'
@@ -271,7 +272,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -372,7 +373,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }
@@ -397,7 +398,7 @@ class WestVirginiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
 _________________________________
 JUDGE
-${divorceData.county ? `FAMILY COURT OF ${divorceData.county.toUpperCase()} COUNTY` : 'FAMILY COURT OF [COUNTY] COUNTY'}
+${divorceData.county ? `FAMILY COURT OF ${divorceData.county.toUpperCase()} COUNTY` : ('FAMILY COURT OF ' + placeholder('COUNTY') + ' COUNTY')}
 STATE OF WEST VIRGINIA`,
       type: 'judgment'
     };

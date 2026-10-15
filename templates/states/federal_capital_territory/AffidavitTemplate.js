@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -33,7 +34,7 @@ class FCTAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Territory',
       districtTerm: 'Judicial division',
-      districtPlaceholder: '[JUDICIAL DIVISION]',
+      districtPlaceholder: placeholder('JUDICIAL DIVISION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -56,8 +57,8 @@ class FCTAffidavitTemplate extends BaseAffidavitTemplate {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF THE FEDERAL CAPITAL TERRITORY';
     const location = (affidavitData.county || affidavitData.city || 'ABUJA').toUpperCase();
     const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `IN THE ${court.toUpperCase()}\n` +

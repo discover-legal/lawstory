@@ -28,6 +28,7 @@
 // court-name line + registry/court-location, e.g. Canadian provinces).
 
 'use strict';
+const { placeholder } = require('./placeholders');
 
 const DEFAULT_TERMS = Object.freeze({
   jurisdictionLabel: 'STATE OF',
@@ -35,7 +36,7 @@ const DEFAULT_TERMS = Object.freeze({
   districtLabel: 'COUNTY OF',
   districtTerm: 'County',
   districtStyle: 'suffix',
-  districtPlaceholder: '[COUNTY]',
+  districtPlaceholder: placeholder('COUNTY'),
   filerLabel: 'Petitioner',
   responderLabel: 'Respondent',
   selfRepresentedLabel: 'Pro Se',
@@ -121,7 +122,7 @@ function venueHeaderLines(state, county) {
       ca.territory ? ca.name.toUpperCase() : `PROVINCE OF ${ca.name.toUpperCase()}`,
     ];
   }
-  return [`STATE OF ${state || '[STATE]'}`, `COUNTY OF ${county || '[COUNTY]'}`];
+  return [`STATE OF ${state || placeholder('STATE')}`, `COUNTY OF ${county || placeholder('COUNTY')}`];
 }
 
 module.exports = {

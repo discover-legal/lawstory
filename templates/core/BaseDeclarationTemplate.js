@@ -11,6 +11,7 @@
  */
 
 const BaseDocument = require('./BaseDocument');
+const { placeholder } = require('./placeholders');
 
 class BaseDeclarationTemplate extends BaseDocument {
   constructor(stateCode, stateName) {
@@ -31,11 +32,11 @@ class BaseDeclarationTemplate extends BaseDocument {
   }
 
   generateTitle(declarationTitle) {
-    return `DECLARATION OF ${(declarationTitle || '[DECLARANT]').toUpperCase()}`;
+    return `DECLARATION OF ${(declarationTitle || placeholder('DECLARANT')).toUpperCase()}`;
   }
 
   generateIntroduction(data) {
-    const name = data.affiantName || data.declarantName || data.petitionerName || '[NAME]';
+    const name = data.affiantName || data.declarantName || data.petitionerName || placeholder('NAME');
     return `I, ${name}, declare as follows:`;
   }
 
@@ -66,8 +67,8 @@ class BaseDeclarationTemplate extends BaseDocument {
    * The penalty-of-perjury statement at the bottom (replaces notary for unsworn declarations).
    */
   generateDeclarationStatement(signerName, stateCode) {
-    const name  = signerName || '[NAME]';
-    const state = stateCode  || this.stateName || '[STATE]';
+    const name  = signerName || placeholder('NAME');
+    const state = stateCode  || this.stateName || placeholder('STATE');
     return `I declare under penalty of perjury under the laws of the State of ${state} that the foregoing is true and correct.\n\nExecuted on _________________, at _________________________, ${state}.`;
   }
 
@@ -75,7 +76,7 @@ class BaseDeclarationTemplate extends BaseDocument {
     const validation = this.validateData(data);
     const header     = this.generateHeader();
     const caseCaption = this.generateCaseCaption(data);
-    const signerName = data.affiantName || data.declarantName || data.petitionerName || '[NAME]';
+    const signerName = data.affiantName || data.declarantName || data.petitionerName || placeholder('NAME');
     const title      = this.generateTitle(signerName);
     const intro      = this.generateIntroduction(data);
     const facts      = this.processFacts(data.facts || []);

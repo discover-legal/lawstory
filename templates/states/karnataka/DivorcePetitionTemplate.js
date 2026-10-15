@@ -1,6 +1,7 @@
 // templates/states/karnataka/DivorcePetitionTemplate.js
 'use strict';
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class KarnatakaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -10,7 +11,7 @@ class KarnatakaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   // caption lines and no "X County" body phrasing.
   constructor() {
     super();
-    this.state = 'IN_KA'; this.stateName = 'Karnataka'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: '[DISTRICT]', filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
+    this.state = 'IN_KA'; this.stateName = 'Karnataka'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: placeholder('DISTRICT'), filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
     this.documentTitle = 'PETITION FOR DIVORCE';
     try { this.metadata = require('./metadata.json'); } catch (e) { this.metadata = null; }
     this.requiredFields = ['petitionerName', 'respondentName', 'state', 'county', 'marriageDate', 'groundsForDivorce'];
@@ -31,8 +32,8 @@ class KarnatakaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county || divorceData.city)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     // Mutual-consent petitions are presented jointly (HMA s.13B(1) / SMA s.28(1))
     const g = (divorceData.groundsForDivorce || 'mutual_consent').toLowerCase();
     const joint = g.includes('mutual') || g.includes('consent');
@@ -68,7 +69,7 @@ class KarnatakaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVerificationText(divorceData) {
-    return `Verified at Bengaluru on this _____ day of __________, _______. I, ${divorceData.petitionerName || '[PETITIONER NAME]'}, the Petitioner, verify that the contents of the above petition are true and correct to the best of my knowledge and belief.`;
+    return `Verified at Bengaluru on this _____ day of __________, _______. I, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, the Petitioner, verify that the contents of the above petition are true and correct to the best of my knowledge and belief.`;
   }
 
   getGroundsText(groundsForDivorce) {

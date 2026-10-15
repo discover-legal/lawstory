@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -27,7 +28,7 @@ class RiversDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Judicial division',
-      districtPlaceholder: '[JUDICIAL DIVISION]',
+      districtPlaceholder: placeholder('JUDICIAL DIVISION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -39,15 +40,15 @@ class RiversDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   }
 
   getCaseNumberLabel() { return 'Suit No.'; }
-  getDefaultCourt(county) { return `HIGH COURT OF RIVERS STATE — ${(county || '[JUDICIAL DIVISION]').toUpperCase()} JUDICIAL DIVISION`; }
+  getDefaultCourt(county) { return `HIGH COURT OF RIVERS STATE — ${(county || placeholder('JUDICIAL DIVISION')).toUpperCase()} JUDICIAL DIVISION`; }
   generateHeader() { return 'IN THE HIGH COURT OF RIVERS STATE'; }
-  generateVenue(county) { return `${(county || '[JUDICIAL DIVISION]').toUpperCase()} JUDICIAL DIVISION`; }
+  generateVenue(county) { return `${(county || placeholder('JUDICIAL DIVISION')).toUpperCase()} JUDICIAL DIVISION`; }
 
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     const formatted = `IN THE ${courtName}\n\nSuit No. ${caseNumber}\n\nIN THE MATTER OF THE MATRIMONIAL CAUSES ACT, CAP M7 LFN 2004\n\nBETWEEN:\n\n${petitioner}\nPetitioner\n\n— AND —\n\n${respondent}\nRespondent`;
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted };
   }
@@ -79,7 +80,7 @@ class RiversDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     items.push({ content: 'The Court finds that the following order regarding the custody, welfare, and maintenance of the child(ren) is in the best interests of the child(ren) (Matrimonial Causes Act s.71; Child Rights Act 2003):', type: 'finding' });
     items.push({ content: 'The child(ren) subject to this order:', type: 'order' });
     divorceData.children.forEach((child, index) => {
-      const childInfo = typeof child === 'string' ? child : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+      const childInfo = typeof child === 'string' ? child : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
     // Safety rule (mirrors the base class): only positively recognized
@@ -114,7 +115,7 @@ class RiversDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -149,7 +150,7 @@ class RiversDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (divorceData.spousalSupportWaived) {
       items.push({ content: 'The Court notes that neither party has applied for maintenance under section 70 of the Matrimonial Causes Act.', type: 'order' });
     } else if (divorceData.spousalSupportAwarded) {
-      items.push({ content: `IT IS ORDERED pursuant to section 70 of the Matrimonial Causes Act that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'the Respondent'} shall pay maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'the Petitioner'} in the sum of NGN ${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for ${divorceData.spousalSupportDuration || '[DURATION]'}.`, type: 'order' });
+      items.push({ content: `IT IS ORDERED pursuant to section 70 of the Matrimonial Causes Act that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'the Respondent'} shall pay maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'the Petitioner'} in the sum of NGN ${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`, type: 'order' });
     }
     return { title: 'SPOUSAL MAINTENANCE', items, type: 'spousal_support' };
   }

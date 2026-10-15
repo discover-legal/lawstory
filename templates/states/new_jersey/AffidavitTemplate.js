@@ -4,6 +4,7 @@
 //                N.J. Court Rule 1:4-4(b) (certification), N.J.S.A. 52:7-10 et seq. (notary)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -56,7 +57,7 @@ class NewJerseyAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Formatted venue
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -70,7 +71,7 @@ class NewJerseyAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name — New Jersey Superior Court
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `${courtName}\n\n`;
@@ -80,8 +81,8 @@ class NewJerseyAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -163,7 +164,7 @@ My commission expires: ___________`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

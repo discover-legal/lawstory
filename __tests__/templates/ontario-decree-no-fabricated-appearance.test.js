@@ -56,7 +56,7 @@ describe('Ontario decree — no fabricated appearance / property waiver', () => 
     // must not surface — but the Draft-note enumeration of options may
     // mention it as one of the choices. Assert the recital shape is absent.
     expect(text).not.toMatch(/Thompson,\s+appeared self-represented/i);
-    expect(text).toMatch(/Draft.*confirm representation/i);
+    expect(text).toMatch(/Draft — insert 'appeared by and through a lawyer of record', 'appeared self-represented', or 'did not appear'/i);
   });
 
   test('explicit petitionerRepresentation="lawyer" renders the lawyer-of-record clause', () => {

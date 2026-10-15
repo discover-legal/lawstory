@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -42,7 +43,7 @@ class ScotlandAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Sheriffdom',
-      districtPlaceholder: '[SHERIFFDOM]',
+      districtPlaceholder: placeholder('SHERIFFDOM'),
       filerLabel: 'Pursuer',
       responderLabel: 'Defender',
       selfRepresentedLabel: 'Party Litigant',
@@ -63,7 +64,7 @@ class ScotlandAffidavitTemplate extends BaseAffidavitTemplate {
    * Scotland venue — Sheriff Court district.
    */
   generateVenue(county) {
-    const location = (county || '[SHERIFFDOM/COURT LOCATION]').toUpperCase();
+    const location = (county || placeholder('SHERIFFDOM/COURT LOCATION')).toUpperCase();
     return `AT ${location} SHERIFF COURT`;
   }
 
@@ -74,10 +75,10 @@ class ScotlandAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'SHERIFF COURT';
-    const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('LOCATION')).toUpperCase();
     const refNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const pursuer = affidavitData.plaintiff || affidavitData.petitionerName || '[PURSUER NAME]';
-    const defender = affidavitData.defendant || affidavitData.respondentName || '[DEFENDER NAME]';
+    const pursuer = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PURSUER NAME');
+    const defender = affidavitData.defendant || affidavitData.respondentName || placeholder('DEFENDER NAME');
 
     const formatted =
       `${court.toUpperCase()}\n` +

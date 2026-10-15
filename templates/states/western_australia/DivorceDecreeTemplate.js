@@ -3,7 +3,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -25,7 +26,7 @@ class WesternAustraliaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Registry',
-      districtPlaceholder: '[REGISTRY]',
+      districtPlaceholder: placeholder('REGISTRY'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -44,8 +45,8 @@ class WesternAustraliaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt()).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     const formatted = `IN THE ${courtName}\n\n${this.getCaseNumberLabel()}: ${caseNumber}\n\nIN THE MATTER OF THE FAMILY LAW ACT 1975 (CTH)\nAND THE FAMILY COURT ACT 1997 (WA)\n\nBETWEEN:\n\n${applicant}\nApplicant\n\n— and —\n\n${respondent}\nRespondent`;
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted };
   }
@@ -77,7 +78,7 @@ class WesternAustraliaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     items.push({ content: 'The Court finds that the following parenting orders are in the best interests of the child(ren) (s.60CA):', type: 'finding' });
     items.push({ content: 'The child(ren) subject to this order:', type: 'order' });
     divorceData.children.forEach((child, i) => {
-      const info = typeof child === 'string' ? child : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+      const info = typeof child === 'string' ? child : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({ content: `${i + 1}. ${info}`, type: 'child_item' });
     });
     // Safety rule (mirrors the base class): only positively recognized
@@ -103,7 +104,7 @@ class WesternAustraliaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -135,7 +136,7 @@ class WesternAustraliaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (divorceData.spousalSupportWaived) {
       items.push({ content: 'IT IS ORDERED that each party releases any claim for spousal maintenance under sections 72-75 of the Family Law Act 1975 (Cth).', type: 'order' });
     } else if (divorceData.spousalSupportAwarded) {
-      items.push({ content: `IT IS ORDERED that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay spousal maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Applicant'} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for ${divorceData.spousalSupportDuration || '[DURATION]'}.`, type: 'order' });
+      items.push({ content: `IT IS ORDERED that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay spousal maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Applicant'} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`, type: 'order' });
     }
     return { title: 'SPOUSAL MAINTENANCE', items, type: 'spousal_support' };
   }

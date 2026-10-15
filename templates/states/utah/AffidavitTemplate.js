@@ -3,6 +3,7 @@
 // Governing Law: Utah Code § 46-1-6.5 (PRESCRIPTIVE STATUTORY FORM)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -42,7 +43,7 @@ class UtahAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name - use 'court' field (matches schema), fallback to courtName for backwards compatibility
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -52,8 +53,8 @@ class UtahAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()}\n\n`;
     caption += `V.\n\n`;
@@ -183,7 +184,7 @@ Only after administering this oath may you complete the certificate below.`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true, // Recommended by Utah courts for clarity
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

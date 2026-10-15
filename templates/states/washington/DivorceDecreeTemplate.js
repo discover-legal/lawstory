@@ -3,7 +3,8 @@
 // Complies with RCW 26.09 (Dissolution of Marriage, Legal Separation)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -67,7 +68,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `Superior Court of ${countyName} County, State of Washington`;
   }
 
@@ -85,7 +86,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -104,8 +105,8 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `${caseLabel} ${caseNumber}\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     caption += `IN RE THE MARRIAGE OF:\n\n`;
     caption += `${petitioner},\n`;
@@ -150,10 +151,10 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se (self-represented)')}.\n\n`;
-      text += `Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
+      text += `Petitioner, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se (self-represented)', 'did not appear')}.\n\n`;
+      text += `Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
     } else {
-      text += `Petitioner appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')}.\n\n`;
+      text += `Petitioner ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se', 'did not appear')}.\n\n`;
       text += `Respondent ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -174,7 +175,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'JURISDICTION',
-      text: `The Court finds that it has jurisdiction over this proceeding pursuant to RCW 26.09.010. At least one party was a resident of Washington and intended to remain in the state at the time of filing, satisfying the residency requirement of RCW 26.09.020. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The marriage is irretrievably broken. At least ninety (90) days have elapsed since the Petition was filed. (RCW 26.09.030)`,
+      text: `The Court finds that it has jurisdiction over this proceeding pursuant to RCW 26.09.010. At least one party was a resident of Washington and intended to remain in the state at the time of filing, satisfying the residency requirement of RCW 26.09.020. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The marriage is irretrievably broken. At least ninety (90) days have elapsed since the Petition was filed. (RCW 26.09.030)`,
       type: 'jurisdiction'
     };
   }
@@ -187,7 +188,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DISSOLUTION',
-      text: `IT IS ORDERED that the marriage of ${divorceData.petitionerName || '[PETITIONER NAME]'} and ${divorceData.respondentName || '[RESPONDENT NAME]'} is hereby dissolved, and the parties are restored to the status of single persons, effective ${this.getEffectiveDateText()}.`,
+      text: `IT IS ORDERED that the marriage of ${divorceData.petitionerName || placeholder('PETITIONER NAME')} and ${divorceData.respondentName || placeholder('RESPONDENT NAME')} is hereby dissolved, and the parties are restored to the status of single persons, effective ${this.getEffectiveDateText()}.`,
       type: 'dissolution'
     };
   }
@@ -275,7 +276,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({
         content: `${index + 1}. ${childInfo}`,
         type: 'child_item'
@@ -312,7 +313,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -418,7 +419,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }
@@ -462,7 +463,7 @@ class WashingtonDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
 _________________________________
 SUPERIOR COURT JUDGE
-${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY, WASHINGTON` : '[COUNTY] COUNTY, WASHINGTON'}`,
+${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY, WASHINGTON` : (placeholder('COUNTY') + ' COUNTY, WASHINGTON')}`,
       type: 'judgment'
     };
   }

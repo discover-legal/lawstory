@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -58,7 +59,7 @@ class NewZealandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court district',
-      districtPlaceholder: '[COURT DISTRICT]',
+      districtPlaceholder: placeholder('COURT DISTRICT'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -107,7 +108,7 @@ class NewZealandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const city = (county || '[CITY]').toUpperCase();
+    const city = (county || placeholder('CITY')).toUpperCase();
     return `FAMILY COURT AT ${city}`;
   }
 
@@ -116,12 +117,12 @@ class NewZealandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Family Court proceedings reference "IN THE FAMILY COURT AT [location]".
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -162,7 +163,7 @@ class NewZealandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * NZ venue reason — Applicant or Respondent resides in this court district.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COURT LOCATION]';
+    const location = divorceData.county || placeholder('COURT LOCATION');
     return `the Applicant or Respondent resides in ${location}`;
   }
 
@@ -228,7 +229,7 @@ class NewZealandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Uses a sworn affidavit under the Oaths and Declarations Act 1957.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[APPLICANT NAME]';
+    const name = divorceData.petitionerName || placeholder('APPLICANT NAME');
     return `I, ${name}, Applicant, swear (or solemnly affirm) that the contents of this application are true, to the best of my knowledge, information, and belief.`;
   }
 

@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -42,7 +43,7 @@ class GhanaAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -63,7 +64,7 @@ class GhanaAffidavitTemplate extends BaseAffidavitTemplate {
    * Ghana venue — city or district of filing.
    */
   generateVenue(county) {
-    const location = (county || '[CITY/DISTRICT]').toUpperCase();
+    const location = (county || placeholder('CITY/DISTRICT')).toUpperCase();
     return `IN THE HIGH COURT OF JUSTICE, ${location}`;
   }
 
@@ -73,10 +74,10 @@ class GhanaAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF JUSTICE';
-    const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('LOCATION')).toUpperCase();
     const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n` +

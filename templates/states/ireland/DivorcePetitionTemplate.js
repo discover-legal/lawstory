@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -61,7 +62,7 @@ class IrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Circuit',
-      districtPlaceholder: '[CIRCUIT]',
+      districtPlaceholder: placeholder('CIRCUIT'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -110,7 +111,7 @@ class IrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const location = (county || '[COUNTY/CITY]').toUpperCase();
+    const location = (county || placeholder('COUNTY/CITY')).toUpperCase();
     return `CIRCUIT FAMILY COURT \u2014 ${location}`;
   }
 
@@ -119,12 +120,12 @@ class IrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Circuit Family Court uses "Record No." as the case identifier.
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -165,7 +166,7 @@ class IrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Ireland venue reason — Applicant or Respondent resides in this circuit.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COUNTY/CITY]';
+    const location = divorceData.county || placeholder('COUNTY/CITY');
     return `the Applicant or Respondent resides in ${location}`;
   }
 
@@ -239,7 +240,7 @@ class IrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * The jurat is sworn before a Commissioner for Oaths or Practising Solicitor.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[APPLICANT NAME]';
+    const name = divorceData.petitionerName || placeholder('APPLICANT NAME');
     return `I, ${name}, Applicant, make oath and say that the contents of this Application are true, to the best of my knowledge, information, and belief.`;
   }
 

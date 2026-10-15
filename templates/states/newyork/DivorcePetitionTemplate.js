@@ -3,6 +3,7 @@
 // Complies with New York Domestic Relations Law and CPLR
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 const { resolveGroundsForDivorce } = require('./groundsResolver');
 
@@ -203,7 +204,7 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    return `Supreme Court of the State of New York, County of ${county || '[COUNTY]'}`;
+    return `Supreme Court of the State of New York, County of ${county || placeholder('COUNTY')}`;
   }
 
   /**
@@ -224,12 +225,12 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     // Court
     caption += `SUPREME COURT OF THE STATE OF NEW YORK\n`;
-    caption += `COUNTY OF ${(divorceData.county || '[COUNTY]').toUpperCase()}\n`;
+    caption += `COUNTY OF ${(divorceData.county || placeholder('COUNTY')).toUpperCase()}\n`;
     caption += `- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -x\n\n`;
 
     // Parties (NY uses Plaintiff/Defendant)
-    const plaintiff = divorceData.petitionerName || '[PLAINTIFF NAME]';
-    const defendant = divorceData.respondentName || '[DEFENDANT NAME]';
+    const plaintiff = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
+    const defendant = divorceData.respondentName || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `                                              Plaintiff,\n\n`;
@@ -589,7 +590,7 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     });
 
     minors.forEach((child, i) => {
-      const name = typeof child === 'string' ? child : (child.name || `[CHILD ${i + 1} NAME]`);
+      const name = typeof child === 'string' ? child : (child.name || placeholder(`CHILD ${i + 1} NAME`));
       const dob = typeof child === 'object'
         ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth)
         : null;
@@ -811,34 +812,34 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // Round-3 attorney review (David NY, 2026-08-30): a silent transcript
-    // was fabricating "real property, personal property, and financial
-    // accounts" allegations. Delegate to super's silence-aware gate
-    // whenever `hasProperty` is not an affirmative true; only render the
-    // NY marital-property boilerplate on an explicit user "yes".
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      // Fall through to the base agreed/no-property paths, then scrub the
-      // "community/marital" phrasing so NY reads as marital-only.
-      const section = super.generatePropertySection(divorceData);
-      section.items = section.items.map((item) => ({
-        ...item,
-        content: typeof item.content === 'string'
-          ? item.content
-            .replace(/community or marital property/gi, 'marital property')
-            .replace(/marital or community property/gi, 'marital property')
-            .replace(/community\/marital property/gi, 'marital property')
-            .replace(/marital\/community property/gi, 'marital property')
-            .replace(/community\s+and\s+marital\s+property/gi, 'marital property')
-            .replace(/marital\s+and\s+community\s+property/gi, 'marital property')
-            // Any remaining bare "community property" mention: NY is
-            // equitable-distribution only, so scrub it.
-            .replace(/community property/gi, 'marital property')
-          : item.content,
-      }));
-      return section;
-    }
+  /**
+   * NY is equitable-distribution only: every base-rendered posture (Draft
+   * note, nil finding, agreed division) reads "marital", never "community".
+   */
+  gatedPropertySection(divorceData) {
+    const section = super.gatedPropertySection(divorceData);
+    section.items = section.items.map((item) => ({
+      ...item,
+      content: typeof item.content === 'string'
+        ? item.content
+          .replace(/community or marital property/gi, 'marital property')
+          .replace(/marital or community property/gi, 'marital property')
+          .replace(/community\/marital property/gi, 'marital property')
+          .replace(/marital\/community property/gi, 'marital property')
+          .replace(/community\s+and\s+marital\s+property/gi, 'marital property')
+          .replace(/marital\s+and\s+community\s+property/gi, 'marital property')
+          // Any remaining bare "community property" mention: NY is
+          // equitable-distribution only, so scrub it.
+          .replace(/community property/gi, 'marital property')
+        : item.content,
+    }));
+    return section;
+  }
 
+  // Round-3 attorney review (David NY, 2026-08-30): the NY marital-property
+  // boilerplate renders only on an explicit user "yes" — the base calls this
+  // hook ONLY when shouldPleadPropertyBoilerplate passes.
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
     const t = this.terminology;
@@ -1079,8 +1080,8 @@ class NewYorkDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
-    const county = divorceData.county || '[COUNTY]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
+    const county = divorceData.county || placeholder('COUNTY');
 
     return `STATE OF NEW YORK      )
                        ) ss.:

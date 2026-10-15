@@ -1,7 +1,8 @@
 // templates/states/australian_capital_territory/DivorceDecreeTemplate.js
 'use strict';
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 
 class ACTDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
@@ -11,7 +12,7 @@ class ACTDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   // "COUNTY OF" caption lines and no "X County" body phrasing.
   constructor() {
     super();
-    this.state = 'ACT'; this.stateName = 'Australian Capital Territory'; this.countryCode = 'AU'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'Territory', districtTerm: 'Registry', districtPlaceholder: '[REGISTRY]', filerLabel: 'Applicant', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' }; this.documentTitle = 'DIVORCE ORDER';
+    this.state = 'ACT'; this.stateName = 'Australian Capital Territory'; this.countryCode = 'AU'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'Territory', districtTerm: 'Registry', districtPlaceholder: placeholder('REGISTRY'), filerLabel: 'Applicant', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' }; this.documentTitle = 'DIVORCE ORDER';
     try { this.metadata = require('./metadata.json'); } catch (e) { this.metadata = null; }
     this.requiredFields = ['petitionerName', 'respondentName', 'state', 'county', 'caseNumber', 'marriageDate'];
     this.formatting = { fontSize: '12pt', fontFamily: 'Times New Roman', lineHeight: '1.5', margin: '2.54cm', paperSize: 'A4' };
@@ -23,8 +24,8 @@ class ACTDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt()).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted: `IN THE ${courtName}\n\n${this.getCaseNumberLabel()}: ${caseNumber}\n\nIN THE MATTER OF THE FAMILY LAW ACT 1975 (CTH)\n\nBETWEEN:\n\n${applicant}\nApplicant\n\n— and —\n\n${respondent}\nRespondent` };
   }
   generatePropertyDivisionSection(divorceData) {
@@ -51,7 +52,7 @@ class ACTDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
           : (resolvePrimaryResidenceName(divorceData) || 'Applicant');
       items.push({ content: `IT IS ORDERED: ${soleCustodianName} has sole parental responsibility.`, type: 'order' });
     } else {
-      items.push({ content: 'IT IS ORDERED that the parties shall exercise parental responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).', type: 'order' });
+      items.push({ content: ('IT IS ORDERED that the parties shall exercise parental responsibility for the child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'), type: 'order' });
     }
     if (custody.kind !== 'joint' && residenceName && residenceName !== soleCustodianName) {
       items.push({ content: `IT IS ORDERED that the child(ren) shall primarily reside with ${residenceName}.`, type: 'order' });
@@ -67,7 +68,7 @@ class ACTDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (!divorceData.spousalSupportAwarded && !divorceData.spousalSupportWaived) return null;
     const items = [];
     if (divorceData.spousalSupportWaived) items.push({ content: 'IT IS ORDERED that each party releases claims for spousal maintenance.', type: 'order' });
-    else if (divorceData.spousalSupportAwarded) items.push({ content: `IT IS ORDERED: spousal maintenance of $${divorceData.spousalSupportAmount || '[AMOUNT]'}/month for ${divorceData.spousalSupportDuration || '[DURATION]'}.`, type: 'order' });
+    else if (divorceData.spousalSupportAwarded) items.push({ content: `IT IS ORDERED: spousal maintenance of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')}/month for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`, type: 'order' });
     return { title: 'SPOUSAL MAINTENANCE', items, type: 'spousal_support' };
   }
   generateFinalOrdersSection() {

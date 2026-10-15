@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -56,7 +57,7 @@ class EnglandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Litigant in Person',
@@ -105,7 +106,7 @@ class EnglandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const location = (county || '[LOCATION]').toUpperCase();
+    const location = (county || placeholder('LOCATION')).toUpperCase();
     return `FAMILY COURT AT ${location}`;
   }
 
@@ -115,12 +116,12 @@ class EnglandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * paper alternative.
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -161,7 +162,7 @@ class EnglandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * England venue reason.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COURT LOCATION]';
+    const location = divorceData.county || placeholder('COURT LOCATION');
     return `the Applicant or Respondent resides within the jurisdiction of the Family Court at ${location}`;
   }
 
@@ -227,7 +228,7 @@ class EnglandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * England verification uses Statement of Truth (Family Procedure Rules 2010, Part 17).
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[APPLICANT NAME]';
+    const name = divorceData.petitionerName || placeholder('APPLICANT NAME');
     return `I, ${name}, the Applicant, believe that the facts stated in this application are true. I understand that proceedings for contempt of court may be brought against anyone who makes, or causes to be made, a false statement in a document verified by a statement of truth without an honest belief in its truth.`;
   }
 

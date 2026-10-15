@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -63,8 +64,8 @@ class YukonAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'SUPREME COURT OF YUKON';
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n\n` +

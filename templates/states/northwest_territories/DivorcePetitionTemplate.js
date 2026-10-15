@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -56,7 +57,7 @@ class NorthwestTerritoriesDivorcePetitionTemplate extends BaseDivorcePetitionTem
       districtLabel: null,
       districtTerm: 'Court location',
       districtStyle: 'plain',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -130,8 +131,8 @@ class NorthwestTerritoriesDivorcePetitionTemplate extends BaseDivorcePetitionTem
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -243,7 +244,7 @@ class NorthwestTerritoriesDivorcePetitionTemplate extends BaseDivorcePetitionTem
    * Perjury is an offence under Criminal Code, RSC 1985, c. C-46, s.131.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[APPLICANT NAME]';
+    const name = divorceData.petitionerName || placeholder('APPLICANT NAME');
     return `I, ${name}, Applicant, make oath and say (or solemnly affirm) that the contents of this Application are true, to the best of my knowledge, information, and belief.`;
   }
 

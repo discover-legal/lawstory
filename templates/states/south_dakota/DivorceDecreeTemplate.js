@@ -3,7 +3,8 @@
 // Complies with SDCL Chapter 25-4 (Divorce)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -69,7 +70,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `Circuit Court, ${countyName} County, State of South Dakota`;
   }
 
@@ -87,7 +88,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     const countyFormatted = countyName.charAt(0).toUpperCase() + countyName.slice(1).toLowerCase();
     return `County of ${countyFormatted}`;
   }
@@ -119,10 +120,10 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court for hearing.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se (self-represented)')}.\n\n`;
-      text += `Defendant, ${divorceData.respondentName || '[DEFENDANT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
+      text += `Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se (self-represented)', 'did not appear')}.\n\n`;
+      text += `Defendant, ${divorceData.respondentName || placeholder('DEFENDANT NAME')}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
     } else {
-      text += `Plaintiff appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')}.\n\n`;
+      text += `Plaintiff ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se', 'did not appear')}.\n\n`;
       text += `Defendant ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -143,7 +144,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'JURISDICTION',
-      text: `The Court finds that it has jurisdiction over this proceeding and the parties. The Plaintiff is a resident of the State of South Dakota, ${divorceData.county || '[COUNTY]'} County, at the time of filing. (SDCL §25-4-30) The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. There exist irreconcilable differences between the parties which have caused the irremediable breakdown of the marriage. (SDCL §25-4-17.1)`,
+      text: `The Court finds that it has jurisdiction over this proceeding and the parties. The Plaintiff is a resident of the State of South Dakota, ${divorceData.county || placeholder('COUNTY')} County, at the time of filing. (SDCL §25-4-30) The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. There exist irreconcilable differences between the parties which have caused the irremediable breakdown of the marriage. (SDCL §25-4-17.1)`,
       type: 'jurisdiction'
     };
   }
@@ -156,7 +157,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DECREE OF DIVORCE',
-      text: `IT IS ORDERED, ADJUDGED, AND DECREED that the marriage of ${divorceData.petitionerName || '[PLAINTIFF NAME]'} and ${divorceData.respondentName || '[DEFENDANT NAME]'} is hereby dissolved, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
+      text: `IT IS ORDERED, ADJUDGED, AND DECREED that the marriage of ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')} and ${divorceData.respondentName || placeholder('DEFENDANT NAME')} is hereby dissolved, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
       type: 'dissolution'
     };
   }
@@ -233,7 +234,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({
         content: `${index + 1}. ${childInfo}`,
         type: 'child_item'
@@ -270,7 +271,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -371,7 +372,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }
@@ -397,7 +398,7 @@ class SouthDakotaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 _________________________________
 JUDGE
 CIRCUIT COURT
-${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY` : '[COUNTY] COUNTY'}
+${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY` : (placeholder('COUNTY') + ' COUNTY')}
 STATE OF SOUTH DAKOTA`,
       type: 'judgment'
     };

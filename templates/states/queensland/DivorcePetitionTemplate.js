@@ -3,6 +3,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class QueenslandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -23,7 +24,7 @@ class QueenslandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Registry',
-      districtPlaceholder: '[REGISTRY]',
+      districtPlaceholder: placeholder('REGISTRY'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -37,19 +38,19 @@ class QueenslandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getCaseNumberLabel() { return 'File Number'; }
-  getDefaultCourt(county) { return `FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA (DIVISION 2) — ${(county || '[CITY]').toUpperCase()} REGISTRY`; }
+  getDefaultCourt(county) { return `FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA (DIVISION 2) — ${(county || placeholder('CITY')).toUpperCase()} REGISTRY`; }
 
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     const caption = [`IN THE ${courtName}`, '', `${this.getCaseNumberLabel()}: ${caseNumber}`, '', `IN THE MATTER OF THE FAMILY LAW ACT 1975 (CTH)`, '', `BETWEEN:`, '', `${applicant}`, `Applicant`, '', `AND`, '', `${respondent}`, `Respondent`].join('\n');
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted: caption };
   }
 
   getJurisdictionStatement() { return `Either the Applicant or the Respondent is an Australian citizen, is domiciled in Australia, or has been ordinarily resident in Australia for at least twelve months immediately preceding the filing of this Application, as required by section 39(3) of the Family Law Act 1975 (Cth).`; }
-  getVenueReason(divorceData) { return `the Applicant or Respondent resides within the jurisdiction of the ${divorceData.county || '[REGISTRY LOCATION]'} registry`; }
+  getVenueReason(divorceData) { return `the Applicant or Respondent resides within the jurisdiction of the ${divorceData.county || placeholder('REGISTRY LOCATION')} registry`; }
 
   // The Application for Divorce seeks only the divorce order (plus costs where sought) —
   // property/parenting/maintenance orders go in a separate Initiating Application
@@ -72,7 +73,7 @@ class QueenslandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     return { title: 'ORDERS SOUGHT', items, nextParagraphNumber: divorceData._paragraphNum || 15 };
   }
 
-  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || '[APPLICANT NAME]'}, the Applicant, make oath and say (or solemnly affirm) that the contents of this Application are true and correct to the best of my knowledge, information, and belief.`; }
+  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || placeholder('APPLICANT NAME')}, the Applicant, make oath and say (or solemnly affirm) that the contents of this Application are true and correct to the best of my knowledge, information, and belief.`; }
   getGroundsText() { return 'The marriage has broken down irretrievably within the meaning of section 48(1) of the Family Law Act 1975 (Cth). The parties have lived separately and apart for a continuous period of not less than 12 months immediately preceding the date of filing of this Application.'; }
 }
 

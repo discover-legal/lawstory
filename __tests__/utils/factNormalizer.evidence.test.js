@@ -220,7 +220,7 @@ describe('factNormalizer - Evidence Functions', () => {
       expect(placeholder.evidenceData.description).toBe('Bank statement from January 2025');
       expect(placeholder.evidenceData.requiresUpload).toBe(true);
       expect(placeholder.evidenceData.fileKey).toBeNull();
-      expect(placeholder.content).toContain('Exhibit [TBD]');
+      expect(placeholder.content).toContain('Exhibit ______');
     });
 
     test('should create evidence placeholder with custom content', () => {

@@ -3,6 +3,7 @@
 // Complies with N.J.S.A. 2A:34-2 et seq. (New Jersey divorce statutes)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * New Jersey Complaint for Divorce Template
@@ -85,7 +86,7 @@ class NewJerseyDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `SUPERIOR COURT OF NEW JERSEY, CHANCERY DIVISION, FAMILY PART, ${countyUpper} COUNTY`;
   }
 
@@ -104,8 +105,8 @@ class NewJerseyDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const docketNum = divorceData.caseNumber || `FM-____-______-${new Date().getFullYear()}`;
     caption += `DOCKET NO. ${docketNum}\n\n`;
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${plaintiff},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -133,12 +134,12 @@ class NewJerseyDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const grounds = divorceData.groundsForDivorce || 'irreconcilable_differences';
 
     if (grounds === 'irreconcilable_differences') {
-      return `${plaintiff} has been a bona fide resident of the State of New Jersey for at least one (1) year immediately preceding the commencement of this action, as required by N.J.S.A. 2A:34-10, and continues to reside in ${divorceData.county || '[COUNTY]'} County.`;
+      return `${plaintiff} has been a bona fide resident of the State of New Jersey for at least one (1) year immediately preceding the commencement of this action, as required by N.J.S.A. 2A:34-10, and continues to reside in ${divorceData.county || placeholder('COUNTY')} County.`;
     }
     if (grounds === 'adultery' && divorceData.adulteryCommittedInNJ) {
-      return `The ground for divorce occurred within the State of New Jersey. Plaintiff resides in ${divorceData.county || '[COUNTY]'} County, New Jersey.`;
+      return `The ground for divorce occurred within the State of New Jersey. Plaintiff resides in ${divorceData.county || placeholder('COUNTY')} County, New Jersey.`;
     }
-    return `${plaintiff} has been a bona fide resident of the State of New Jersey for at least one (1) year immediately preceding the commencement of this action, as required by N.J.S.A. 2A:34-10, and resides in ${divorceData.county || '[COUNTY]'} County.`;
+    return `${plaintiff} has been a bona fide resident of the State of New Jersey for at least one (1) year immediately preceding the commencement of this action, as required by N.J.S.A. 2A:34-10, and resides in ${divorceData.county || placeholder('COUNTY')} County.`;
   }
 
   /**
@@ -206,7 +207,7 @@ class NewJerseyDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -238,23 +239,17 @@ class NewJerseyDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      // The financial-disclosure recital is procedural — required whatever
-      // the property posture — so it survives the base property gate.
-      const section = super.generatePropertySection(divorceData);
-      section.items.push({
-        number: section.nextParagraphNumber++,
-        content: 'A Case Information Statement (CIS) is being filed simultaneously with this Complaint as required by N.J. Court Rule 5:5-2.',
-        type: 'financial_disclosure'
-      });
-      return section;
-    }
+  /**
+   * Procedural recital required whatever the property posture.
+   * @returns {string[]}
+   */
+  getPropertyProceduralRecitals(_divorceData) {
+    return ['A Case Information Statement (CIS) is being filed simultaneously with this Complaint as required by N.J. Court Rule 5:5-2.'];
+  }
 
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -270,11 +265,6 @@ class NewJerseyDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       type: 'property_request'
     });
 
-    items.push({
-      number: paragraphNum++,
-      content: 'A Case Information Statement (CIS) is being filed simultaneously with this Complaint as required by N.J. Court Rule 5:5-2.',
-      type: 'financial_disclosure'
-    });
 
     return {
       title: 'VI. PROPERTY AND DEBTS',
@@ -351,7 +341,7 @@ class NewJerseyDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `CERTIFICATION
 
 I, ${name}, Plaintiff, hereby certify that the foregoing statements made by me are true. I am aware that if any of the foregoing statements made by me are willfully false, I am subject to punishment.

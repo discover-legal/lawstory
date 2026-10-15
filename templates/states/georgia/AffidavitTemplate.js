@@ -3,6 +3,7 @@
 // Governing Law: O.C.G.A. § 16-10-71 (perjury), O.C.G.A. § 45-17-8 (notary)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -42,7 +43,7 @@ class GeorgiaAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     let caption = '';
 
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -51,8 +52,8 @@ class GeorgiaAffidavitTemplate extends BaseAffidavitTemplate {
     const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CIVIL ACTION FILE NO. ${caseNumber.toUpperCase()}\n\n`;
 
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -85,7 +86,7 @@ class GeorgiaAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -152,7 +153,7 @@ My commission expires: ___________
       labelStyle: 'letters',
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

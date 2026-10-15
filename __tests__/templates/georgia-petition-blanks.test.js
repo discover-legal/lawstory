@@ -19,6 +19,7 @@
  */
 
 const GeorgiaDivorcePetitionTemplate = require('../../templates/states/georgia/DivorcePetitionTemplate');
+const { placeholder } = require('../../templates/core/placeholders');
 
 function baseData(overrides = {}) {
   return {
@@ -84,7 +85,7 @@ describe('Georgia Complaint for Divorce — missing-value rendering', () => {
       baseData({ children: [{ dob: '2015-04-02' }] }),
     );
     const rendered = JSON.stringify(section);
-    expect(rendered).toMatch(/\[CHILD NAME\]/);
+    expect(rendered).toContain(placeholder('CHILD NAME'));
   });
 
   test('present child birthDate renders literally, no blank', () => {

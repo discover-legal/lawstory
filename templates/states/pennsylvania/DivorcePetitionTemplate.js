@@ -3,6 +3,7 @@
 // Complies with 23 Pa.C.S. § 3101 et seq. (Pennsylvania Divorce Code)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -94,7 +95,7 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `COURT OF COMMON PLEAS OF ${countyName.toUpperCase()} COUNTY, PENNSYLVANIA`;
   }
 
@@ -112,7 +113,7 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -132,8 +133,8 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `DOCKET NO. ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // Pennsylvania uses Plaintiff/Defendant in divorce complaints
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -168,7 +169,7 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue reason
    */
   getVenueReason(divorceData) {
-    return `the Plaintiff resides in ${divorceData.county || '[COUNTY]'} County, Pennsylvania`;
+    return `the Plaintiff resides in ${divorceData.county || placeholder('COUNTY')} County, Pennsylvania`;
   }
 
   /**
@@ -184,7 +185,7 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         return 'The marriage is irretrievably broken, and both parties consent to the divorce. Pursuant to 23 Pa.C.S. § 3301(c), Plaintiff requests that after ninety (90) days from the date of service of this Complaint, both parties shall file Affidavits of Consent evidencing their desire to proceed with the divorce.';
 
       case 'separation':
-        return `The parties have been living separate and apart for a period of at least one (1) year, and the marriage is irretrievably broken, pursuant to 23 Pa.C.S. § 3301(d). The parties separated on or about ${this.formatDate(divorceData.separationDate) || '[DATE OF SEPARATION]'}.`;
+        return `The parties have been living separate and apart for a period of at least one (1) year, and the marriage is irretrievably broken, pursuant to 23 Pa.C.S. § 3301(d). The parties separated on or about ${this.formatDate(divorceData.separationDate) || placeholder('DATE OF SEPARATION')}.`;
 
       case 'desertion':
         return 'Defendant has willfully and maliciously deserted Plaintiff, and has absented from Plaintiff\'s habitation, for and during the period of one or more years, pursuant to 23 Pa.C.S. § 3301(a)(1).';
@@ -233,7 +234,7 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -268,15 +269,9 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 13;
 
@@ -376,7 +371,7 @@ class PennsylvaniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, Plaintiff, verify that the statements made in this Complaint in Divorce are true and correct. I understand that false statements herein are made subject to the penalties of 18 Pa.C.S. § 4904, relating to unsworn falsification to authorities.
 
 _________________________________

@@ -7,7 +7,8 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('./BaseAffidavitTemplate');
-const { caseNumberOrBlank } = require('./blanks');
+const { inlineDraftBlank, caseNumberOrBlank } = require('./blanks');
+const { placeholder } = require('./placeholders');
 const BaseDivorcePetitionTemplate = require('./BaseDivorcePetitionTemplate');
 const BaseDivorceDecreeTemplate = require('./BaseDivorceDecreeTemplate');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('./parenting');
@@ -47,8 +48,8 @@ function createIndiaAffidavitTemplate(config) {
       const court = d.court || d.courtName || config.defaultCourt;
       const loc = (d.county || d.city || config.defaultCity).toUpperCase();
       const caseNo = caseNumberOrBlank(d.caseNumber);
-      const p = d.plaintiff || d.petitionerName || '[PETITIONER NAME]';
-      const r = d.defendant || d.respondentName || '[RESPONDENT NAME]';
+      const p = d.plaintiff || d.petitionerName || placeholder('PETITIONER NAME');
+      const r = d.defendant || d.respondentName || placeholder('RESPONDENT NAME');
       return {
         courtName: court,
         caseNumber: d.caseNumber,
@@ -107,8 +108,8 @@ function createIndiaDivorcePetitionTemplate(config) {
     generateCaseCaption(dd) {
       const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase();
       const no = caseNumberOrBlank(dd.caseNumber);
-      const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase();
-      const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
+      const p = (dd.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+      const r = (dd.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
       // Mutual-consent petitions are presented jointly "by both the parties
       // together" (HMA s.13B(1) / SMA s.28(1)) — styled Petitioner No. 1 /
       // No. 2 with no opposing party, unlike contested grounds.
@@ -149,7 +150,7 @@ function createIndiaDivorcePetitionTemplate(config) {
     }
 
     getVerificationText(dd) {
-      return `Verified at ${config.defaultCity} on this _____ day of __________, _______. I, ${dd.petitionerName || '[PETITIONER NAME]'}, verify that the contents are true and correct.`;
+      return `Verified at ${config.defaultCity} on this _____ day of __________, _______. I, ${dd.petitionerName || placeholder('PETITIONER NAME')}, verify that the contents are true and correct.`;
     }
 
     getGroundsText(g) {
@@ -201,8 +202,8 @@ function createIndiaDivorceDecreeTemplate(config) {
     generateCaseCaption(dd) {
       const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase();
       const no = caseNumberOrBlank(dd.caseNumber);
-      const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase();
-      const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
+      const p = (dd.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+      const r = (dd.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
       // Mutual-consent matters carry the joint style through to the decree
       const g = (dd.groundsForDivorce || 'mutual_consent').toLowerCase();
       const parties = (g.includes('mutual') || g.includes('consent'))
@@ -237,7 +238,7 @@ function createIndiaDivorceDecreeTemplate(config) {
       if (dd.hasMinorChildren === false || !dd.children?.length) return null;
       const items = [{ content: 'Custody ordered in the best interest of the child(ren):', type: 'finding' }];
       dd.children.forEach((c, i) => {
-        const info = typeof c === 'string' ? c : `${c.name || '[NAME]'}, born ${this.formatDate(c.birthDate) || '[DOB]'}`;
+        const info = typeof c === 'string' ? c : `${c.name || placeholder('NAME')}, born ${this.formatDate(c.birthDate) || placeholder('DOB')}`;
         items.push({ content: `${i + 1}. ${info}`, type: 'child_item' });
       });
       const custody = resolveCustodyArrangement(dd);
@@ -257,7 +258,7 @@ function createIndiaDivorceDecreeTemplate(config) {
         items.push({ content: `IT IS ORDERED that ${soleCustodianName} has sole custody.`, type: 'order' });
         items.push({ content: `${otherParentName} shall have visitation rights.`, type: 'order' });
       } else {
-        items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).', type: 'order' });
+        items.push({ content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'), type: 'order' });
       }
       if (custody.kind !== 'joint' && residenceName && residenceName !== soleCustodianName) {
         items.push({ content: `IT IS ORDERED that the child(ren) shall primarily reside with ${residenceName}.`, type: 'order' });
@@ -277,7 +278,7 @@ function createIndiaDivorceDecreeTemplate(config) {
       if (!dd.spousalSupportAwarded && !dd.spousalSupportWaived) return null;
       const items = [];
       if (dd.spousalSupportWaived) items.push({ content: 'Neither party shall claim maintenance from the other.', type: 'order' });
-      else items.push({ content: `IT IS ORDERED under HMA s.25: ${dd.spousalSupportPayor || 'Respondent'} pays INR ${dd.spousalSupportAmount || '[AMOUNT]'}/month for ${dd.spousalSupportDuration || '[DURATION]'}.`, type: 'order' });
+      else items.push({ content: `IT IS ORDERED under HMA s.25: ${dd.spousalSupportPayor || 'Respondent'} pays INR ${dd.spousalSupportAmount || placeholder('AMOUNT')}/month for ${dd.spousalSupportDuration || placeholder('DURATION')}.`, type: 'order' });
       return { title: 'PERMANENT ALIMONY / MAINTENANCE', items, type: 'spousal_support' };
     }
 

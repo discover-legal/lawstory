@@ -3,7 +3,8 @@
 // Complies with Md. Code, Fam. Law § 7-101 et seq.
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -65,7 +66,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     if (countyName.toLowerCase().includes('baltimore city')) {
       return 'Circuit Court for Baltimore City, Maryland';
     }
@@ -86,7 +87,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     if (countyName.toLowerCase().includes('baltimore city')) {
       return 'Baltimore City';
     }
@@ -121,10 +122,10 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court for hearing.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se (self-represented)')}.\n\n`;
-      text += `Defendant, ${divorceData.respondentName || '[DEFENDANT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
+      text += `Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se (self-represented)', 'did not appear')}.\n\n`;
+      text += `Defendant, ${divorceData.respondentName || placeholder('DEFENDANT NAME')}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
     } else {
-      text += `Plaintiff appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')}.\n\n`;
+      text += `Plaintiff ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se', 'did not appear')}.\n\n`;
       text += `Defendant ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -145,7 +146,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'JURISDICTION',
-      text: `The Court finds that it has jurisdiction over this proceeding and the parties. Plaintiff has been a resident of the State of Maryland as required by Md. Code, Fam. Law § 7-101. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The Court finds that the grounds for absolute divorce have been established.`,
+      text: `The Court finds that it has jurisdiction over this proceeding and the parties. Plaintiff has been a resident of the State of Maryland as required by Md. Code, Fam. Law § 7-101. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The Court finds that the grounds for absolute divorce have been established.`,
       type: 'jurisdiction'
     };
   }
@@ -158,7 +159,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'JUDGMENT OF ABSOLUTE DIVORCE',
-      text: `IT IS ORDERED AND ADJUDGED that the marriage of ${divorceData.petitionerName || '[PLAINTIFF NAME]'} and ${divorceData.respondentName || '[DEFENDANT NAME]'} is hereby absolutely divorced, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
+      text: `IT IS ORDERED AND ADJUDGED that the marriage of ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')} and ${divorceData.respondentName || placeholder('DEFENDANT NAME')} is hereby absolutely divorced, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
       type: 'dissolution'
     };
   }
@@ -240,7 +241,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({
         content: `${index + 1}. ${childInfo}`,
         type: 'child_item'
@@ -277,7 +278,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -378,7 +379,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }
@@ -396,7 +397,7 @@ class MarylandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Judgment block
    */
   generateJudgmentBlock(divorceData) {
-    const county = divorceData.county || '[COUNTY]';
+    const county = divorceData.county || placeholder('COUNTY');
     let courtLine;
     if (county.toLowerCase().includes('baltimore city')) {
       courtLine = 'CIRCUIT COURT FOR BALTIMORE CITY, MARYLAND';

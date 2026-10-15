@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -79,7 +80,7 @@ class NewfoundlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Default court name
    */
   getDefaultCourt(county) {
-    return `SUPREME COURT OF NEWFOUNDLAND AND LABRADOR (TRIAL DIVISION) — ${(county || '[LOCATION]').toUpperCase()}`;
+    return `SUPREME COURT OF NEWFOUNDLAND AND LABRADOR (TRIAL DIVISION) — ${(county || placeholder('LOCATION')).toUpperCase()}`;
   }
 
   /**
@@ -96,7 +97,7 @@ class NewfoundlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const location = (county || '[LOCATION]').toUpperCase();
+    const location = (county || placeholder('LOCATION')).toUpperCase();
     return `${location}`;
   }
 
@@ -109,8 +110,8 @@ class NewfoundlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const formatted = (
       `IN THE ${courtName}\n\n` +
@@ -209,7 +210,7 @@ class NewfoundlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
 
@@ -254,7 +255,7 @@ class NewfoundlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement) (Divorce Act, RSC 1985, c. 3, s.16.1).',
+        content: ('IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + ' (Divorce Act, RSC 1985, c. 3, s.16.1).'),
         type: 'order'
       });
     }
@@ -335,7 +336,7 @@ class NewfoundlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.spousalSupportAwarded) {
       items.push({
-        content: `IT IS ORDERED pursuant to s.15.2 of the Divorce Act, RSC 1985, c. 3, that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay spousal support to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Petitioner'} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED pursuant to s.15.2 of the Divorce Act, RSC 1985, c. 3, that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay spousal support to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Petitioner'} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }
@@ -405,7 +406,7 @@ class NewfoundlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DIVORCE GRANTED',
-      text: `IT IS ORDERED that the marriage solemnized on ${this.formatDate(divorceData.marriageDate) || '[DATE OF MARRIAGE]'} between ${divorceData.petitionerName || '[PETITIONER NAME]'} and ${divorceData.respondentName || '[RESPONDENT NAME]'} is dissolved, and the parties are divorced from each other, effective as set out below.`,
+      text: `IT IS ORDERED that the marriage solemnized on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE OF MARRIAGE')} between ${divorceData.petitionerName || placeholder('PETITIONER NAME')} and ${divorceData.respondentName || placeholder('RESPONDENT NAME')} is dissolved, and the parties are divorced from each other, effective as set out below.`,
       type: 'dissolution'
     };
   }

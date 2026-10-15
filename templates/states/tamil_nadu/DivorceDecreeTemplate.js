@@ -1,7 +1,8 @@
 // templates/states/tamil_nadu/DivorceDecreeTemplate.js
 'use strict';
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 
 class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
@@ -11,7 +12,7 @@ class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   // caption lines and no "X County" body phrasing.
   constructor() {
     super();
-    this.state = 'IN_TN'; this.stateName = 'Tamil Nadu'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: '[DISTRICT]', filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
+    this.state = 'IN_TN'; this.stateName = 'Tamil Nadu'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: placeholder('DISTRICT'), filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
     this.documentTitle = 'DECREE OF DIVORCE';
     try { this.metadata = require('./metadata.json'); } catch (e) { this.metadata = null; }
     this.requiredFields = ['petitionerName', 'respondentName', 'state', 'county', 'caseNumber', 'marriageDate'];
@@ -29,7 +30,7 @@ class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateVenue(county) { return (county || 'CHENNAI').toUpperCase(); }
   generateCaseCaption(dd) {
     const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase(); const no = caseNumberOrBlank(dd.caseNumber);
-    const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase(); const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const p = (dd.petitionerName || placeholder('PETITIONER NAME')).toUpperCase(); const r = (dd.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     return { courtName: cn, caseNumber: dd.caseNumber, petitioner: dd.petitionerName, respondent: dd.respondentName, formatted: `IN THE ${cn}\n\n${this.getCaseNumberLabel()} ${no}\n\nIN THE MATTER OF:\n\n${p}\nPetitioner\n\nVersus\n\n${r}\nRespondent` };
   }
   generatePropertyDivisionSection(dd) {
@@ -41,7 +42,7 @@ class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateChildCustodySection(dd) {
     if (dd.hasMinorChildren === false || !dd.children?.length) return null;
     const items = [{ content: 'Custody ordered in the best interest of the child(ren):', type: 'finding' }];
-    dd.children.forEach((c, i) => { const info = typeof c === 'string' ? c : `${c.name || '[NAME]'}, born ${this.formatDate(c.birthDate) || '[DOB]'}`; items.push({ content: `${i+1}. ${info}`, type: 'child_item' }); });
+    dd.children.forEach((c, i) => { const info = typeof c === 'string' ? c : `${c.name || placeholder('NAME')}, born ${this.formatDate(c.birthDate) || placeholder('DOB')}`; items.push({ content: `${i+1}. ${info}`, type: 'child_item' }); });
     // Safety rule: only positively recognized custody values render a joint or
     // sole order; anything ambiguous renders neutral as-agreed language —
     // NEVER a sole order (see templates/core/parenting.js).
@@ -56,7 +57,7 @@ class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
           : (resolvePrimaryResidenceName(dd) || dd.petitionerName || 'Petitioner');
       items.push({ content: `IT IS ORDERED that ${soleCustodianName} has sole custody.`, type: 'order' });
     } else {
-      items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).', type: 'order' });
+      items.push({ content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'), type: 'order' });
     }
     if (custody.kind !== 'joint' && residenceName && residenceName !== soleCustodianName) {
       items.push({ content: `IT IS ORDERED that the child(ren) shall primarily reside with ${residenceName}.`, type: 'order' });
@@ -71,7 +72,7 @@ class TamilNaduDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (!dd.spousalSupportAwarded && !dd.spousalSupportWaived) return null;
     const items = [];
     if (dd.spousalSupportWaived) items.push({ content: 'Neither party shall claim maintenance from the other.', type: 'order' });
-    else items.push({ content: `IT IS ORDERED under HMA s.25: ${dd.spousalSupportPayor || 'Respondent'} pays INR ${dd.spousalSupportAmount || '[AMOUNT]'}/month for ${dd.spousalSupportDuration || '[DURATION]'}.`, type: 'order' });
+    else items.push({ content: `IT IS ORDERED under HMA s.25: ${dd.spousalSupportPayor || 'Respondent'} pays INR ${dd.spousalSupportAmount || placeholder('AMOUNT')}/month for ${dd.spousalSupportDuration || placeholder('DURATION')}.`, type: 'order' });
     return { title: 'PERMANENT ALIMONY / MAINTENANCE', items, type: 'spousal_support' };
   }
   generateFinalOrdersSection() {

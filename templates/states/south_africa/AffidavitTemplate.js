@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -44,7 +45,7 @@ class SouthAfricaAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Division',
-      districtPlaceholder: '[DIVISION]',
+      districtPlaceholder: placeholder('DIVISION'),
       filerLabel: 'Plaintiff',
       responderLabel: 'Defendant',
       selfRepresentedLabel: 'Self-Represented',
@@ -73,7 +74,7 @@ class SouthAfricaAffidavitTemplate extends BaseAffidavitTemplate {
    * South Africa venue — division of the High Court (e.g. Gauteng Division, Pretoria).
    */
   generateVenue(county) {
-    const location = (county || '[DIVISION]').toUpperCase();
+    const location = (county || placeholder('DIVISION')).toUpperCase();
     return `(${location})`;
   }
 
@@ -84,10 +85,10 @@ class SouthAfricaAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF SOUTH AFRICA';
-    const division = (affidavitData.county || affidavitData.city || '[DIVISION]').toUpperCase();
+    const division = (affidavitData.county || affidavitData.city || placeholder('DIVISION')).toUpperCase();
     const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || affidavitData.respondentName || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || affidavitData.respondentName || placeholder('DEFENDANT NAME');
 
     const formatted =
       `IN THE ${court.toUpperCase()}\n` +

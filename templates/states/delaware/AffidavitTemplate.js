@@ -4,6 +4,7 @@
 //                Del. Code tit. 11, §1221 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -46,7 +47,7 @@ class DelawareAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     let caption = '';
 
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -54,8 +55,8 @@ class DelawareAffidavitTemplate extends BaseAffidavitTemplate {
     const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `PETITION NO. ${caseNumber.toUpperCase()}\n\n`;
 
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Petitioner,\n\n`;
@@ -88,7 +89,7 @@ class DelawareAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     // Delaware uses title case for venue
     const countyFormatted = countyName.charAt(0).toUpperCase() + countyName.slice(1).toLowerCase();
     return `County of ${countyFormatted}`;
@@ -151,7 +152,7 @@ My commission expires: ___________
       labelStyle: 'letters',
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

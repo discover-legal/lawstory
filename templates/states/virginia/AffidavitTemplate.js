@@ -3,6 +3,7 @@
 // Governing Law: Va. Code § 8.01-390, Va. Code § 18.2-434, Va. Code § 47.1-12
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -53,7 +54,7 @@ class VirginiaAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Formatted venue
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     // If user entered "City of X" we preserve it; otherwise prefix COUNTY OF
     if (countyUpper.startsWith('CITY OF')) {
       return countyUpper;
@@ -71,7 +72,7 @@ class VirginiaAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name — Virginia Circuit Court
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -81,8 +82,8 @@ class VirginiaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -116,7 +117,7 @@ class VirginiaAffidavitTemplate extends BaseAffidavitTemplate {
 
     // Remind users about independent cities
     if (affidavitData.county && !affidavitData.county.toUpperCase().startsWith('CITY OF')) {
-      warnings.push('If the venue is an independent Virginia city (e.g., Richmond, Alexandria), enter "City of [Name]" in the county field rather than a county name.');
+      warnings.push(('If the venue is an independent Virginia city (e.g., Richmond, Alexandria), enter "City of ' + placeholder('Name') + '" in the county field rather than a county name.'));
     }
 
     return { errors, warnings };
@@ -166,7 +167,7 @@ Registration No.: ___________`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

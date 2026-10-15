@@ -3,6 +3,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class SouthAustraliaAffidavitTemplate extends BaseAffidavitTemplate {
@@ -24,7 +25,7 @@ class SouthAustraliaAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Registry',
-      districtPlaceholder: '[REGISTRY]',
+      districtPlaceholder: placeholder('REGISTRY'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -35,14 +36,14 @@ class SouthAustraliaAffidavitTemplate extends BaseAffidavitTemplate {
   }
 
   generateHeader() { return 'SOUTH AUSTRALIA'; }
-  generateVenue(county) { return `AT ${(county || '[CITY/LOCALITY]').toUpperCase()}`; }
+  generateVenue(county) { return `AT ${(county || placeholder('CITY/LOCALITY')).toUpperCase()}`; }
 
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA';
-    const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('LOCATION')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
     const formatted = `${court.toUpperCase()}\nREGISTRY: ${location}\n\nFile Number: ${fileNo}\n\n${applicant.toUpperCase()}\nApplicant\n\n— and —\n\n${respondent.toUpperCase()}\nRespondent`;
     return { courtName: court, caseNumber: affidavitData.caseNumber, plaintiff: applicant, defendant: respondent, formatted };
   }
@@ -55,7 +56,7 @@ class SouthAustraliaAffidavitTemplate extends BaseAffidavitTemplate {
 
   generateNotaryBlock(affidavitData) {
     const city = affidavitData.county || affidavitData.city || '_______________';
-    return `Sworn/Affirmed at ${city},\nin South Australia,\non the _____ day of _________________, _______.\n\nBefore me:\n\n________________________________\n[Name]\nJustice of the Peace / Solicitor / Commissioner for Oaths`;
+    return `Sworn/Affirmed at ${city},\nin South Australia,\non the _____ day of _________________, _______.\n\nBefore me:\n\n________________________________\n${placeholder('Name')}\nJustice of the Peace / Solicitor / Commissioner for Oaths`;
   }
 }
 

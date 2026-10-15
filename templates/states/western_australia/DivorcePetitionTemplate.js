@@ -3,6 +3,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class WesternAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -23,7 +24,7 @@ class WesternAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplat
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Registry',
-      districtPlaceholder: '[REGISTRY]',
+      districtPlaceholder: placeholder('REGISTRY'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -45,8 +46,8 @@ class WesternAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplat
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     const caption = [
       `IN THE ${courtName}`, '', `${this.getCaseNumberLabel()}: ${caseNumber}`, '',
       `IN THE MATTER OF THE FAMILY LAW ACT 1975 (CTH)`, `AND THE FAMILY COURT ACT 1997 (WA)`, '',
@@ -93,7 +94,7 @@ class WesternAustraliaDivorcePetitionTemplate extends BaseDivorcePetitionTemplat
     return { title: 'ORDERS SOUGHT', items, nextParagraphNumber: divorceData._paragraphNum || 15 };
   }
 
-  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || '[APPLICANT NAME]'}, the Applicant, make oath and say (or solemnly affirm) that the contents of this Application are true and correct to the best of my knowledge, information, and belief.`; }
+  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || placeholder('APPLICANT NAME')}, the Applicant, make oath and say (or solemnly affirm) that the contents of this Application are true and correct to the best of my knowledge, information, and belief.`; }
   getGroundsText() { return 'The marriage has broken down irretrievably within the meaning of section 48(1) of the Family Law Act 1975 (Cth). The parties have lived separately and apart for a continuous period of not less than 12 months immediately preceding the date of filing of this Application.'; }
 }
 

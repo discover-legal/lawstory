@@ -3,7 +3,8 @@
 // Complies with Florida Statutes Chapter 61 and Florida Family Law Rules of Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -88,7 +89,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `CIRCUIT COURT OF THE _____ JUDICIAL CIRCUIT, IN AND FOR ${countyUpper} COUNTY, FLORIDA`;
   }
 
@@ -106,7 +107,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `IN AND FOR ${countyUpper} COUNTY`;
   }
 
@@ -118,7 +119,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     let caption = '';
 
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     caption += `IN THE CIRCUIT COURT OF THE ${divorceData.judicialCircuit || '________'} JUDICIAL CIRCUIT,\n`;
     caption += `IN AND FOR ${countyUpper} COUNTY, FLORIDA\n\n`;
 
@@ -128,13 +129,13 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `Case No.: ${caseNumber}\n`;
     caption += `Division: ${divorceData.division || '________'}\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
     caption += `${petitioner},\n`;
     caption += `Petitioner,\n\n`;
 
     caption += `and\n\n`;
 
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     caption += `${respondent},\n`;
     caption += `Respondent.`;
 
@@ -158,15 +159,15 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `THIS CAUSE having come before this Court on ${this.formatDate(divorceData.hearingDate) || '___________________'} for final hearing,`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += ` and Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appearing ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')},`;
+      text += ` and Petitioner, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing with counsel', 'appearing pro se', 'not appearing')},`;
 
       if (divorceData.respondentAppeared) {
-        text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, appearing and consenting to the entry of this Final Judgment,`;
+        text += ` and Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, appearing and consenting to the entry of this Final Judgment,`;
       } else {
-        text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, having been served and not appearing,`;
+        text += ` and Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, having been served and not appearing,`;
       }
     } else {
-      text += ` and Petitioner appearing ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')},`;
+      text += ` and Petitioner ${representationPhrase(divorceData.petitionerRepresentation, 'appearing with counsel', 'appearing pro se', 'not appearing')},`;
       text += ` and Respondent ${divorceData.respondentAppeared ? 'appearing' : 'not appearing after proper service'},`;
     }
 
@@ -187,7 +188,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'FINDINGS',
-      text: `ORDERED AND ADJUDGED as follows:\n\n1. The Court has jurisdiction over the subject matter and the parties.\n\n2. ${divorceData.residencyProvingParty || 'Petitioner'} has been a resident of the State of Florida for at least six (6) months prior to the filing of the Petition, as required by Florida Statutes § 61.021.\n\n3. The marriage between the parties is irretrievably broken.\n\n4. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'} and separated on or about ${this.formatDate(divorceData.separationDate) || '[DATE]'}.`,
+      text: `ORDERED AND ADJUDGED as follows:\n\n1. The Court has jurisdiction over the subject matter and the parties.\n\n2. ${divorceData.residencyProvingParty || 'Petitioner'} has been a resident of the State of Florida for at least six (6) months prior to the filing of the Petition, as required by Florida Statutes § 61.021.\n\n3. The marriage between the parties is irretrievably broken.\n\n4. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')} and separated on or about ${this.formatDate(divorceData.separationDate) || placeholder('DATE')}.`,
       type: 'jurisdiction'
     };
   }
@@ -288,7 +289,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -332,7 +333,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -453,7 +454,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `${payor} shall pay ${alimonyType} alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || '[DATE]'} and continuing for ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `${payor} shall pay ${alimonyType} alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || placeholder('DATE')} and continuing for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
 
@@ -532,7 +533,7 @@ class FloridaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    */
   generateJudgmentBlock(divorceData) {
     return {
-      text: `DONE AND ORDERED in ${divorceData.county || '[COUNTY]'} County, Florida, this _____ day of _______________, 20___.
+      text: `DONE AND ORDERED in ${divorceData.county || placeholder('COUNTY')} County, Florida, this _____ day of _______________, 20___.
 
 
 _________________________________

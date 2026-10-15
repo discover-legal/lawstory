@@ -3,7 +3,8 @@
 // Complies with New York Domestic Relations Law and CPLR
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 const { resolveGroundsForDivorce } = require('./groundsResolver');
@@ -124,7 +125,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `SUPREME COURT OF THE STATE OF NEW YORK, COUNTY OF ${countyUpper}`;
   }
 
@@ -142,7 +143,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -156,17 +157,17 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     let caption = '';
 
     caption += `SUPREME COURT OF THE STATE OF NEW YORK\n`;
-    caption += `COUNTY OF ${(divorceData.county || '[COUNTY]').toUpperCase()}\n`;
+    caption += `COUNTY OF ${(divorceData.county || placeholder('COUNTY')).toUpperCase()}\n`;
     caption += `-------------------------------------------------------------------X\n\n`;
 
     // NY uses Plaintiff/Defendant terminology
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
     caption += `${plaintiff},\n`;
     caption += `Plaintiff,\n\n`;
 
     caption += `-against-\n\n`;
 
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
     caption += `${defendant},\n`;
     caption += `Defendant.`;
 
@@ -201,7 +202,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `The above-entitled action having been brought on for trial on ${this.formatDate(divorceData.hearingDate) || '___________________'},`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += ` ${plaintiff} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')},`;
+      text += ` ${plaintiff} ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by counsel', 'appearing pro se', 'not appearing')},`;
 
       if (divorceData.respondentAppeared) {
         text += ` and ${defendant} appearing and consenting,`;
@@ -209,7 +210,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += ` and ${defendant} having defaulted,`;
       }
     } else {
-      text += ` ${plaintiff} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')},`;
+      text += ` ${plaintiff} ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by counsel', 'appearing pro se', 'not appearing')},`;
       text += ` and ${defendant} ${divorceData.respondentAppeared ? 'appearing' : 'not appearing after proper service'},`;
     }
 
@@ -245,7 +246,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     return {
       title: 'FINDINGS OF FACT',
-      text: `ORDERED, ADJUDGED and DECREED as follows:\n\n1. The Court has jurisdiction over this action pursuant to DRL § 230.\n\n2. ${residencyText}\n\n3. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'} in ${divorceData.marriageLocation || '______________'}.\n\n4. ${groundsClause}\n\n5. All economic issues have been resolved either by stipulation or by the Court's determination.`,
+      text: `ORDERED, ADJUDGED and DECREED as follows:\n\n1. The Court has jurisdiction over this action pursuant to DRL § 230.\n\n2. ${residencyText}\n\n3. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')} in ${divorceData.marriageLocation || '______________'}.\n\n4. ${groundsClause}\n\n5. All economic issues have been resolved either by stipulation or by the Court's determination.`,
       type: 'jurisdiction'
     };
   }
@@ -372,7 +373,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -416,7 +417,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -552,7 +553,7 @@ class NewYorkDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `${payor} shall pay maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || '[DATE]'}.`,
+        content: `${payor} shall pay maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || placeholder('DATE')}.`,
         type: 'order'
       });
 

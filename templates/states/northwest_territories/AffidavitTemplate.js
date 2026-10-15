@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -62,8 +63,8 @@ class NorthwestTerritoriesAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'SUPREME COURT OF THE NORTHWEST TERRITORIES';
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n\n` +

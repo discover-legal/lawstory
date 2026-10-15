@@ -3,7 +3,8 @@
 // Complies with La. C.C. Art. 102-103 (Divorce)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -70,7 +71,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(parish) {
-    const parishName = parish || '[PARISH]';
+    const parishName = parish || placeholder('PARISH');
     return `District Court, Parish of ${parishName}, State of Louisiana`;
   }
 
@@ -89,7 +90,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const parishName = county || '[PARISH]';
+    const parishName = county || placeholder('PARISH');
     const parishFormatted = parishName.charAt(0).toUpperCase() + parishName.slice(1).toLowerCase();
     return `Parish of ${parishFormatted}`;
   }
@@ -121,10 +122,10 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court for hearing.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'in proper person (self-represented)')}.\n\n`;
-      text += `Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served with citation, did not appear'}.`;
+      text += `Petitioner, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared in proper person (self-represented)', 'did not appear')}.\n\n`;
+      text += `Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served with citation, did not appear'}.`;
     } else {
-      text += `Petitioner appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'in proper person')}.\n\n`;
+      text += `Petitioner ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared in proper person', 'did not appear')}.\n\n`;
       text += `Respondent ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -143,7 +144,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Jurisdiction section
    */
   generateJurisdictionSection(divorceData) {
-    const parish = divorceData.parish || divorceData.county || '[PARISH]';
+    const parish = divorceData.parish || divorceData.county || placeholder('PARISH');
     const grounds = divorceData.groundsForDivorce || 'article_102';
 
     let groundsText = '';
@@ -161,7 +162,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     return {
       title: 'JURISDICTION',
-      text: `The Court finds that it has jurisdiction over this proceeding and the parties. Petitioner is domiciled in the State of Louisiana and has been domiciled in the Parish of ${parish} for at least six (6) months preceding the filing of the petition. (La. C.C. Art. 10; La. C.C.P. Art. 3941) The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. ${groundsText}`,
+      text: `The Court finds that it has jurisdiction over this proceeding and the parties. Petitioner is domiciled in the State of Louisiana and has been domiciled in the Parish of ${parish} for at least six (6) months preceding the filing of the petition. (La. C.C. Art. 10; La. C.C.P. Art. 3941) The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. ${groundsText}`,
       type: 'jurisdiction'
     };
   }
@@ -174,7 +175,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'JUDGMENT OF DIVORCE',
-      text: `IT IS ORDERED, ADJUDGED, AND DECREED that a Judgment of Divorce is hereby rendered in favor of ${divorceData.petitionerName || '[PETITIONER NAME]'} and against ${divorceData.respondentName || '[RESPONDENT NAME]'}, dissolving the bonds of matrimony between the parties, effective ${this.getEffectiveDateText()}.`,
+      text: `IT IS ORDERED, ADJUDGED, AND DECREED that a Judgment of Divorce is hereby rendered in favor of ${divorceData.petitionerName || placeholder('PETITIONER NAME')} and against ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, dissolving the bonds of matrimony between the parties, effective ${this.getEffectiveDateText()}.`,
       type: 'dissolution'
     };
   }
@@ -251,7 +252,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({
         content: `${index + 1}. ${childInfo}`,
         type: 'child_item'
@@ -289,7 +290,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -390,7 +391,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay final periodic spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}, subject to modification upon a material change in circumstances.`,
+        content: `IT IS ORDERED that ${payor} shall pay final periodic spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}, subject to modification upon a material change in circumstances.`,
         type: 'order'
       });
     }
@@ -408,7 +409,7 @@ class LouisianaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Judgment block
    */
   generateJudgmentBlock(divorceData) {
-    const parish = divorceData.parish || divorceData.county || '[PARISH]';
+    const parish = divorceData.parish || divorceData.county || placeholder('PARISH');
     return {
       text: `THUS DONE AND SIGNED in open court in the Parish of ${parish}, State of Louisiana, this _____ day of _______________, 20___.
 

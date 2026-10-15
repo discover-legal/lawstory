@@ -3,7 +3,8 @@
 // Complies with 23 Pa.C.S. § 3101 et seq. (Pennsylvania Divorce Code)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -79,7 +80,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = (county || '[COUNTY]').toUpperCase();
+    const countyName = (county || placeholder('COUNTY')).toUpperCase();
     return `COURT OF COMMON PLEAS OF ${countyName} COUNTY`;
   }
 
@@ -97,7 +98,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -110,7 +111,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     let caption = '';
 
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     caption += `IN THE COURT OF COMMON PLEAS OF ${countyUpper} COUNTY, PENNSYLVANIA\n\n`;
 
     // Pennsylvania uses DOCKET NO.
@@ -118,8 +119,8 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `DOCKET NO. ${caseNumber}\n\n`;
 
     // Pennsylvania uses Plaintiff/Defendant
-    const petitioner = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `Plaintiff,\n\n`;
@@ -153,11 +154,11 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
     let text = '';
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `AND NOW, this cause coming before the Court, Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')},`;
+      text += `AND NOW, this cause coming before the Court, Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
       text += ` and the Court having considered the Affidavit(s) of Consent and the record in this matter, and being fully advised in the premises;`;
     } else {
-      text += `AND NOW, this cause coming before the Court for hearing, Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se')},`;
-      text += ` and Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${divorceData.respondentAppeared ? 'appearing' : 'having been duly served but failing to appear'},`;
+      text += `AND NOW, this cause coming before the Court for hearing, Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
+      text += ` and Defendant, ${divorceData.respondentName || placeholder('DEFENDANT')}, ${divorceData.respondentAppeared ? 'appearing' : 'having been duly served but failing to appear'},`;
       text += ` and the Court having heard all testimony, reviewed the record, and considered the applicable law;`;
     }
 
@@ -176,7 +177,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'FINDINGS',
-      text: `The Court finds that it has jurisdiction over the parties and the subject matter of this action. At least one party has been a bona fide resident of the Commonwealth of Pennsylvania for a period in excess of six (6) months immediately preceding this action, as required by 23 Pa.C.S. § 3104. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.separationDate ? ` and have been living separate and apart since ${this.formatDate(divorceData.separationDate)}` : ''}.`,
+      text: `The Court finds that it has jurisdiction over the parties and the subject matter of this action. At least one party has been a bona fide resident of the Commonwealth of Pennsylvania for a period in excess of six (6) months immediately preceding this action, as required by 23 Pa.C.S. § 3104. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.separationDate ? ` and have been living separate and apart since ${this.formatDate(divorceData.separationDate)}` : ''}.`,
       type: 'jurisdiction'
     };
   }
@@ -293,7 +294,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate
@@ -336,7 +337,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -447,7 +448,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for ${divorceData.spousalSupportDuration || 'a period to be determined'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for ${divorceData.spousalSupportDuration || 'a period to be determined'}.`,
         type: 'order'
       });
 
@@ -523,7 +524,7 @@ class PennsylvaniaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Judgment block
    */
   generateJudgmentBlock(divorceData) {
-    const countyUpper = divorceData.county ? divorceData.county.toUpperCase() : '[COUNTY]';
+    const countyUpper = divorceData.county ? divorceData.county.toUpperCase() : placeholder('COUNTY');
     return {
       text: `BY THE COURT:
 

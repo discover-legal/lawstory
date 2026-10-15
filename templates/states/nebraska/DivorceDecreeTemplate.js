@@ -3,7 +3,8 @@
 // Complies with Neb. Rev. Stat. §42-347 et seq. (Dissolution of Marriage)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -66,7 +67,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `District Court of ${countyName} County, Nebraska`;
   }
 
@@ -84,7 +85,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     const countyFormatted = countyName.charAt(0).toUpperCase() + countyName.slice(1).toLowerCase();
     return `County of ${countyFormatted}`;
   }
@@ -116,10 +117,10 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court for hearing.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se (self-represented)')}.\n\n`;
-      text += `Defendant, ${divorceData.respondentName || '[DEFENDANT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
+      text += `Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se (self-represented)', 'did not appear')}.\n\n`;
+      text += `Defendant, ${divorceData.respondentName || placeholder('DEFENDANT NAME')}, ${divorceData.respondentAppeared ? 'appeared and announced agreement' : 'having been duly served, did not appear'}.`;
     } else {
-      text += `Plaintiff appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'pro se')}.\n\n`;
+      text += `Plaintiff ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared pro se', 'did not appear')}.\n\n`;
       text += `Defendant ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -140,7 +141,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'JURISDICTION',
-      text: `The Court finds that it has jurisdiction over this proceeding and the parties. At least one party has been a bona fide resident of the State of Nebraska for at least one (1) year immediately preceding the filing of the complaint. (Neb. Rev. Stat. §42-349) The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The marriage is irretrievably broken. (Neb. Rev. Stat. §42-361) At least sixty (60) days have elapsed since the filing or service of the complaint. (Neb. Rev. Stat. §42-372)`,
+      text: `The Court finds that it has jurisdiction over this proceeding and the parties. At least one party has been a bona fide resident of the State of Nebraska for at least one (1) year immediately preceding the filing of the complaint. (Neb. Rev. Stat. §42-349) The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The marriage is irretrievably broken. (Neb. Rev. Stat. §42-361) At least sixty (60) days have elapsed since the filing or service of the complaint. (Neb. Rev. Stat. §42-372)`,
       type: 'jurisdiction'
     };
   }
@@ -153,7 +154,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DECREE OF DISSOLUTION',
-      text: `IT IS ORDERED, ADJUDGED, AND DECREED that the marriage of ${divorceData.petitionerName || '[PLAINTIFF NAME]'} and ${divorceData.respondentName || '[DEFENDANT NAME]'} is hereby dissolved, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
+      text: `IT IS ORDERED, ADJUDGED, AND DECREED that the marriage of ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')} and ${divorceData.respondentName || placeholder('DEFENDANT NAME')} is hereby dissolved, and the parties are restored to the status of unmarried persons, effective ${this.getEffectiveDateText()}.`,
       type: 'dissolution'
     };
   }
@@ -230,7 +231,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({
         content: `${index + 1}. ${childInfo}`,
         type: 'child_item'
@@ -267,7 +268,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -368,7 +369,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }
@@ -393,7 +394,7 @@ class NebraskaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
 _________________________________
 JUDGE
-${divorceData.county ? `DISTRICT COURT OF ${divorceData.county.toUpperCase()} COUNTY` : 'DISTRICT COURT OF [COUNTY] COUNTY'}
+${divorceData.county ? `DISTRICT COURT OF ${divorceData.county.toUpperCase()} COUNTY` : ('DISTRICT COURT OF ' + placeholder('COUNTY') + ' COUNTY')}
 STATE OF NEBRASKA`,
       type: 'judgment'
     };

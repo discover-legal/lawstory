@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -58,7 +59,7 @@ class ScotlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Sheriffdom',
-      districtPlaceholder: '[SHERIFFDOM]',
+      districtPlaceholder: placeholder('SHERIFFDOM'),
       filerLabel: 'Pursuer',
       responderLabel: 'Defender',
       selfRepresentedLabel: 'Party Litigant',
@@ -101,12 +102,12 @@ class ScotlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   getDefaultCourt(county) {
     const value = (county || '').trim().toUpperCase();
     if (!value) {
-      return 'SHERIFFDOM OF [SHERIFFDOM] AT [PLACE]';
+      return ('SHERIFFDOM OF ' + placeholder('SHERIFFDOM') + ' AT ' + placeholder('PLACE'));
     }
     if (SCOTTISH_SHERIFFDOMS.includes(value)) {
-      return `SHERIFFDOM OF ${value} AT [PLACE]`;
+      return `SHERIFFDOM OF ${value} AT ${placeholder('PLACE')}`;
     }
-    return `SHERIFFDOM OF [SHERIFFDOM] AT ${value}`;
+    return `SHERIFFDOM OF ${placeholder('SHERIFFDOM')} AT ${value}`;
   }
 
   /**
@@ -120,7 +121,7 @@ class ScotlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * Scotland venue — sheriffdom / court district.
    */
   generateVenue(county) {
-    const location = (county || '[SHERIFFDOM]').toUpperCase();
+    const location = (county || placeholder('SHERIFFDOM')).toUpperCase();
     return `${location}`;
   }
 
@@ -131,8 +132,8 @@ class ScotlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const pursuer = (divorceData.petitionerName || '[PURSUER NAME]').toUpperCase();
-    const defender = (divorceData.respondentName || '[DEFENDER NAME]').toUpperCase();
+    const pursuer = (divorceData.petitionerName || placeholder('PURSUER NAME')).toUpperCase();
+    const defender = (divorceData.respondentName || placeholder('DEFENDER NAME')).toUpperCase();
 
     // Form G1-style headings begin "SHERIFFDOM OF ..." with no "IN THE" prefix.
     const heading = courtName.startsWith('SHERIFFDOM') ? courtName : `IN THE ${courtName}`;
@@ -240,7 +241,7 @@ class ScotlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
 
@@ -285,7 +286,7 @@ class ScotlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -354,7 +355,7 @@ class ScotlandDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.spousalSupportAwarded) {
       items.push({
-        content: `THE COURT ORDERS that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'the Defender'} shall pay periodical allowance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'the Pursuer'} in the sum of £${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}, in terms of section 9(1)(d) of the Family Law (Scotland) Act 1985.`,
+        content: `THE COURT ORDERS that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'the Defender'} shall pay periodical allowance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'the Pursuer'} in the sum of £${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}, in terms of section 9(1)(d) of the Family Law (Scotland) Act 1985.`,
         type: 'order'
       });
     }

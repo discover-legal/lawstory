@@ -3,7 +3,8 @@
 // Complies with MCL § 552.6 et seq. (Michigan divorce statutes)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -72,7 +73,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `STATE OF MICHIGAN, ${countyUpper} COUNTY CIRCUIT COURT, FAMILY DIVISION`;
   }
 
@@ -84,7 +85,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     let caption = '';
 
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     const circuit = divorceData.judicialCircuit || '_____';
 
     caption += `IN THE ${circuit} JUDICIAL CIRCUIT COURT FOR ${countyUpper} COUNTY, STATE OF MICHIGAN\n`;
@@ -93,8 +94,8 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CASE NO. ${caseNumber}\n\n`;
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${plaintiff},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -103,7 +104,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `     Defendant.`;
 
     return {
-      courtName: `${circuit} Judicial Circuit Court, ${divorceData.county || '[County]'} County, Michigan, Family Division`,
+      courtName: `${circuit} Judicial Circuit Court, ${divorceData.county || placeholder('County')} County, Michigan, Family Division`,
       caseNumber: divorceData.caseNumber,
       petitioner: divorceData.petitionerName,
       respondent: divorceData.respondentName,
@@ -120,10 +121,10 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     let text = '';
 
     text += `This matter came before the Court on ${this.formatDate(divorceData.hearingDate) || '___________________'}, `;
-    text += `${divorceData.petitionerName || 'Plaintiff'} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'in propria persona')}`;
+    text += `${divorceData.petitionerName || 'Plaintiff'} ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing in propria persona', 'not appearing')}`;
 
     if (divorceData.respondentAppeared) {
-      text += `, and ${divorceData.respondentName || 'Defendant'} appearing ${representationPhrase(divorceData.respondentRepresentation, 'by and through counsel', 'in propria persona')}`;
+      text += `, and ${divorceData.respondentName || 'Defendant'} ${representationPhrase(divorceData.respondentRepresentation, 'appearing by and through counsel', 'appearing in propria persona', 'not appearing')}`;
     } else if (divorceData.isUncontested) {
       text += `, and ${divorceData.respondentName || 'Defendant'} having been duly served, having executed a Consent to Entry of Judgment / Waiver of Service`;
     } else {
@@ -152,7 +153,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     return {
       title: 'FINDINGS OF FACT',
-      text: `1. The Court has jurisdiction over the parties and the subject matter of this action.\n\n2. Plaintiff has been domiciled in Michigan for at least 180 days and a resident of ${divorceData.county || '[COUNTY]'} County for at least 10 days immediately preceding the filing of the Complaint, satisfying MCL § 552.9.\n\n3. The requisite waiting period of ${waitingDays} days from the date of filing has elapsed as required by MCL § 552.9f.\n\n4. There has been a breakdown of the marriage relationship to the extent that the objects of matrimony have been destroyed and there remains no reasonable likelihood that the marriage can be preserved. (MCL § 552.6)\n\n5. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE OF MARRIAGE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}.`,
+      text: `1. The Court has jurisdiction over the parties and the subject matter of this action.\n\n2. Plaintiff has been domiciled in Michigan for at least 180 days and a resident of ${divorceData.county || placeholder('COUNTY')} County for at least 10 days immediately preceding the filing of the Complaint, satisfying MCL § 552.9.\n\n3. The requisite waiting period of ${waitingDays} days from the date of filing has elapsed as required by MCL § 552.9f.\n\n4. There has been a breakdown of the marriage relationship to the extent that the objects of matrimony have been destroyed and there remains no reasonable likelihood that the marriage can be preserved. (MCL § 552.6)\n\n5. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE OF MARRIAGE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}.`,
       type: 'jurisdiction'
     };
   }
@@ -248,7 +249,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -293,7 +294,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -409,7 +410,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month, commencing ${this.formatDate(divorceData.spousalSupportStartDate) || '[DATE]'}, and continuing for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month, commencing ${this.formatDate(divorceData.spousalSupportStartDate) || placeholder('DATE')}, and continuing for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
 
@@ -500,7 +501,7 @@ class MichiganDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Judgment block
    */
   generateJudgmentBlock(divorceData) {
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     return {
       text: `IT IS SO ORDERED.
 
@@ -509,7 +510,7 @@ Date: ___________________
 
 _________________________________
 Circuit Court Judge
-${divorceData.county ? `${divorceData.judicialCircuit || '_____'} Judicial Circuit Court\n${countyUpper} County, Michigan` : '_____ Judicial Circuit Court\n[COUNTY] County, Michigan'}`,
+${divorceData.county ? `${divorceData.judicialCircuit || '_____'} Judicial Circuit Court\n${countyUpper} County, Michigan` : ('_____ Judicial Circuit Court\n' + placeholder('COUNTY') + ' County, Michigan')}`,
       type: 'judgment'
     };
   }

@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -53,7 +54,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Division',
-      districtPlaceholder: '[DIVISION]',
+      districtPlaceholder: placeholder('DIVISION'),
       filerLabel: 'Plaintiff',
       responderLabel: 'Defendant',
       selfRepresentedLabel: 'Self-Represented',
@@ -89,7 +90,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   }
 
   getDefaultCourt(county) {
-    const division = (county || '[DIVISION]').toUpperCase();
+    const division = (county || placeholder('DIVISION')).toUpperCase();
     return `HIGH COURT OF SOUTH AFRICA (${division})`;
   }
 
@@ -107,7 +108,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const division = (county || '[DIVISION]').toUpperCase();
+    const division = (county || placeholder('DIVISION')).toUpperCase();
     return `(${division})`;
   }
 
@@ -120,8 +121,8 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     const formatted = (
       `IN THE ${courtName}\n\n` +
@@ -229,7 +230,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     // Pension sharing (Divorce Act s.7(7)-(8); Pension Funds Act 24 of 1956)
     if (divorceData.pensionSharing) {
       items.push({
-        content: `IT IS ORDERED in terms of section 7(7) of the Divorce Act 70 of 1979, read with the Pension Funds Act 24 of 1956, that the ${divorceData.pensionFundName || '[PENSION FUND NAME]'} shall pay to ${divorceData.pensionBeneficiary || divorceData.petitionerName || 'Plaintiff'} an amount equal to ${divorceData.pensionSharePercentage || '[PERCENTAGE]'}% of the pension interest of ${divorceData.pensionMember || divorceData.respondentName || 'the member spouse'} as at the date of this decree.`,
+        content: `IT IS ORDERED in terms of section 7(7) of the Divorce Act 70 of 1979, read with the Pension Funds Act 24 of 1956, that the ${divorceData.pensionFundName || placeholder('PENSION FUND NAME')} shall pay to ${divorceData.pensionBeneficiary || divorceData.petitionerName || 'Plaintiff'} an amount equal to ${divorceData.pensionSharePercentage || placeholder('PERCENTAGE')}% of the pension interest of ${divorceData.pensionMember || divorceData.respondentName || 'the member spouse'} as at the date of this decree.`,
         type: 'order'
       });
     }
@@ -268,7 +269,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
 
@@ -313,7 +314,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -395,7 +396,7 @@ class SouthAfricaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.spousalSupportAwarded) {
       items.push({
-        content: `IT IS ORDERED in terms of section 7(2) of the Divorce Act 70 of 1979 that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Defendant'} shall pay spousal maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Plaintiff'} in the amount of R${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED in terms of section 7(2) of the Divorce Act 70 of 1979 that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Defendant'} shall pay spousal maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Plaintiff'} in the amount of R${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }

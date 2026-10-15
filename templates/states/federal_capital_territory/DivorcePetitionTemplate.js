@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -37,7 +38,7 @@ class FCTDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Territory',
       districtTerm: 'Judicial division',
-      districtPlaceholder: '[JUDICIAL DIVISION]',
+      districtPlaceholder: placeholder('JUDICIAL DIVISION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -89,12 +90,12 @@ class FCTDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -178,7 +179,7 @@ class FCTDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, the Petitioner herein, make oath and state that the facts deposed to in this Petition are true and correct to the best of my knowledge, information, and belief.`;
   }
 

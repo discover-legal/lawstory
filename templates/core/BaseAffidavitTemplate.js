@@ -3,6 +3,7 @@
 // Provides common functionality across all states
 
 const { caseNumberOrBlank } = require('./blanks');
+const { placeholder } = require('./placeholders');
 /**
  * Escape HTML special characters to prevent XSS/injection
  * @param {string} str - String to escape
@@ -308,7 +309,7 @@ class BaseAffidavitTemplate {
     // live CA acceptance run caught rendering "AFFIDAVIT OF ALISON RAE
     // MCPHERSON" in the financial declaration.
     const { captionUpper } = require('./nameCase');
-    return `AFFIDAVIT OF ${affiantName ? captionUpper(affiantName) : '[NAME]'}`;
+    return `AFFIDAVIT OF ${affiantName ? captionUpper(affiantName) : placeholder('NAME')}`;
   }
 
   /**
@@ -318,7 +319,7 @@ class BaseAffidavitTemplate {
    * @returns {string} Introduction text
    */
   generateIntroduction(affidavitData) {
-    const name = affidavitData.affiantName || '[NAME]';
+    const name = affidavitData.affiantName || placeholder('NAME');
     // Residence clause — standard affidavit form, and required for the
     // residency/domicile affidavit types whose interviews collect it.
     const residence = [
@@ -413,7 +414,7 @@ class BaseAffidavitTemplate {
    * @returns {Object} Signature block with formatted text
    */
   generateSignatureBlock(affiantName) {
-    const name = affiantName || '[NAME]';
+    const name = affiantName || placeholder('NAME');
     return {
       line: '_________________________________',
       name,

@@ -4,6 +4,7 @@
 //                MCL § 750.422 (perjury — judicial proceedings)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -56,7 +57,7 @@ class MichiganAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Formatted venue
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     const countyFormatted = countyName.charAt(0).toUpperCase() + countyName.slice(1);
     return `County of ${countyFormatted}`;
   }
@@ -71,7 +72,7 @@ class MichiganAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name — Michigan Circuit Court
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -81,8 +82,8 @@ class MichiganAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -166,7 +167,7 @@ Acting in ${county} County`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

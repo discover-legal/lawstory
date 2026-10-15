@@ -17,6 +17,12 @@ const DRAFT_RULE = '________________________________________';
 /** Fill-in blank used for a case / file / docket number not yet assigned. */
 const CASE_NUMBER_BLANK = '____________________';
 
+/** Short fill-in blank for a single missing value (a name, a date). */
+const FILL_BLANK = '______________';
+
+/** The rule an inline Draft-note blank opens with. */
+const INLINE_RULE = '__________________________';
+
 /**
  * A visible Draft-note blank: a fill-in rule followed by the instruction.
  * @param {string} instruction - What the filer must state, without the
@@ -34,7 +40,7 @@ function draftBlank(instruction) {
  * @returns {string}
  */
 function inlineDraftBlank(instruction) {
-  return `__________________________ (Draft — ${instruction})`;
+  return `${INLINE_RULE} (Draft — ${instruction})`;
 }
 
 /**
@@ -128,28 +134,32 @@ const COUNSEL_VALUES = new Set(['attorney', 'lawyer', 'counsel', 'represented'])
 const SELF_VALUES = new Set(['self', 'self-represented', 'self_represented', 'pro_se', 'pro se', 'pro-se', 'in pro per', 'unrepresented']);
 
 /**
- * How a party appeared, for a decree's appearances recital. A missing
- * representation field is NOT evidence of self-representation: the recital
- * renders the counsel / self-represented phrase only from a recorded
- * answer, otherwise a fill-in blank with a Draft note (Ontario round-7
- * attorney review, generalized to every decree).
+ * How a party appeared, for a decree's appearances recital. Each phrase
+ * carries its own verb ("appeared with counsel"), so the call site reads
+ * "Petitioner ${representationPhrase(…)}" and a filled-in blank is correct
+ * grammar. A missing representation field is NOT evidence of
+ * self-representation: the recital renders a phrase only from a recorded
+ * answer, otherwise a fill-in blank whose Draft note lists the three exact
+ * phrases to insert (Ontario round-7 attorney review, generalized).
  *
  * @param {*} value - divorceData.petitionerRepresentation (or respondent…)
- * @param {string} counselPhrase - Jurisdiction wording when represented
- * @param {string} selfPhrase - Jurisdiction wording when self-represented
+ * @param {string} counselPhrase - e.g. 'appeared with counsel'
+ * @param {string} selfPhrase - e.g. 'appeared pro se'
+ * @param {string} [absentPhrase] - e.g. 'did not appear'
  * @returns {string}
  */
-function representationPhrase(value, counselPhrase, selfPhrase) {
+function representationPhrase(value, counselPhrase, selfPhrase, absentPhrase = 'did not appear') {
   const v = typeof value === 'string' ? value.trim().toLowerCase() : '';
   if (COUNSEL_VALUES.has(v)) return counselPhrase;
   if (SELF_VALUES.has(v)) return selfPhrase;
-  const bare = (phrase) => phrase.replace(/^appear(?:ed|ing) /, '');
-  return inlineDraftBlank(`confirm representation before filing: appeared ${bare(counselPhrase)}, appeared ${bare(selfPhrase)}, or did not appear`);
+  return inlineDraftBlank(`insert '${counselPhrase}', '${selfPhrase}', or '${absentPhrase}'`);
 }
 
 module.exports = {
   DRAFT_RULE,
   CASE_NUMBER_BLANK,
+  FILL_BLANK,
+  INLINE_RULE,
   draftBlank,
   inlineDraftBlank,
   primaryResidenceOrBlank,

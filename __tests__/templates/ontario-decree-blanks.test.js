@@ -19,6 +19,7 @@
  */
 
 const OntarioDivorceDecreeTemplate = require('../../templates/states/ontario/DivorceDecreeTemplate');
+const { placeholder } = require('../../templates/core/placeholders');
 
 function baseData(overrides = {}) {
   return {
@@ -86,6 +87,6 @@ describe('Ontario Divorce Order — missing-value rendering', () => {
       baseData({ children: [{ dob: '2015-04-02' }] }),
     );
     const rendered = JSON.stringify(section);
-    expect(rendered).toMatch(/\[CHILD NAME\]/);
+    expect(rendered).toContain(placeholder('CHILD NAME'));
   });
 });

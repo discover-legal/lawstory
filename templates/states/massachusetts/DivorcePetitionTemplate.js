@@ -3,6 +3,7 @@
 // Complies with M.G.L. c. 208 (Massachusetts divorce statutes)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -89,7 +90,7 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `PROBATE AND FAMILY COURT DEPARTMENT, ${countyName.toUpperCase()} DIVISION`;
   }
 
@@ -107,7 +108,7 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    return `${(county || '[COUNTY]').toUpperCase()} COUNTY`;
+    return `${(county || placeholder('COUNTY')).toUpperCase()} COUNTY`;
   }
 
   /**
@@ -125,8 +126,8 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const docketNum = caseNumberOrBlank(divorceData.caseNumber);
     caption += `DOCKET NO. ${docketNum}\n\n`;
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${plaintiff},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -159,7 +160,7 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    */
   getJurisdictionStatement(divorceData) {
     const plaintiff = divorceData.petitionerName || 'Plaintiff';
-    const county = divorceData.county || '[COUNTY]';
+    const county = divorceData.county || placeholder('COUNTY');
 
     return `${plaintiff} is domiciled in ${county} County, Commonwealth of Massachusetts, and has the requisite domicile and residency to maintain this action pursuant to M.G.L. c. 208, § 5. The Probate and Family Court for ${county} County has jurisdiction over this action.`;
   }
@@ -231,7 +232,7 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -264,23 +265,17 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      // The financial-disclosure recital is procedural — required whatever
-      // the property posture — so it survives the base property gate.
-      const section = super.generatePropertySection(divorceData);
-      section.items.push({
-        number: section.nextParagraphNumber++,
-        content: 'The parties are required to file a Financial Statement in this matter. Plaintiff\'s Financial Statement is being filed herewith.',
-        type: 'financial_disclosure'
-      });
-      return section;
-    }
+  /**
+   * Procedural recital required whatever the property posture.
+   * @returns {string[]}
+   */
+  getPropertyProceduralRecitals(_divorceData) {
+    return ['The parties are required to file a Financial Statement in this matter. Plaintiff\'s Financial Statement is being filed herewith.'];
+  }
 
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -296,11 +291,6 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       type: 'property_request'
     });
 
-    items.push({
-      number: paragraphNum++,
-      content: 'The parties are required to file a Financial Statement in this matter. Plaintiff\'s Financial Statement is being filed herewith.',
-      type: 'financial_disclosure'
-    });
 
     return {
       title: 'VI. PROPERTY AND DEBTS',
@@ -376,7 +366,7 @@ class MassachusettsDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `I, ${name}, Plaintiff, hereby state under the penalties of perjury that the foregoing is true and correct to the best of my knowledge and belief.
 
 Signed under the penalties of perjury this ___ day of _______________, 20___.

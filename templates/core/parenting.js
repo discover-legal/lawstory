@@ -25,19 +25,23 @@
  *            raw: string|null, explicit: boolean}}
  *   kind        - safe rendering branch
  *   raw         - the stored value (null when absent)
- *   explicit    - false when custodyType was absent and 'joint' is only the
- *                 historical default (petitions must not plead a defaulted
- *                 arrangement as if the parties chose it)
+ *   explicit    - false when custodyType was absent (rendered as neutral
+ *                 as-agreed language, never a defaulted arrangement)
  */
 function resolveCustodyArrangement(divorceData) {
-  const raw = divorceData && divorceData.custodyType != null && String(divorceData.custodyType).trim() !== ''
-    ? String(divorceData.custodyType).trim()
-    : null;
+  // custodyType is the template field; custodyArrangement is what the
+  // interviews (v1 orchestrator, v2 legacy bridge) record — read either.
+  const stored = divorceData
+    ? [divorceData.custodyType, divorceData.custodyArrangement].find((v) => v != null && String(v).trim() !== '')
+    : undefined;
+  const raw = stored != null ? String(stored).trim() : null;
 
   if (raw === null) {
-    // Historical default: templates always rendered the joint branch when no
-    // custody type was stored. Preserved for byte-identity of old US output.
-    return { kind: 'joint', raw: null, explicit: false };
+    // Silence is not an arrangement. Templates used to render the joint
+    // branch here (a joint-custody ORDER in every decree whose interview
+    // never discussed custody); now it is neutral as-agreed language with a
+    // fill-in blank, like any value the data does not pin down.
+    return { kind: 'unspecified', raw: null, explicit: false };
   }
 
   const value = raw.toLowerCase();

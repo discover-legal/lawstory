@@ -1,5 +1,6 @@
 'use strict';
 const { createIndiaAffidavitTemplate } = require('../../core/IndiaTemplateFactory');
+const { placeholder } = require('../../core/placeholders');
 const Base = createIndiaAffidavitTemplate({ stateCode: 'IN_GJ', stateName: 'Gujarat', defaultCourt: 'Family Court, Ahmedabad', defaultCity: 'Ahmedabad', stampPaperValue: 'INR 20', metadataPath: '../states/gujarat/metadata.json' });
 
 // Indian terminology (see templates/core/terminology.js): the caption is the
@@ -16,7 +17,7 @@ class Template extends Base {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'District',
-      districtPlaceholder: '[DISTRICT]',
+      districtPlaceholder: placeholder('DISTRICT'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',

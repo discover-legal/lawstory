@@ -6,6 +6,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -50,7 +51,7 @@ class NewBrunswickAffidavitTemplate extends BaseAffidavitTemplate {
    * Fredericton, Moncton, Woodstock, etc.), not by county.
    */
   generateVenue(county) {
-    const location = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const location = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `JUDICIAL DISTRICT OF ${location}`;
   }
 
@@ -61,10 +62,10 @@ class NewBrunswickAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'COURT OF KING\'S BENCH OF NEW BRUNSWICK';
-    const location = (affidavitData.county || affidavitData.city || '[JUDICIAL DISTRICT]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n` +

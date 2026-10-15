@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * Saskatchewan Divorce Petition Template
@@ -62,7 +63,7 @@ class SaskatchewanDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Judicial centre',
       districtStyle: 'plain',
-      districtPlaceholder: '[JUDICIAL CENTRE]',
+      districtPlaceholder: placeholder('JUDICIAL CENTRE'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -112,7 +113,7 @@ class SaskatchewanDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const centre = (county || '[JUDICIAL CENTRE]').toUpperCase();
+    const centre = (county || placeholder('JUDICIAL CENTRE')).toUpperCase();
     return `COURT OF KING'S BENCH FOR SASKATCHEWAN — JUDICIAL CENTRE OF ${centre}`;
   }
 
@@ -131,7 +132,7 @@ class SaskatchewanDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Saskatchewan venue reason — Petitioner or Respondent resides in this judicial centre.
    */
   getVenueReason(divorceData) {
-    const centre = divorceData.county || '[JUDICIAL CENTRE]';
+    const centre = divorceData.county || placeholder('JUDICIAL CENTRE');
     return `the Petitioner or Respondent resides in the Judicial Centre of ${centre}`;
   }
 
@@ -210,7 +211,7 @@ class SaskatchewanDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Saskatchewan uses "Petitioner" and "Respondent".
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, Petitioner, make oath and say (or solemnly affirm) that the facts stated in this Petition for Divorce are true, to the best of my knowledge, information, and belief.`;
   }
 

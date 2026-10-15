@@ -4,6 +4,7 @@
 //                Conn. Gen. Stat. §53a-156 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -48,7 +49,7 @@ class ConnecticutAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     let caption = '';
 
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `${courtName}\n\n`;
@@ -56,8 +57,8 @@ class ConnecticutAffidavitTemplate extends BaseAffidavitTemplate {
     const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -91,7 +92,7 @@ class ConnecticutAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const districtName = county || '[JUDICIAL DISTRICT]';
+    const districtName = county || placeholder('JUDICIAL DISTRICT');
     const districtFormatted = districtName.charAt(0).toUpperCase() + districtName.slice(1).toLowerCase();
     return `Judicial District of ${districtFormatted}`;
   }
@@ -155,7 +156,7 @@ My commission expires: ___________
       labelStyle: 'letters',
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

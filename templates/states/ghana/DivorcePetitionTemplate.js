@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -70,7 +71,7 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -120,7 +121,7 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const city = (county || '[CITY]').toUpperCase();
+    const city = (county || placeholder('CITY')).toUpperCase();
     return `HIGH COURT OF JUSTICE, ${city}`;
   }
 
@@ -129,12 +130,12 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * High Court uses "Suit No." and the Matrimonial Causes Act heading.
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -179,7 +180,7 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Ghana venue reason — Petitioner or Respondent resides in this court location.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COURT LOCATION]';
+    const location = divorceData.county || placeholder('COURT LOCATION');
     return `the Petitioner or Respondent resides within the jurisdiction of the High Court at ${location}`;
   }
 
@@ -194,7 +195,7 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Ghana venue uses city/district of filing.
    */
   generateVenue(county) {
-    const location = (county || '[CITY/DISTRICT]').toUpperCase();
+    const location = (county || placeholder('CITY/DISTRICT')).toUpperCase();
     return `IN THE HIGH COURT OF JUSTICE, ${location}`;
   }
 
@@ -265,7 +266,7 @@ class GhanaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Ghana uses a sworn affidavit under the Oaths Act 1972 (NRCD 6).
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, Petitioner, make oath and say that the contents of this Petition are true to the best of my knowledge, information, and belief.`;
   }
 

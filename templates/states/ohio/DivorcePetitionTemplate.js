@@ -3,6 +3,7 @@
 // Complies with R.C. § 3105.01 et seq. (Ohio Divorce statutes)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -83,7 +84,7 @@ class OhioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COURT OF COMMON PLEAS, DOMESTIC RELATIONS DIVISION, ${countyUpper} COUNTY, OHIO`;
   }
 
@@ -101,8 +102,8 @@ class OhioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CASE NO. ${caseNumber}\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -126,7 +127,7 @@ class OhioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    */
   getJurisdictionStatement(divorceData) {
     const petitioner = divorceData.petitionerName || 'Plaintiff';
-    return `${petitioner} has been a resident of the State of Ohio for at least six (6) months and a resident of ${divorceData.county || '[COUNTY]'} County, Ohio for at least ninety (90) days immediately preceding the filing of this Complaint, as required by R.C. § 3105.03.`;
+    return `${petitioner} has been a resident of the State of Ohio for at least six (6) months and a resident of ${divorceData.county || placeholder('COUNTY')} County, Ohio for at least ninety (90) days immediately preceding the filing of this Complaint, as required by R.C. § 3105.03.`;
   }
 
   /**
@@ -203,7 +204,7 @@ class OhioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -235,15 +236,9 @@ class OhioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -333,7 +328,7 @@ class OhioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `I, ${name}, Plaintiff, being first duly sworn, state that the allegations of this Complaint are true and correct to the best of my knowledge and belief.
 
 

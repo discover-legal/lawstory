@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -46,7 +47,7 @@ class AlbertaAffidavitTemplate extends BaseAffidavitTemplate {
    * Alberta venue — judicial district of filing.
    */
   generateVenue(county) {
-    const district = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `JUDICIAL DISTRICT OF ${district}`;
   }
 
@@ -55,12 +56,12 @@ class AlbertaAffidavitTemplate extends BaseAffidavitTemplate {
    * Court of King's Bench uses judicial district and "Court File No."
    */
   generateCaseCaption(affidavitData) {
-    const district = (affidavitData.county || affidavitData.city || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (affidavitData.county || affidavitData.city || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
     // Alberta divorce: Statement of Claim for Divorce uses Plaintiff / Defendant (Alberta Rules of Court, AR 124/2010)
     // Family Law Act proceedings use Applicant / Respondent
-    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || affidavitData.respondentName || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || affidavitData.respondentName || placeholder('DEFENDANT NAME');
 
     const formatted =
       `COURT OF KING'S BENCH OF ALBERTA\n` +

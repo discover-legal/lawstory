@@ -3,6 +3,7 @@
 // Governing Law: M.G.L. c. 268, § 1A (perjury statement), M.G.L. c. 222 (notary public)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -56,7 +57,7 @@ class MassachusettsAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Formatted venue (e.g. "MIDDLESEX COUNTY")
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `${countyUpper} COUNTY`;
   }
 
@@ -71,7 +72,7 @@ class MassachusettsAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name — Massachusetts Probate and Family Court
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `${courtName}\n\n`;
@@ -81,8 +82,8 @@ class MassachusettsAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -162,7 +163,7 @@ My commission expires: ___________`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -57,7 +58,7 @@ class NorthernIrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Litigant in Person',
@@ -113,12 +114,12 @@ class NorthernIrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate
    * NI case caption uses "Petitioner" and "Respondent".
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -159,7 +160,7 @@ class NorthernIrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate
    * NI venue reason.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COURT LOCATION]';
+    const location = divorceData.county || placeholder('COURT LOCATION');
     return `the Petitioner or Respondent resides within the jurisdiction of the court at ${location}`;
   }
 
@@ -225,7 +226,7 @@ class NorthernIrelandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate
    * NI verification — sworn affidavit supporting the petition.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, the Petitioner, make oath and say that the facts stated in this Petition are true, to the best of my knowledge, information, and belief.`;
   }
 

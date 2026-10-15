@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -48,7 +49,7 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -84,7 +85,7 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   }
 
   getDefaultCourt(county) {
-    const city = (county || '[CITY]').toUpperCase();
+    const city = (county || placeholder('CITY')).toUpperCase();
     return `HIGH COURT OF JUSTICE, ${city}`;
   }
 
@@ -102,7 +103,7 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const location = (county || '[CITY/DISTRICT]').toUpperCase();
+    const location = (county || placeholder('CITY/DISTRICT')).toUpperCase();
     return `IN THE HIGH COURT OF JUSTICE, ${location}`;
   }
 
@@ -115,8 +116,8 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const formatted = (
       `IN THE ${courtName}\n\n` +
@@ -148,7 +149,7 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DECREE OF DIVORCE',
-      text: `THE COURT, having heard the petition, having been informed of the efforts made to effect a reconciliation (section 8 of the Matrimonial Causes Act 1971 (Act 367)), and being satisfied on all the evidence that the marriage between ${divorceData.petitionerName || '[PETITIONER NAME]'} and ${divorceData.respondentName || '[RESPONDENT NAME]'} has broken down beyond reconciliation within the meaning of sections 1(2) and 2(1) of the said Act:\n\nIT IS HEREBY DECREED that the said marriage solemnised on ${this.formatDate(divorceData.marriageDate) || '[DATE OF MARRIAGE]'} be and is hereby dissolved. This decree is final and takes effect from the date of this judgment (section 37).`,
+      text: `THE COURT, having heard the petition, having been informed of the efforts made to effect a reconciliation (section 8 of the Matrimonial Causes Act 1971 (Act 367)), and being satisfied on all the evidence that the marriage between ${divorceData.petitionerName || placeholder('PETITIONER NAME')} and ${divorceData.respondentName || placeholder('RESPONDENT NAME')} has broken down beyond reconciliation within the meaning of sections 1(2) and 2(1) of the said Act:\n\nIT IS HEREBY DECREED that the said marriage solemnised on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE OF MARRIAGE')} be and is hereby dissolved. This decree is final and takes effect from the date of this judgment (section 37).`,
       type: 'dissolution'
     };
   }
@@ -227,7 +228,7 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
 
@@ -268,7 +269,7 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -349,7 +350,7 @@ class GhanaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.spousalSupportAwarded) {
       items.push({
-        content: `IT IS ORDERED pursuant to section 19 of the Matrimonial Causes Act 1971 (Act 367) that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Petitioner'} in the amount of GHS ${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED pursuant to section 19 of the Matrimonial Causes Act 1971 (Act 367) that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'Petitioner'} in the amount of GHS ${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }

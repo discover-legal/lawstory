@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -45,7 +46,7 @@ class BCAffidavitTemplate extends BaseAffidavitTemplate {
    * BC venue — registry location (city) of filing.
    */
   generateVenue(county) {
-    const registry = (county || '[REGISTRY]').toUpperCase();
+    const registry = (county || placeholder('REGISTRY')).toUpperCase();
     return `${registry} REGISTRY`;
   }
 
@@ -54,10 +55,10 @@ class BCAffidavitTemplate extends BaseAffidavitTemplate {
    * Supreme Court of BC uses registry location and "Court File No."
    */
   generateCaseCaption(affidavitData) {
-    const registry = (affidavitData.county || affidavitData.city || '[REGISTRY]').toUpperCase();
+    const registry = (affidavitData.county || affidavitData.city || placeholder('REGISTRY')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const claimant = affidavitData.plaintiff || affidavitData.petitionerName || '[CLAIMANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const claimant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('CLAIMANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `SUPREME COURT OF BRITISH COLUMBIA\n` +

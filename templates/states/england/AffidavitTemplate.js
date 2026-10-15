@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -43,7 +44,7 @@ class EnglandAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Litigant in Person',
@@ -65,7 +66,7 @@ class EnglandAffidavitTemplate extends BaseAffidavitTemplate {
    * England venue — court location.
    */
   generateVenue(county) {
-    const location = (county || '[COURT LOCATION]').toUpperCase();
+    const location = (county || placeholder('COURT LOCATION')).toUpperCase();
     return `IN THE FAMILY COURT AT ${location}`;
   }
 
@@ -75,10 +76,10 @@ class EnglandAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT';
-    const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('LOCATION')).toUpperCase();
     const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `IN THE ${court.toUpperCase()} AT ${location}\n\n` +

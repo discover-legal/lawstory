@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * New Brunswick Divorce Petition Template
@@ -63,7 +64,7 @@ class NewBrunswickDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Judicial district',
       districtStyle: 'plain',
-      districtPlaceholder: '[JUDICIAL DISTRICT]',
+      districtPlaceholder: placeholder('JUDICIAL DISTRICT'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -113,7 +114,7 @@ class NewBrunswickDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const district = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `COURT OF KING'S BENCH OF NEW BRUNSWICK — JUDICIAL DISTRICT OF ${district}`;
   }
 
@@ -133,7 +134,7 @@ class NewBrunswickDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * New Brunswick venue reason — Petitioner or Respondent resides in this judicial district.
    */
   getVenueReason(divorceData) {
-    const district = divorceData.county || '[JUDICIAL DISTRICT]';
+    const district = divorceData.county || placeholder('JUDICIAL DISTRICT');
     return `the Petitioner or Respondent resides in the Judicial District of ${district}`;
   }
 
@@ -212,7 +213,7 @@ class NewBrunswickDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * NB uses "Petitioner" and "Respondent".
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, Petitioner, make oath and say (or solemnly affirm) that the facts stated in this Petition for Divorce are true, to the best of my knowledge, information, and belief.`;
   }
 

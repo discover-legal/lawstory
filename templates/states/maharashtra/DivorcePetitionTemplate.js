@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class MaharashtraDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -25,7 +26,7 @@ class MaharashtraDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'District',
-      districtPlaceholder: '[DISTRICT]',
+      districtPlaceholder: placeholder('DISTRICT'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -50,8 +51,8 @@ class MaharashtraDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county || divorceData.city)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     // Mutual-consent petitions are presented jointly (HMA s.13B(1) / SMA s.28(1))
     const g = (divorceData.groundsForDivorce || 'mutual_consent').toLowerCase();
     const joint = g.includes('mutual') || g.includes('consent');
@@ -92,7 +93,7 @@ class MaharashtraDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `Verified at Mumbai on this _____ day of __________, _______. I, ${name}, the Petitioner above-named, do hereby verify that the contents of the above petition are true and correct to the best of my knowledge and belief and nothing material has been concealed therefrom.`;
   }
 

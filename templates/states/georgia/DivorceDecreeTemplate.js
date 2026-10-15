@@ -3,7 +3,8 @@
 // Complies with O.C.G.A. § 19-5-1 et seq. and Georgia Superior Court rules
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -63,7 +64,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `Superior Court of ${countyName} County, Georgia`;
   }
 
@@ -81,7 +82,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -111,8 +112,8 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     }
     caption += '\n';
 
-    const petitioner = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -156,11 +157,11 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came on for a hearing before the Court.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel of record', 'pro se')}.\n\n`;
-      text += `Defendant, ${divorceData.respondentName || '[DEFENDANT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and announced agreement to the terms of this Final Judgment' : 'having been duly served with process, did not appear, and default was duly entered against Defendant'}.`;
+      text += `Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel of record', 'appeared pro se', 'did not appear')}.\n\n`;
+      text += `Defendant, ${divorceData.respondentName || placeholder('DEFENDANT NAME')}, ${divorceData.respondentAppeared ? 'appeared and announced agreement to the terms of this Final Judgment' : 'having been duly served with process, did not appear, and default was duly entered against Defendant'}.`;
     } else {
-      text += `Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel of record', 'pro se')}.\n\n`;
-      text += `Defendant, ${divorceData.respondentName || '[DEFENDANT NAME]'}, ${divorceData.respondentAppeared ? 'appeared' : 'although duly served with process, did not appear'}.`;
+      text += `Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel of record', 'appeared pro se', 'did not appear')}.\n\n`;
+      text += `Defendant, ${divorceData.respondentName || placeholder('DEFENDANT NAME')}, ${divorceData.respondentAppeared ? 'appeared' : 'although duly served with process, did not appear'}.`;
     }
 
     text += `\n\nThe Court, having heard evidence and considered the record, enters the following Final Judgment and Decree of Divorce:`;
@@ -180,7 +181,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'FINDINGS OF FACT',
-      text: `The Court finds that it has jurisdiction over this proceeding and the parties. Plaintiff has been a bona fide resident of the State of Georgia for more than six (6) months preceding the filing of this action. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The marriage of the parties is irretrievably broken, or other grounds for divorce have been established. At least thirty (30) days have elapsed since service of process on Defendant. (O.C.G.A. § 19-5-8)`,
+      text: `The Court finds that it has jurisdiction over this proceeding and the parties. Plaintiff has been a bona fide resident of the State of Georgia for more than six (6) months preceding the filing of this action. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The marriage of the parties is irretrievably broken, or other grounds for divorce have been established. At least thirty (30) days have elapsed since service of process on Defendant. (O.C.G.A. § 19-5-8)`,
       type: 'jurisdiction'
     };
   }
@@ -193,7 +194,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DIVORCE GRANTED',
-      text: `IT IS HEREBY ORDERED, ADJUDGED, AND DECREED that a total divorce is granted between ${divorceData.petitionerName || '[PLAINTIFF NAME]'} and ${divorceData.respondentName || '[DEFENDANT NAME]'}, and the bonds of matrimony heretofore existing between the parties are hereby dissolved, effective ${this.getEffectiveDateText()}.`,
+      text: `IT IS HEREBY ORDERED, ADJUDGED, AND DECREED that a total divorce is granted between ${divorceData.petitionerName || placeholder('PLAINTIFF NAME')} and ${divorceData.respondentName || placeholder('DEFENDANT NAME')}, and the bonds of matrimony heretofore existing between the parties are hereby dissolved, effective ${this.getEffectiveDateText()}.`,
       type: 'dissolution'
     };
   }
@@ -274,7 +275,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       const dobDisplay = childDob || '__________________';
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${dobDisplay}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${dobDisplay}`;
       items.push({
         content: `${index + 1}. ${childInfo}`,
         type: 'child_item'
@@ -311,7 +312,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -411,7 +412,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       const payee = divorceData.spousalSupportPayee || divorceData.petitionerName || 'Plaintiff';
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}, pursuant to O.C.G.A. § 19-6-1.`,
+        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}, pursuant to O.C.G.A. § 19-6-1.`,
         type: 'order'
       });
     }
@@ -436,7 +437,7 @@ class GeorgiaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
 _________________________________
 JUDGE, SUPERIOR COURT
-${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY, GEORGIA` : '[COUNTY] COUNTY, GEORGIA'}`,
+${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY, GEORGIA` : (placeholder('COUNTY') + ' COUNTY, GEORGIA')}`,
       type: 'judgment'
     };
   }

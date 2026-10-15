@@ -3,6 +3,7 @@
 // Complies with Va. Code § 20-91 et seq.
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -100,7 +101,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name including "Virginia"
    */
   getDefaultCourt(county) {
-    const jurisdictionName = county || '[COUNTY/CITY]';
+    const jurisdictionName = county || placeholder('COUNTY/CITY');
     const upper = jurisdictionName.toUpperCase();
     if (upper.startsWith('CITY OF')) {
       return `CIRCUIT COURT OF THE ${upper}, VIRGINIA`;
@@ -123,7 +124,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const upper = (county || '[COUNTY]').toUpperCase();
+    const upper = (county || placeholder('COUNTY')).toUpperCase();
     if (upper.startsWith('CITY OF')) {
       return upper;
     }
@@ -148,8 +149,8 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `CASE NO. ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // Virginia uses Complainant/Defendant (equity court tradition)
-    const petitioner = (divorceData.petitionerName || '[COMPLAINANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('COMPLAINANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `     Complainant,\n\n`;
@@ -176,7 +177,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    */
   getJurisdictionStatement(divorceData) {
     const petitioner = divorceData.petitionerName || 'Complainant';
-    const county = divorceData.county || '[COUNTY/CITY]';
+    const county = divorceData.county || placeholder('COUNTY/CITY');
     return `${petitioner} is and has been domiciled in the Commonwealth of Virginia for a period of more than six (6) months immediately preceding the commencement of this suit, satisfying the jurisdictional requirements of Va. Code § 20-97. ${petitioner} resides in ${county}, Virginia.`;
   }
 
@@ -186,7 +187,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue reason
    */
   getVenueReason(divorceData) {
-    const county = divorceData.county || '[COUNTY/CITY]';
+    const county = divorceData.county || placeholder('COUNTY/CITY');
     return `the parties last cohabited in ${county}, Virginia, and/or the Complainant resides in ${county}, Virginia, pursuant to Va. Code § 20-98`;
   }
 
@@ -225,7 +226,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     // formatDate returns null on freeform text ("a few months ago") — fall
     // back to the denylist sentinel so the generate route surfaces a
     // 422 rather than emitting the narrative verbatim (v12-B base fix).
-    const separationDate = this.formatDate(divorceData.separationDate) || '[DATE OF SEPARATION]';
+    const separationDate = this.formatDate(divorceData.separationDate) || placeholder('DATE OF SEPARATION');
 
     switch (grounds) {
       case 'separation_6mo':
@@ -273,7 +274,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -314,15 +315,9 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 13;
 
@@ -422,7 +417,7 @@ class VirginiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[COMPLAINANT NAME]';
+    const name = divorceData.petitionerName || placeholder('COMPLAINANT NAME');
     return `I, ${name}, Complainant, declare under penalty of perjury that the foregoing is true and correct to the best of my knowledge, information, and belief, pursuant to Va. Code § 18.2-434.
 
 _________________________________
@@ -457,7 +452,7 @@ Registration No.: ___________`;
 
     // Warn about independent cities
     if (divorceData.county && !divorceData.county.toUpperCase().startsWith('CITY OF')) {
-      warnings.push('Note: Virginia has independent cities (Richmond, Alexandria, etc.) that are not within any county. If the venue is an independent city, enter "City of [Name]" rather than a county name.');
+      warnings.push(('Note: Virginia has independent cities (Richmond, Alexandria, etc.) that are not within any county. If the venue is an independent city, enter "City of ' + placeholder('Name') + '" rather than a county name.'));
     }
 
     // Separation date check for no-fault grounds

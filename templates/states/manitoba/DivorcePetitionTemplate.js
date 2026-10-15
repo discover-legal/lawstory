@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * Manitoba Divorce Application Template
@@ -60,7 +61,7 @@ class ManitobaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Court location',
       districtStyle: 'plain',
-      districtPlaceholder: '[LOCATION]',
+      districtPlaceholder: placeholder('LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -110,7 +111,7 @@ class ManitobaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const location = (county || '[LOCATION]').toUpperCase();
+    const location = (county || placeholder('LOCATION')).toUpperCase();
     return `COURT OF KING'S BENCH OF MANITOBA (FAMILY DIVISION) — ${location}`;
   }
 
@@ -129,7 +130,7 @@ class ManitobaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Manitoba venue reason — Petitioner or Respondent resides in this location.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[LOCATION]';
+    const location = divorceData.county || placeholder('LOCATION');
     return `the Petitioner or Respondent resides in ${location}`;
   }
 
@@ -207,7 +208,7 @@ class ManitobaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Manitoba uses "Petitioner" and "Respondent".
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, Petitioner, make oath and say (or solemnly affirm) that the facts stated in this Petition for Divorce are true, to the best of my knowledge, information, and belief.`;
   }
 

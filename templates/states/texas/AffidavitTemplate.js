@@ -3,6 +3,7 @@
 // Governing Law: Tex. Gov't Code § 312.011, Tex. Civ. Prac. & Rem. Code § 18.002, Tex. Penal Code § 37.02
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -50,7 +51,7 @@ class TexasAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').replace(/\s+COUNTY$/i, '').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).replace(/\s+COUNTY$/i, '').toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -64,7 +65,7 @@ class TexasAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name - use 'court' field (matches schema), fallback to courtName for backwards compatibility
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -74,8 +75,8 @@ class TexasAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()}\n\n`;
     caption += `V.\n\n`;
@@ -151,7 +152,7 @@ My commission expires: ___________`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

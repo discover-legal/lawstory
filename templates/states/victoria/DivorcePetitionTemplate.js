@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -40,7 +41,7 @@ class VictoriaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Registry',
-      districtPlaceholder: '[REGISTRY]',
+      districtPlaceholder: placeholder('REGISTRY'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -67,16 +68,16 @@ class VictoriaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   getCaseNumberLabel() { return 'File Number'; }
 
   getDefaultCourt(county) {
-    const city = (county || '[CITY]').toUpperCase();
+    const city = (county || placeholder('CITY')).toUpperCase();
     return `FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA (DIVISION 2) — ${city} REGISTRY`;
   }
 
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`, '', `${caseLabel}: ${caseNumber}`, '',
@@ -92,7 +93,7 @@ class VictoriaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[REGISTRY LOCATION]';
+    const location = divorceData.county || placeholder('REGISTRY LOCATION');
     return `the Applicant or Respondent resides within the jurisdiction of the ${location} registry`;
   }
 
@@ -144,7 +145,7 @@ class VictoriaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[APPLICANT NAME]';
+    const name = divorceData.petitionerName || placeholder('APPLICANT NAME');
     return `I, ${name}, the Applicant, make oath and say (or solemnly affirm) that the contents of this Application are true and correct to the best of my knowledge, information, and belief.`;
   }
 

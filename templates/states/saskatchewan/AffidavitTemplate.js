@@ -6,6 +6,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -47,7 +48,7 @@ class SaskatchewanAffidavitTemplate extends BaseAffidavitTemplate {
    * Saskatchewan venue — judicial centre of filing.
    */
   generateVenue(county) {
-    const location = (county || '[JUDICIAL CENTRE]').toUpperCase();
+    const location = (county || placeholder('JUDICIAL CENTRE')).toUpperCase();
     return `AT ${location}`;
   }
 
@@ -57,10 +58,10 @@ class SaskatchewanAffidavitTemplate extends BaseAffidavitTemplate {
    * (Regina, Saskatoon, Prince Albert, etc.) and "Court File No."
    */
   generateCaseCaption(affidavitData) {
-    const centre = (affidavitData.county || affidavitData.city || '[JUDICIAL CENTRE]').toUpperCase();
+    const centre = (affidavitData.county || affidavitData.city || placeholder('JUDICIAL CENTRE')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `COURT OF KING'S BENCH FOR SASKATCHEWAN\n` +

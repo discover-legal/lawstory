@@ -121,7 +121,8 @@ describe('Utah decree', () => {
   test('does not recite "appeared pro se" unless representation is recorded', () => {
     const silent = new UtahDecree().generateDocument(kids).fullText;
     expect(silent).not.toMatch(/Mari Lopez appeared pro se/);
-    expect(silent).toMatch(/Mari Lopez appeared _+ \(Draft — confirm representation before filing/);
+    expect(silent).toMatch(/Mari Lopez _+ \(Draft — insert 'appeared by and through counsel', 'appeared pro se', or 'did not appear'\)/);
+    expect(silent).not.toMatch(/appeared _+/);
     expect(new UtahDecree().generateDocument({ ...kids, petitionerRepresentation: 'self' }).fullText)
       .toMatch(/Mari Lopez appeared pro se/);
   });
@@ -149,7 +150,7 @@ describe('base decree appearances', () => {
   test('a missing representation field is not recited as self-representation', () => {
     const text = new BaseDecree().generateAppearancesSection(kids).text;
     expect(text).not.toMatch(/Mari Lopez, appeared pro se/i);
-    expect(text).toMatch(/Draft — confirm representation before filing/);
+    expect(text).toMatch(/Mari Lopez, _+ \(Draft — insert 'appeared by and through counsel'/);
   });
 });
 

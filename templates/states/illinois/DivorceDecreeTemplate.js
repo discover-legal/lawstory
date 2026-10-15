@@ -3,7 +3,8 @@
 // Complies with 750 ILCS 5 (Illinois Marriage and Dissolution of Marriage Act)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -86,7 +87,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `CIRCUIT COURT OF ${countyUpper} COUNTY, ILLINOIS`;
   }
 
@@ -104,7 +105,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `${countyUpper} COUNTY`;
   }
 
@@ -116,19 +117,19 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     let caption = '';
 
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     caption += `IN THE CIRCUIT COURT OF THE ${divorceData.judicialCircuit || '_____'} JUDICIAL CIRCUIT\n`;
     caption += `${countyUpper} COUNTY, ILLINOIS\n\n`;
 
     caption += `In re the Marriage of:\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
     caption += `${petitioner},\n`;
     caption += `Petitioner,\n\n`;
 
     caption += `and\n\n`;
 
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     caption += `${respondent},\n`;
     caption += `Respondent.`;
 
@@ -155,15 +156,15 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This cause coming on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'},`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += ` Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')},`;
+      text += ` Petitioner, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
 
       if (divorceData.respondentAppeared) {
-        text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, appearing and agreeing to the entry of this Judgment,`;
+        text += ` and Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, appearing and agreeing to the entry of this Judgment,`;
       } else {
-        text += ` and Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, having been served and defaulting,`;
+        text += ` and Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, having been served and defaulting,`;
       }
     } else {
-      text += ` Petitioner appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')},`;
+      text += ` Petitioner ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by counsel', 'appearing pro se', 'not appearing')},`;
       text += ` and Respondent ${divorceData.respondentAppeared ? 'appearing' : 'not appearing'},`;
     }
 
@@ -186,7 +187,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'FINDINGS OF FACT',
-      text: `1. The Court has jurisdiction over this matter and the parties.\n\n2. At least one of the parties has been a resident of the State of Illinois for ninety (90) days immediately preceding the entry of this Judgment, satisfying the requirements of 750 ILCS 5/401.\n\n3. Irreconcilable differences have caused the irretrievable breakdown of the marriage, and efforts at reconciliation have failed or future attempts at reconciliation would be impracticable and not in the best interests of the family. (750 ILCS 5/401(a)(2))\n\n4. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'} and have been living separate and apart since ${this.formatDate(divorceData.separationDate) || '[DATE]'}.`,
+      text: `1. The Court has jurisdiction over this matter and the parties.\n\n2. At least one of the parties has been a resident of the State of Illinois for ninety (90) days immediately preceding the entry of this Judgment, satisfying the requirements of 750 ILCS 5/401.\n\n3. Irreconcilable differences have caused the irretrievable breakdown of the marriage, and efforts at reconciliation have failed or future attempts at reconciliation would be impracticable and not in the best interests of the family. (750 ILCS 5/401(a)(2))\n\n4. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')} and have been living separate and apart since ${this.formatDate(divorceData.separationDate) || placeholder('DATE')}.`,
       type: 'jurisdiction'
     };
   }
@@ -287,7 +288,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -331,7 +332,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -458,7 +459,7 @@ class IllinoisDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `${payor} shall pay maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || '[DATE]'}.`,
+        content: `${payor} shall pay maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || placeholder('DATE')}.`,
         type: 'order'
       });
 

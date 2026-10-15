@@ -27,6 +27,7 @@
  */
 
 const path = require('path');
+const { placeholder } = require('../../templates/core/placeholders');
 
 const CORE = path.join(__dirname, '..', '..', 'templates', 'core');
 const STATES = path.join(__dirname, '..', '..', 'templates', 'states');
@@ -317,7 +318,7 @@ describe('no-minor-children petitions omit custody/support prayer', () => {
   it('California petition caption renders no placeholder tokens with McPherson data', () => {
     const doc = new CaliforniaPetition().generateDocument(CA_MCP);
     const caption = doc.sections.caseCaption.formatted;
-    for (const token of ['[COURT NAME]', '[PLAINTIFF NAME]', '[DEFENDANT NAME]', '[CASE NUMBER]', '[PETITIONER NAME]', '[RESPONDENT NAME]', '[COUNTY]']) {
+    for (const token of ['COURT NAME', 'PLAINTIFF NAME', 'DEFENDANT NAME', 'CASE NUMBER', 'PETITIONER NAME', 'RESPONDENT NAME', 'COUNTY'].map((h) => placeholder(h))) {
       expect(caption).not.toContain(token);
     }
     // fullText head (before the title) must also carry none of them.
@@ -325,7 +326,7 @@ describe('no-minor-children petitions omit custody/support prayer', () => {
     const head = title && doc.fullText.includes(title)
       ? doc.fullText.slice(0, doc.fullText.indexOf(title))
       : doc.fullText;
-    for (const token of ['[COURT NAME]', '[PLAINTIFF NAME]', '[DEFENDANT NAME]', '[CASE NUMBER]', '[PETITIONER NAME]', '[RESPONDENT NAME]']) {
+    for (const token of ['COURT NAME', 'PLAINTIFF NAME', 'DEFENDANT NAME', 'CASE NUMBER', 'PETITIONER NAME', 'RESPONDENT NAME'].map((h) => placeholder(h))) {
       expect(head).not.toContain(token);
     }
   });
@@ -384,7 +385,7 @@ describe('captionUpper preserves internal-capital name patterns', () => {
     );
     expect(tpl.generateTitle('Leonardo DiCaprio')).toBe('AFFIDAVIT OF LEONARDO DiCAPRIO');
     // No name → placeholder unchanged.
-    expect(tpl.generateTitle('')).toBe('AFFIDAVIT OF [NAME]');
+    expect(tpl.generateTitle('')).toBe(`AFFIDAVIT OF ${placeholder('NAME')}`);
   });
 });
 

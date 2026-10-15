@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { findUnfilledPlaceholders } from '@/templates/core/placeholders';
 import { z } from 'zod';
 import { withAuth } from '@/lib/api/auth';
 import { query } from '@/lib/db';
@@ -307,6 +308,30 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
           facts: items.length > 0 ? { items } : undefined,
         },
       });
+    }
+
+    // Same guard as documents/generate: a sub-document whose template still
+    // carries placeholder markers is missing required data (e.g. a party's
+    // name). 422 with the specific gaps instead of filing blank captions.
+    const missingFields = Array.from(
+      new Set(documentStructures.flatMap((structure) => findUnfilledPlaceholders(structure))),
+    ).sort();
+    if (missingFields.length > 0) {
+      logger.warn('document_packet_blocked_missing_fields', {
+        userId: user.id,
+        documentId,
+        state: stateCode,
+        missingFields,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Packet cannot be generated: missing required fields — ${missingFields.join(', ')}`,
+          errorType: 'MissingRequiredFields',
+          missingFields,
+        },
+        { status: 422 },
+      );
     }
 
     const PDFService = require('@/services/pdfService');

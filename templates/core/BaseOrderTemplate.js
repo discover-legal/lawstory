@@ -9,6 +9,7 @@
  */
 
 const BaseDocument = require('./BaseDocument');
+const { placeholder } = require('./placeholders');
 
 class BaseOrderTemplate extends BaseDocument {
   constructor(stateCode, stateName) {
@@ -22,8 +23,8 @@ class BaseOrderTemplate extends BaseDocument {
   }
 
   generatePreamble(data) {
-    const court = (data.court || data.courtName || '[COURT]').toUpperCase();
-    const date  = '[DATE]';
+    const court = (data.court || data.courtName || placeholder('COURT')).toUpperCase();
+    const date  = placeholder('DATE');
     return `This matter having come before the Court on ${date}, and the Court having reviewed the record and considered the matter:`;
   }
 
@@ -49,7 +50,7 @@ class BaseOrderTemplate extends BaseDocument {
       '',
       '_________________________________',
       'Judge / Commissioner',
-      '[Court Name]'
+      placeholder('Court Name')
     ].join('\n');
   }
 

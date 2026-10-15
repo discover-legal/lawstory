@@ -10,6 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { NextRequest } from 'next/server';
+import { placeholder } from '@/templates/core/placeholders';
 
 const mockQuery = jest.fn();
 
@@ -82,11 +83,12 @@ afterEach(() => {
 
 describe('POST /api/documents/generate denylist (CA v7 replay tokens)', () => {
   test.each([
-    ['[DATE OF SEPARATION]', 'separation date'],
-    ['[CASE NUMBER]',        'case number'],
-    ['[BIRTH DATE]',         'child birth date'],
-    ['[COUNTY NAME]',        'county'],
-  ])('rejects with 422 when structure contains %s', async (token, label) => {
+    ['DATE OF SEPARATION', 'separation date'],
+    ['CASE NUMBER',        'case number'],
+    ['BIRTH DATE',         'child birth date'],
+    ['COUNTY NAME',        'county'],
+  ])('rejects with 422 when structure carries the %s marker', async (head, label) => {
+    const token = placeholder(head);
     currentBuilder = () => ({
       documentType: 'divorce_petition',
       sections: {
@@ -109,11 +111,11 @@ describe('POST /api/documents/generate denylist (CA v7 replay tokens)', () => {
   // Generic detection (templates/core/placeholders.js): tokens that were
   // never on the old hand-maintained denylist are caught by shape.
   test.each([
-    ['[PRIMARY RESIDENCE — set out the parent with whom the child(ren) primarily reside]', 'primary residence'],
-    ['[ARRANGEMENT — set out the parties\' decision-making agreement]', 'arrangement'],
-    ['[COMPLAINANT NAME]', 'complainant name'],
-    ['[SOMETHING NEW]', 'something new'],
-  ])('generic guard rejects %s', async (token, label) => {
+    [placeholder('PRIMARY RESIDENCE', 'set out the parent with whom the child(ren) primarily reside'), 'primary residence'],
+    [placeholder('ARRANGEMENT', "set out the parties' decision-making agreement"), 'arrangement'],
+    [placeholder('COMPLAINANT NAME'), 'complainant name'],
+    [placeholder('SOMETHING NEW'), 'something new'],
+  ])('guard rejects any template marker (%#)', async (token, label) => {
     currentBuilder = () => ({
       documentType: 'divorce_decree',
       sections: { body: [{ text: `IT IS ORDERED that ${token}.` }] },
@@ -128,7 +130,7 @@ describe('POST /api/documents/generate denylist (CA v7 replay tokens)', () => {
     expect((await res.json()).missingFields).toEqual([label]);
   });
 
-  test('legitimately bracketed text never trips the generic guard', async () => {
+  test('legitimately bracketed text and user text never trip the guard', async () => {
     currentBuilder = () => ({
       documentType: 'divorce_decree',
       sections: {
@@ -136,8 +138,11 @@ describe('POST /api/documents/generate denylist (CA v7 replay tokens)', () => {
           { text: 'Physical custody of the minor child(ren) is awarded to: [X] Petitioner' },
           { text: '[Print, type, or stamp commissioned name of notary or deputy clerk.]' },
           { text: 'Respondent: [APPEARANCE, SERVICE, AND DEFAULT STATUS — TO BE COMPLETED BY THE COURT].' },
-          { text: '[NOTARY SEAL] [SEAL] [JUDGE SIGNATURE] Signed on [DATE].' },
+          { text: `${placeholder('NOTARY SEAL')} ${placeholder('SEAL')} ${placeholder('JUDGE SIGNATURE')} Signed on ${placeholder('DATE')}.` },
           { text: '[ ] SNAP (food stamps)' },
+          // The user's own words are never placeholders, however they look.
+          { text: 'He called me [EXPLETIVE]; the statement is [REDACTED]; we lived in [ON]; Smith v. Jones [ONCA].' },
+          { text: '[PETITIONER NAME] typed literally by the user is just text.' },
         ],
       },
     });

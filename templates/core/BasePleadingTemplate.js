@@ -8,6 +8,7 @@
  */
 
 const BaseDocument = require('./BaseDocument');
+const { placeholder } = require('./placeholders');
 const { escapeHtml } = BaseDocument;
 
 class BasePleadingTemplate extends BaseDocument {
@@ -36,7 +37,7 @@ class BasePleadingTemplate extends BaseDocument {
   }
 
   generateIntroduction(data) {
-    const name = data.petitionerName || data.plaintiffName || '[PETITIONER]';
+    const name = data.petitionerName || data.plaintiffName || placeholder('PETITIONER');
     return `COMES NOW ${name}, Petitioner, appearing Pro Se, and respectfully states as follows:`;
   }
 
@@ -73,8 +74,8 @@ class BasePleadingTemplate extends BaseDocument {
   }
 
   generateVerification(signerName, stateCode) {
-    const name  = signerName || '[NAME]';
-    const state = stateCode  || this.stateName || '[STATE]';
+    const name  = signerName || placeholder('NAME');
+    const state = stateCode  || this.stateName || placeholder('STATE');
     return [
       `I, ${name}, declare under penalty of perjury under the laws of the`,
       `State of ${state} that the foregoing is true and correct to the best of my`,
@@ -84,7 +85,7 @@ class BasePleadingTemplate extends BaseDocument {
 
   generateCertificateOfService(data) {
     const respondent = data.respondentName || data.defendantName || 'Respondent / Defendant';
-    const petitioner = data.petitionerName || data.plaintiffName || '[NAME]';
+    const petitioner = data.petitionerName || data.plaintiffName || placeholder('NAME');
     return [
       'CERTIFICATE OF SERVICE',
       '',
@@ -111,7 +112,7 @@ class BasePleadingTemplate extends BaseDocument {
     const paragraphs  = this.processParagraphs(data.facts || []);
     const prayer      = this.generatePrayer(data.reliefRequested || []);
     const verification = this.generateVerification(data.petitionerName || data.affiantName, this.stateName);
-    const signerName  = data.petitionerName || data.affiantName || '[NAME]';
+    const signerName  = data.petitionerName || data.affiantName || placeholder('NAME');
     const signatureBlock = this.generateSignatureBlock(signerName);
     const footer      = this.generateFooter();
 

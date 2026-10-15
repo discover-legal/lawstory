@@ -370,8 +370,8 @@ function createEvidencePlaceholder(options = {}) {
   const { description = '', content = '' } = options;
 
   return normalizeFact({
-    content: content || `I attach as Exhibit [TBD] ${description}.`,
-    originalContent: content || `I attach as Exhibit [TBD] ${description}.`,
+    content: content || `I attach as Exhibit ______ ${description}.`,
+    originalContent: content || `I attach as Exhibit ______ ${description}.`,
     type: 'evidence',
     category: 'evidence',
     evidenceData: {

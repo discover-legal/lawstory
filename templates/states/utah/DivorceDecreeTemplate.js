@@ -3,7 +3,8 @@
 // Complies with Utah Code Title 81, Chapter 4 (formerly Title 30, Chapter 3) and Utah Rules of Civil Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const {
   resolveCustodyArrangement,
   resolvePrimaryResidenceName,
@@ -16,7 +17,7 @@ const {
   findingGroundClause,
 } = require('./groundsResolver');
 
-const normalizeCounty = (county, fallback = '[COUNTY]') =>
+const normalizeCounty = (county, fallback = placeholder('COUNTY')) =>
   (county || fallback).replace(/\s+county$/i, '').trim();
 
 /**
@@ -130,13 +131,13 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `IN THE DISTRICT COURT OF THE STATE OF UTAH\n`;
     caption += `IN AND FOR ${countyUpper} COUNTY\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
     caption += `${petitioner},\n`;
     caption += `Petitioner,\n\n`;
 
     caption += `vs.\n\n`;
 
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     caption += `${respondent},\n`;
     caption += `Respondent.`;
 
@@ -165,7 +166,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `The above-entitled matter came on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'}.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `${divorceData.petitionerName || 'Petitioner'} appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')}.\n\n`;
+      text += `${divorceData.petitionerName || 'Petitioner'} ${representationPhrase(divorceData.petitionerRepresentation, 'appeared by and through counsel', 'appeared pro se', 'did not appear')}.\n\n`;
 
       if (divorceData.respondentAppeared === true) {
         text += `${respondent} appeared and stipulated to the entry of this Decree.\n\n`;
@@ -175,7 +176,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         text += `${respondent}: [APPEARANCE OR SIGNED STIPULATION — TO BE COMPLETED BY THE COURT].\n\n`;
       }
     } else {
-      text += `${divorceData.petitionerName || 'Petitioner'} appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'pro se')}.\n\n`;
+      text += `${divorceData.petitionerName || 'Petitioner'} ${representationPhrase(divorceData.petitionerRepresentation, 'appeared by and through counsel', 'appeared pro se', 'did not appear')}.\n\n`;
       if (divorceData.respondentAppeared === true) {
         text += `${respondent} appeared.`;
       } else if (divorceData.defaultEntered === true || divorceData.appearanceType === 'default') {
@@ -255,9 +256,10 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         items.push({ content: `• ${prop}`, type: 'property_item' });
       });
     } else {
+      // No list on the record — the draft awards nothing by default.
       items.push({
-        content: '• All personal property currently in Petitioner\'s possession',
-        type: 'property_item'
+        content: `• ${inlineDraftBlank('list the property awarded to the Petitioner, or state "none"')}`,
+        type: 'property_draft_note'
       });
     }
 
@@ -274,8 +276,8 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else {
       items.push({
-        content: '• All personal property currently in Respondent\'s possession',
-        type: 'property_item'
+        content: `• ${inlineDraftBlank('list the property awarded to the Respondent, or state "none"')}`,
+        type: 'property_draft_note'
       });
     }
 
@@ -309,7 +311,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -353,7 +355,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -465,7 +467,9 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     // Health insurance
     items.push({
-      content: `IT IS ORDERED that ${divorceData.healthInsuranceProvider || obligor} shall maintain health insurance for the minor child(ren) if insurance is available at a reasonable cost through an employer or other group plan.`,
+      // Who carries the children's insurance is never assumed (it used to
+      // default to the respondent via the support obligor).
+      content: `IT IS ORDERED that ${divorceData.healthInsuranceProvider || divorceData.childSupportObligor || inlineDraftBlank('name the parent who will maintain health insurance for the children')} shall maintain health insurance for the minor child(ren) if insurance is available at a reasonable cost through an employer or other group plan.`,
       type: 'order'
     });
 
@@ -514,7 +518,7 @@ class UtahDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || '[DATE]'} and continuing for ${divorceData.spousalSupportDuration || '[DURATION]'} or until the occurrence of a terminating event under Utah law.`,
+        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || placeholder('DATE')} and continuing for ${divorceData.spousalSupportDuration || placeholder('DURATION')} or until the occurrence of a terminating event under Utah law.`,
         type: 'order'
       });
     }

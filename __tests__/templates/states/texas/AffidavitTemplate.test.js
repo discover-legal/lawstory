@@ -1,6 +1,7 @@
 /** @jest-environment node */
 // __tests__/templates/states/texas/AffidavitTemplate.test.js
 const TexasAffidavitTemplate = require('../../../../templates/states/texas/AffidavitTemplate');
+const { placeholder } = require('../../../../templates/core/placeholders');
 const BaseAffidavitTemplate = require('../../../../templates/core/BaseAffidavitTemplate');
 
 describe('TexasAffidavitTemplate', () => {
@@ -102,9 +103,9 @@ describe('TexasAffidavitTemplate', () => {
       const data = {};
       const caption = template.generateCaseCaption(data);
 
-      expect(caption.formatted).toContain('[COURT NAME]');
+      expect(caption.formatted).toContain(placeholder('COURT NAME'));
       expect(caption.formatted).toContain('____________________'); // unassigned case number → fill-in blank, never a [CASE NUMBER] token
-      expect(caption.formatted).not.toContain('[CASE NUMBER]');
+      expect(caption.formatted).not.toContain(placeholder('CASE NUMBER'));
     });
   });
 

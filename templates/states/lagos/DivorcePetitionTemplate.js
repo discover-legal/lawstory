@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -48,7 +49,7 @@ class LagosDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Judicial division',
-      districtPlaceholder: '[JUDICIAL DIVISION]',
+      districtPlaceholder: placeholder('JUDICIAL DIVISION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -97,7 +98,7 @@ class LagosDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const division = (county || '[JUDICIAL DIVISION]').toUpperCase();
+    const division = (county || placeholder('JUDICIAL DIVISION')).toUpperCase();
     return `HIGH COURT OF LAGOS STATE — ${division} JUDICIAL DIVISION`;
   }
 
@@ -105,12 +106,12 @@ class LagosDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Lagos case caption uses "Petitioner" and "Respondent".
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -150,7 +151,7 @@ class LagosDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Lagos venue reason.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[JUDICIAL DIVISION]';
+    const location = divorceData.county || placeholder('JUDICIAL DIVISION');
     return `the Petitioner resides within the ${location} Judicial Division of Lagos State`;
   }
 
@@ -216,7 +217,7 @@ class LagosDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Verification text — sworn affidavit under Nigerian Oaths Act.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, the Petitioner herein, make oath and state that the facts deposed to in this Petition are true and correct to the best of my knowledge, information, and belief.`;
   }
 

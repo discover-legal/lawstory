@@ -3,6 +3,7 @@
 // Governing Law: Fla. Stat. § 92.50, Fla. Stat. § 117.05, Fla. Stat. § 92.525
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -42,7 +43,7 @@ class FloridaAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name - use 'court' field (matches schema), fallback to courtName for backwards compatibility
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -52,8 +53,8 @@ class FloridaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -134,7 +135,7 @@ Type of Identification Produced: _______________________`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },
@@ -162,7 +163,7 @@ Type of Identification Produced: _______________________`;
    * @returns {string} Formatted venue
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY NAME]';
+    const countyName = county || placeholder('COUNTY NAME');
     return `State of ${this.stateName}\nCounty of ${countyName}`;
   }
 }

@@ -1,5 +1,6 @@
 'use strict';
 const { createIndiaDivorceDecreeTemplate } = require('../../core/IndiaTemplateFactory');
+const { placeholder } = require('../../core/placeholders');
 const Base = createIndiaDivorceDecreeTemplate({ stateCode: 'IN_TS', stateName: 'Telangana', defaultCourt: 'Family Court, Hyderabad', defaultCity: 'Hyderabad', stampPaperValue: 'INR 20', metadataPath: '../states/telangana/metadata.json' });
 
 // Indian terminology (see templates/core/terminology.js): the caption is the
@@ -16,7 +17,7 @@ class Template extends Base {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'District',
-      districtPlaceholder: '[DISTRICT]',
+      districtPlaceholder: placeholder('DISTRICT'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',

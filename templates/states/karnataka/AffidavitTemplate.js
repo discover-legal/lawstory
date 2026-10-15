@@ -1,6 +1,7 @@
 // templates/states/karnataka/AffidavitTemplate.js
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class KarnatakaAffidavitTemplate extends BaseAffidavitTemplate {
@@ -22,7 +23,7 @@ class KarnatakaAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'District',
-      districtPlaceholder: '[DISTRICT]',
+      districtPlaceholder: placeholder('DISTRICT'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -38,8 +39,8 @@ class KarnatakaAffidavitTemplate extends BaseAffidavitTemplate {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT, BENGALURU';
     const location = (affidavitData.county || affidavitData.city || 'Bengaluru').toUpperCase();
     const caseNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
     const formatted = `${court.toUpperCase()}\n${location}\n\nCase No. ${caseNo}\n\n${petitioner.toUpperCase()}\nPetitioner\n\nVersus\n\n${respondent.toUpperCase()}\nRespondent`;
     return { courtName: court, caseNumber: affidavitData.caseNumber, plaintiff: petitioner, defendant: respondent, formatted };
   }

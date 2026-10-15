@@ -3,7 +3,8 @@
 // Complies with N.C.G.S. Chapter 50 (§ 50-6 et seq.; § 50-1 was repealed in 1971)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 
 /**
@@ -77,7 +78,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `GENERAL COURT OF JUSTICE, DISTRICT COURT DIVISION, ${countyUpper} COUNTY`;
   }
 
@@ -95,7 +96,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `${countyUpper} COUNTY`;
   }
 
@@ -108,7 +109,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     let caption = '';
 
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     caption += `STATE OF NORTH CAROLINA\n`;
     caption += `IN THE GENERAL COURT OF JUSTICE\n`;
     caption += `DISTRICT COURT DIVISION\n`;
@@ -117,8 +118,8 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `FILE NO. ${caseNumber}\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `Plaintiff,\n\n`;
@@ -154,11 +155,11 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This cause came on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'},`;
 
     if (divorceData.isUncontested || !divorceData.respondentAppeared) {
-      text += ` Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'appearing pro se')},`;
+      text += ` Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
       text += ` Defendant having been duly served and not appearing,`;
     } else {
-      text += ` Plaintiff, ${divorceData.petitionerName || '[PLAINTIFF]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'by and through counsel', 'appearing pro se')},`;
-      text += ` and Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${representationPhrase(divorceData.respondentRepresentation, 'by and through counsel', 'appearing pro se')},`;
+      text += ` Plaintiff, ${divorceData.petitionerName || placeholder('PLAINTIFF')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
+      text += ` and Defendant, ${divorceData.respondentName || placeholder('DEFENDANT')}, ${representationPhrase(divorceData.respondentRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
     }
 
     text += ` and the Court having heard the evidence and the testimony of the Plaintiff, and being fully advised in the premises:`;
@@ -177,9 +178,9 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Jurisdiction section
    */
   generateJurisdictionSection(divorceData) {
-    const separationDate = this.formatDate(divorceData.separationDate) || '[DATE]';
-    const marriageDate = this.formatDate(divorceData.marriageDate) || '[DATE]';
-    const county = divorceData.county || '[COUNTY]';
+    const separationDate = this.formatDate(divorceData.separationDate) || placeholder('DATE');
+    const marriageDate = this.formatDate(divorceData.marriageDate) || placeholder('DATE');
+    const county = divorceData.county || placeholder('COUNTY');
 
     return {
       title: 'FINDINGS OF FACT',
@@ -317,7 +318,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
         // Unrecognized/undecided arrangement — neutral order with an explicit
         // placeholder for the parties' actual agreement. Never default to sole.
         items.push({
-          content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+          content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
           type: 'order'
         });
       }
@@ -423,7 +424,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month${divorceData.spousalSupportDuration ? ` for ${divorceData.spousalSupportDuration}` : ''}, pursuant to N.C.G.S. § 50-16.3A.`,
+        content: `IT IS ORDERED that ${payor} shall pay alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month${divorceData.spousalSupportDuration ? ` for ${divorceData.spousalSupportDuration}` : ''}, pursuant to N.C.G.S. § 50-16.3A.`,
         type: 'order'
       });
 
@@ -494,7 +495,7 @@ class NorthCarolinaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Judgment block
    */
   generateJudgmentBlock(divorceData) {
-    const countyUpper = divorceData.county ? divorceData.county.toUpperCase() : '[COUNTY]';
+    const countyUpper = divorceData.county ? divorceData.county.toUpperCase() : placeholder('COUNTY');
     return {
       text: `This the _____ day of _______________, 20___.
 

@@ -3,25 +3,8 @@
 // Complies with Florida Statutes Chapter 61 and Florida Family Law Rules of Procedure
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
-const { pregnancyStatus } = require('../../core/blanks');
-
-/**
- * Attorney round-5 (Tavita FL, 2026-08-30): LLM extraction occasionally
- * lands the literal string "null" / "undefined" / "N/A" where the slot
- * was meant to be empty. Rendering "Case No.: null" is worse than a
- * blank fill-in line.
- */
-function _sanitizeCaseNumber(value) {
-  if (value == null) return '';
-  const s = String(value).trim();
-  if (!s) return '';
-  const lower = s.toLowerCase();
-  if (lower === 'null' || lower === 'undefined' || lower === 'n/a' || lower === 'none') return '';
-  // Round-6: strip punctuation-only sentinels (".", "..") that LLM
-  // extraction lands when the case number is unknown.
-  if (!/[A-Za-z0-9]/.test(s)) return '';
-  return s;
-}
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, pregnancyStatus } = require('../../core/blanks');
 
 /**
  * Florida Petition for Dissolution of Marriage Template
@@ -141,7 +124,7 @@ class FloridaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    return `Circuit Court of the ${this.getJudicialCircuit(county)} Judicial Circuit, in and for ${county || '[COUNTY]'} County, Florida`;
+    return `Circuit Court of the ${this.getJudicialCircuit(county)} Judicial Circuit, in and for ${county || placeholder('COUNTY')} County, Florida`;
   }
 
   /**
@@ -184,16 +167,14 @@ class FloridaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const courtName = divorceData.court || this.getDefaultCourt(divorceData.county);
     caption += `IN THE ${courtName.toUpperCase()}\n\n`;
 
-    // Case number — reject literal "null"/"undefined" strings that
-    // slip in when the LLM extracts a missing case number as a string
-    // sentinel (Tavita FL, round-5).
-    const caseNumberSafe = _sanitizeCaseNumber(divorceData.caseNumber);
-    caption += `Case No.: ${caseNumberSafe || '____________________'}\n`;
+    // Case number — the shared blank (rejects "null"/"."-style sentinels,
+    // Tavita FL rounds 5–6).
+    caption += `Case No.: ${caseNumberOrBlank(divorceData.caseNumber)}\n`;
     caption += `Division: ${divorceData.division || 'Family'}\n\n`;
 
     // Parties
-    const petitioner = divorceData.petitionerName || '[PETITIONER NAME]';
-    const respondent = divorceData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = divorceData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = divorceData.respondentName || placeholder('RESPONDENT NAME');
 
     caption += `In re: The Marriage of\n\n`;
     caption += `${petitioner.toUpperCase()},\n`;
@@ -336,16 +317,9 @@ class FloridaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let paragraphNum = divorceData._paragraphNum || 9;
 
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There are no minor children common to the parties.',
-        type: 'children_info'
-      });
-
-      // Pregnancy averment (simplified-dissolution eligibility turns on
-      // it): sworn only from a recorded answer, otherwise a gender-neutral
-      // Draft-note blank.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      // Pregnancy averment follows (simplified-dissolution eligibility turns
+      // on it): sworn only from a recorded answer, otherwise a blank.
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'There are no minor children common to the parties.');
     } else {
       items.push({
         number: paragraphNum++,
@@ -354,7 +328,7 @@ class FloridaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -575,7 +549,7 @@ class FloridaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
 
     return `I understand that I am swearing or affirming under oath to the truthfulness of the claims made in this petition and that the punishment for knowingly making a false statement includes fines and/or imprisonment.
 

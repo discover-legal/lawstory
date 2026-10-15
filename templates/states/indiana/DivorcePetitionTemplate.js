@@ -3,6 +3,7 @@
 // Complies with IC 31-15 (Dissolution of Marriage)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * Indiana Petition for Dissolution of Marriage Template
@@ -83,7 +84,7 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `${countyName} County Circuit Court, State of Indiana`;
   }
 
@@ -101,7 +102,7 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     const countyFormatted = countyName.charAt(0).toUpperCase() + countyName.slice(1).toLowerCase();
     return `County of ${countyFormatted}`;
   }
@@ -112,7 +113,7 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Jurisdiction statement
    */
   getJurisdictionStatement(divorceData) {
-    return `Petitioner has been a resident of the State of Indiana for at least six (6) months and a resident of ${divorceData.county || '[COUNTY]'} County for at least three (3) months immediately preceding the filing of this Petition. (IC 31-15-2-6)`;
+    return `Petitioner has been a resident of the State of Indiana for at least six (6) months and a resident of ${divorceData.county || placeholder('COUNTY')} County for at least three (3) months immediately preceding the filing of this Petition. (IC 31-15-2-6)`;
   }
 
   /**
@@ -121,7 +122,7 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue reason
    */
   getVenueReason(divorceData) {
-    return `Petitioner or Respondent resides in ${divorceData.county || '[COUNTY]'} County, Indiana`;
+    return `Petitioner or Respondent resides in ${divorceData.county || placeholder('COUNTY')} County, Indiana`;
   }
 
   /**
@@ -184,13 +185,7 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let paragraphNum = divorceData._paragraphNum || 9;
 
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There are no children born of or adopted during this marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'There are no children born of or adopted during this marriage.');
     } else {
       items.push({
         number: paragraphNum++,
@@ -202,7 +197,7 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         divorceData.children.forEach((child, index) => {
           const childInfo = typeof child === 'string'
             ? child
-            : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+            : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
           items.push({
             number: paragraphNum++,
             content: `Child ${index + 1}: ${childInfo}`,
@@ -234,15 +229,9 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 12;
 
@@ -331,7 +320,7 @@ class IndianaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, declare under penalty of perjury under the laws of the State of Indiana that the facts stated in this Petition are true and correct to the best of my knowledge and belief.
 
 Date: ___________________

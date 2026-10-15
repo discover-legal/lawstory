@@ -3,7 +3,8 @@
 // Complies with M.G.L. c. 208 (Massachusetts divorce statutes)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -69,7 +70,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `PROBATE AND FAMILY COURT DEPARTMENT, ${countyName.toUpperCase()} DIVISION`;
   }
 
@@ -87,7 +88,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    return `${(county || '[COUNTY]').toUpperCase()} COUNTY`;
+    return `${(county || placeholder('COUNTY')).toUpperCase()} COUNTY`;
   }
 
   /**
@@ -105,8 +106,8 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const docketNum = caseNumberOrBlank(divorceData.caseNumber);
     caption += `DOCKET NO. ${docketNum}\n\n`;
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${plaintiff},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -132,12 +133,12 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     let text = '';
 
     text += `This cause came on to be heard on ${this.formatDate(divorceData.hearingDate) || '___________________'}, `;
-    text += `at the ${divorceData.county || '[COUNTY]'} Division of the Probate and Family Court, `;
+    text += `at the ${divorceData.county || placeholder('COUNTY')} Division of the Probate and Family Court, `;
 
-    text += `${divorceData.petitionerName || 'Plaintiff'} appearing ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'pro se')}`;
+    text += `${divorceData.petitionerName || 'Plaintiff'} ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by counsel', 'appearing pro se', 'not appearing')}`;
 
     if (divorceData.respondentAppeared) {
-      text += `, and ${divorceData.respondentName || 'Defendant'} appearing ${representationPhrase(divorceData.respondentRepresentation, 'by counsel', 'pro se')}`;
+      text += `, and ${divorceData.respondentName || 'Defendant'} ${representationPhrase(divorceData.respondentRepresentation, 'appearing by counsel', 'appearing pro se', 'not appearing')}`;
     } else {
       text += `, and ${divorceData.respondentName || 'Defendant'} ${divorceData.isUncontested ? 'having executed a Separation Agreement and waived appearance' : 'having been duly served and not appearing'}`;
     }
@@ -160,7 +161,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'FINDINGS',
-      text: `1. The Court has jurisdiction over this action pursuant to M.G.L. c. 208.\n\n2. The jurisdictional requirements of M.G.L. c. 208, § 5 are satisfied.\n\n3. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE OF MARRIAGE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}.\n\n4. There has been an irretrievable breakdown of the marriage, and a divorce should be granted.\n\n5. All financial disclosure requirements have been satisfied.`,
+      text: `1. The Court has jurisdiction over this action pursuant to M.G.L. c. 208.\n\n2. The jurisdictional requirements of M.G.L. c. 208, § 5 are satisfied.\n\n3. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE OF MARRIAGE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}.\n\n4. There has been an irretrievable breakdown of the marriage, and a divorce should be granted.\n\n5. All financial disclosure requirements have been satisfied.`,
       type: 'jurisdiction'
     };
   }
@@ -255,7 +256,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -300,7 +301,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -412,7 +413,7 @@ class MassachusettsDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `It is ORDERED that ${payor} shall pay ${alimonyType.replace(/_/g, ' ')} alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}, pursuant to M.G.L. c. 208, § 48 et seq.`,
+        content: `It is ORDERED that ${payor} shall pay ${alimonyType.replace(/_/g, ' ')} alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}, pursuant to M.G.L. c. 208, § 48 et seq.`,
         type: 'order'
       });
 
@@ -497,7 +498,7 @@ This Judgment shall become a Judgment of Divorce Absolute on _______________, 20
 
 _________________________________
 JUSTICE OF THE PROBATE AND FAMILY COURT
-${divorceData.county ? `${divorceData.county.toUpperCase()} DIVISION` : '[COUNTY] DIVISION'}`,
+${divorceData.county ? `${divorceData.county.toUpperCase()} DIVISION` : (placeholder('COUNTY') + ' DIVISION')}`,
       type: 'judgment'
     };
   }

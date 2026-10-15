@@ -1,6 +1,7 @@
 // templates/states/cross_river/DivorcePetitionTemplate.js
 'use strict';
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class CrossRiverDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -10,7 +11,7 @@ class CrossRiverDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   // counties. No "STATE OF"/"COUNTY OF" caption lines, no "X County" body phrasing.
   constructor() {
     super();
-    this.state = 'CR'; this.stateName = 'Cross River'; this.countryCode = 'NG'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'Judicial division', districtPlaceholder: '[JUDICIAL DIVISION]', filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
+    this.state = 'CR'; this.stateName = 'Cross River'; this.countryCode = 'NG'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'Judicial division', districtPlaceholder: placeholder('JUDICIAL DIVISION'), filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
     this.documentTitle = 'PETITION FOR DISSOLUTION OF MARRIAGE';
     try { this.metadata = require('./metadata.json'); } catch (e) { this.metadata = null; }
     this.requiredFields = ['petitionerName', 'respondentName', 'state', 'county', 'marriageDate', 'groundsForDivorce'];
@@ -19,17 +20,17 @@ class CrossRiverDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     this.formatting = { fontSize: '12pt', fontFamily: 'Times New Roman', lineHeight: '1.5', margin: '1in', paperSize: 'A4' };
   }
   getCaseNumberLabel() { return 'Suit No.'; }
-  getDefaultCourt(county) { return `HIGH COURT OF CROSS RIVER STATE — ${(county || '[JUDICIAL DIVISION]').toUpperCase()} JUDICIAL DIVISION`; }
+  getDefaultCourt(county) { return `HIGH COURT OF CROSS RIVER STATE — ${(county || placeholder('JUDICIAL DIVISION')).toUpperCase()} JUDICIAL DIVISION`; }
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     const caption = [`IN THE ${courtName}`, '', `Suit No. ${caseNumber}`, '', 'IN THE MATTER OF THE MATRIMONIAL CAUSES ACT, CAP M7 LFN 2004', '', 'BETWEEN:', '', petitioner, 'Petitioner', '', 'AND', '', respondent, 'Respondent'].join('\n');
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted: caption };
   }
   getJurisdictionStatement() { return 'The Petitioner/Respondent is domiciled in Nigeria as required by section 2 of the Matrimonial Causes Act, Cap M7 LFN 2004 (or, being a wife, has been ordinarily resident in Nigeria for not less than three years and is thereby deemed domiciled pursuant to section 7(b) of the said Act). By virtue of section 2(3) of the said Act, proceedings may be instituted in the High Court of any State; the Petitioner resides within Cross River State, and this Honourable Court is accordingly the appropriate venue.'; }
-  getVenueReason(divorceData) { return `the Petitioner resides within the ${divorceData.county || '[JUDICIAL DIVISION]'} Judicial Division of Cross River State`; }
+  getVenueReason(divorceData) { return `the Petitioner resides within the ${divorceData.county || placeholder('JUDICIAL DIVISION')} Judicial Division of Cross River State`; }
   generateReliefSection(divorceData) {
     const items = [];
     items.push({ number: null, content: 'THE PETITIONER HUMBLY PRAYS that the Honourable Court grant the following relief:', type: 'relief_intro' });
@@ -45,7 +46,7 @@ class CrossRiverDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     reliefItems.forEach((r, i) => { items.push({ number: null, content: r, type: 'relief_item', style: 'letter', letter: String.fromCharCode(97 + i) }); });
     return { title: 'RELIEF SOUGHT', items, nextParagraphNumber: divorceData._paragraphNum || 15 };
   }
-  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || '[PETITIONER NAME]'}, the Petitioner herein, make oath and state that the facts deposed to in this Petition are true and correct to the best of my knowledge, information, and belief.`; }
+  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, the Petitioner herein, make oath and state that the facts deposed to in this Petition are true and correct to the best of my knowledge, information, and belief.`; }
   getGroundsText(groundsForDivorce) {
     const g = (groundsForDivorce || 'separation_consent').toLowerCase();
     if (g.includes('adultery')) return 'Since the celebration of the marriage, the Respondent has committed adultery and the Petitioner finds it intolerable to live with the Respondent (MCA s.15(2)(b)).';

@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -58,7 +59,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -123,8 +124,8 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const formatted = (
       `IN THE ${courtName}\n` +
@@ -156,11 +157,11 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += 'On this date, the Court considered the above-entitled matter.\n\n';
 
     if (divorceData.appearanceType === 'agreed' || divorceData.isUncontested) {
-      text += `The Applicant, ${divorceData.petitionerName || '[APPLICANT NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'in person')}.\n\n`;
-      text += `The Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${divorceData.respondentAppeared ? 'appeared and consented to the proceedings' : 'having been duly served, did not appear and did not contest the proceedings'}.`;
+      text += `The Applicant, ${divorceData.petitionerName || placeholder('APPLICANT NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared by counsel', 'appeared in person', 'did not appear')}.\n\n`;
+      text += `The Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, ${divorceData.respondentAppeared ? 'appeared and consented to the proceedings' : 'having been duly served, did not appear and did not contest the proceedings'}.`;
     } else {
-      text += `The Applicant, ${divorceData.petitionerName || '[APPLICANT NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'by counsel', 'in person')}.\n\n`;
-      text += `The Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${divorceData.respondentAppeared ? 'appeared' : 'although duly served, did not appear'}.`;
+      text += `The Applicant, ${divorceData.petitionerName || placeholder('APPLICANT NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared by counsel', 'appeared in person', 'did not appear')}.\n\n`;
+      text += `The Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, ${divorceData.respondentAppeared ? 'appeared' : 'although duly served, did not appear'}.`;
     }
 
     return {
@@ -177,7 +178,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'INTERIM JUDGMENT GRANTED',
-      text: `IT IS ADJUDGED that the marriage between ${divorceData.petitionerName || '[APPLICANT NAME]'} (Applicant) and ${divorceData.respondentName || '[RESPONDENT NAME]'} (Respondent), solemnized on ${this.formatDate(divorceData.marriageDate) || '[DATE OF MARRIAGE]'}, has irretrievably broken down and the Court grants an Interim Judgment dissolving the said marriage pursuant to section 95 read with section 99 of the Women's Charter 1961.\n\nNOTE: This Interim Judgment does NOT dissolve the marriage. The marriage is dissolved only when the Final Judgment is extracted (Women's Charter, s.99(1)).`,
+      text: `IT IS ADJUDGED that the marriage between ${divorceData.petitionerName || placeholder('APPLICANT NAME')} (Applicant) and ${divorceData.respondentName || placeholder('RESPONDENT NAME')} (Respondent), solemnized on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE OF MARRIAGE')}, has irretrievably broken down and the Court grants an Interim Judgment dissolving the said marriage pursuant to section 95 read with section 99 of the Women's Charter 1961.\n\nNOTE: This Interim Judgment does NOT dissolve the marriage. The marriage is dissolved only when the Final Judgment is extracted (Women's Charter, s.99(1)).`,
       type: 'dissolution'
     };
   }
@@ -258,7 +259,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     divorceData.children.forEach((child, index) => {
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
 
@@ -295,7 +296,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -378,7 +379,7 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.spousalSupportAwarded) {
       items.push({
-        content: `IT IS ORDERED pursuant to sections 113-114 of the Women's Charter 1961 that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'the Respondent'} shall pay maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'the Applicant'} in the sum of SGD $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED pursuant to sections 113-114 of the Women's Charter 1961 that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'the Respondent'} shall pay maintenance to ${divorceData.spousalSupportPayee || divorceData.petitionerName || 'the Applicant'} in the sum of SGD $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }
@@ -466,12 +467,12 @@ class SingaporeDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         blocks: [
           {
             line: '_________________________________',
-            name: divorceData.petitionerName || '[APPLICANT NAME]',
+            name: divorceData.petitionerName || placeholder('APPLICANT NAME'),
             title: 'Applicant'
           },
           {
             line: '_________________________________',
-            name: divorceData.respondentName || '[RESPONDENT NAME]',
+            name: divorceData.respondentName || placeholder('RESPONDENT NAME'),
             title: 'Respondent'
           }
         ],

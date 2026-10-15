@@ -1,6 +1,7 @@
 // templates/states/tamil_nadu/DivorcePetitionTemplate.js
 'use strict';
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class TamilNaduDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -10,7 +11,7 @@ class TamilNaduDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   // caption lines and no "X County" body phrasing.
   constructor() {
     super();
-    this.state = 'IN_TN'; this.stateName = 'Tamil Nadu'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: '[DISTRICT]', filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
+    this.state = 'IN_TN'; this.stateName = 'Tamil Nadu'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: placeholder('DISTRICT'), filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
     this.documentTitle = 'PETITION FOR DIVORCE';
     try { this.metadata = require('./metadata.json'); } catch (e) { this.metadata = null; }
     this.requiredFields = ['petitionerName', 'respondentName', 'state', 'county', 'marriageDate', 'groundsForDivorce'];
@@ -28,7 +29,7 @@ class TamilNaduDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
   generateCaseCaption(dd) {
     const cn = (dd.court || this.getDefaultCourt(dd.county || dd.city)).toUpperCase(); const no = caseNumberOrBlank(dd.caseNumber);
-    const p = (dd.petitionerName || '[PETITIONER NAME]').toUpperCase(); const r = (dd.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const p = (dd.petitionerName || placeholder('PETITIONER NAME')).toUpperCase(); const r = (dd.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     const g = (dd.groundsForDivorce || 'mutual_consent').toLowerCase();
     // Mutual-consent petitions are presented jointly (HMA s.13B(1) / SMA s.28(1))
     const partyLines = (g.includes('mutual') || g.includes('consent'))
@@ -46,7 +47,7 @@ class TamilNaduDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     r.push('Pass any other order(s) as deemed fit.'); r.forEach((x, i) => items.push({ number: null, content: x, type: 'relief_item', style: 'letter', letter: String.fromCharCode(97+i) }));
     return { title: 'PRAYER', items, nextParagraphNumber: dd._paragraphNum || 15 };
   }
-  getVerificationText(dd) { return `Verified at Chennai on this _____ day of __________, _______. I, ${dd.petitionerName || '[PETITIONER NAME]'}, verify that the contents are true and correct.`; }
+  getVerificationText(dd) { return `Verified at Chennai on this _____ day of __________, _______. I, ${dd.petitionerName || placeholder('PETITIONER NAME')}, verify that the contents are true and correct.`; }
   getGroundsText(g) {
     const s = (g || 'mutual_consent').toLowerCase();
     if (s.includes('mutual') || s.includes('consent')) return 'The parties have mutually consented to dissolve the marriage (HMA s.13B / SMA s.28).';

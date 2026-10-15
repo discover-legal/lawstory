@@ -3,6 +3,7 @@
 // Complies with Tex. R. Civ. P. 3a (effective 2021) and Tex. Fam. Code § 102.009
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
@@ -80,7 +81,7 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -93,15 +94,15 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(data) {
     let caption = '';
 
-    const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
+    const courtName = (data.court || data.courtName || placeholder('COURT NAME')).toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
     const caseNumber = caseNumberOrBlank(data.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // captionUpper preserves McPherson/DiCaprio style internal capitals.
-    const petitioner = captionUpper(data.affiantName || data.petitioner || '[PETITIONER NAME]');
-    const respondent = captionUpper(data.respondentName || data.respondent || '[RESPONDENT NAME]');
+    const petitioner = captionUpper(data.affiantName || data.petitioner || placeholder('PETITIONER NAME'));
+    const respondent = captionUpper(data.respondentName || data.respondent || placeholder('RESPONDENT NAME'));
 
     caption += `${petitioner}\n`;
     caption += `Petitioner,\n\n`;
@@ -134,7 +135,7 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
    * @returns {string} Introduction text
    */
   generateIntroduction(data) {
-    const name = data.affiantName || '[NAME]';
+    const name = data.affiantName || placeholder('NAME');
     return `I, ${name}, being duly sworn, depose and state as follows:`;
   }
 
@@ -203,7 +204,7 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
    * @returns {Object} Signature block object
    */
   generateSignatureBlock(affiantName) {
-    const name = affiantName || '[NAME]';
+    const name = affiantName || placeholder('NAME');
     return {
       line: '_________________________________',
       name,
@@ -341,8 +342,8 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
    * @private
    */
   _buildCertificateFacts(data) {
-    const affiantName = data.affiantName || '[PETITIONER NAME]';
-    const respondentName = data.respondentName || '[RESPONDENT NAME]';
+    const affiantName = data.affiantName || placeholder('PETITIONER NAME');
+    const respondentName = data.respondentName || placeholder('RESPONDENT NAME');
 
     // Build the last known address string
     const address = data.lastKnownAddress ? data.lastKnownAddress.trim() : '______________________________';
@@ -353,7 +354,7 @@ class TexasCertLastKnownAddressTemplate extends BaseAffidavitTemplate {
 
     const lastContactDate = data.lastContactDate
       ? data.lastContactDate.trim()
-      : '[DATE]';
+      : placeholder('DATE');
 
     const items = [];
 

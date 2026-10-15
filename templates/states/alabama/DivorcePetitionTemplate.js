@@ -3,6 +3,7 @@
 // Complies with Ala. Code §30-2 (Divorce and Alimony)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * Alabama Complaint for Divorce Template
@@ -85,7 +86,7 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `Circuit Court of ${countyName} County, Alabama`;
   }
 
@@ -103,7 +104,7 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `IN THE CIRCUIT COURT OF ${countyName.toUpperCase()} COUNTY, ALABAMA`;
   }
 
@@ -113,7 +114,7 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Jurisdiction statement
    */
   getJurisdictionStatement(divorceData) {
-    const county = divorceData.county || '[COUNTY]';
+    const county = divorceData.county || placeholder('COUNTY');
     if (divorceData.bothResidents) {
       return `Both Plaintiff and Defendant are bona fide residents of the State of Alabama. This Court has jurisdiction pursuant to Ala. Code §30-2-5. Plaintiff resides in ${county} County, Alabama.`;
     }
@@ -126,7 +127,7 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue reason
    */
   getVenueReason(divorceData) {
-    return `Plaintiff resides in ${divorceData.county || '[COUNTY]'} County, Alabama`;
+    return `Plaintiff resides in ${divorceData.county || placeholder('COUNTY')} County, Alabama`;
   }
 
   /**
@@ -220,13 +221,7 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let paragraphNum = divorceData._paragraphNum || 9;
 
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There are no minor children born of or adopted during this marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'There are no minor children born of or adopted during this marriage.');
     } else {
       items.push({
         number: paragraphNum++,
@@ -238,7 +233,7 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         divorceData.children.forEach((child, index) => {
           const childInfo = typeof child === 'string'
             ? child
-            : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`;
+            : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`;
           items.push({
             number: paragraphNum++,
             content: `Child ${index + 1}: ${childInfo}`,
@@ -270,15 +265,9 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 12;
 
@@ -367,7 +356,7 @@ class AlabamaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `I, ${name}, declare under penalty of perjury under the laws of the State of Alabama that the facts stated in this Complaint are true and correct to the best of my knowledge and belief.
 
 Date: ___________________

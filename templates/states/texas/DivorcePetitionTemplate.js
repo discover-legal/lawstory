@@ -3,6 +3,7 @@
 // Complies with Texas Family Code and Texas Rules of Civil Procedure
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 const { resolveGroundsForDivorce } = require('./groundsResolver');
 
@@ -229,7 +230,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `${this.getCourtType(county)} COURT OF ${countyUpper} COUNTY, TEXAS`;
   }
 
@@ -259,7 +260,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -283,13 +284,13 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `IN THE MATTER OF\n`;
     caption += `THE MARRIAGE OF\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
     caption += `${petitioner}\n`;
     caption += `Petitioner,\n\n`;
 
     caption += `AND\n\n`;
 
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     caption += `${respondent}\n`;
     caption += `Respondent`;
 
@@ -297,7 +298,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     if (divorceData.hasMinorChildren === true && divorceData.children && divorceData.children.length > 0) {
       caption += `\n\nAND IN THE INTEREST OF\n`;
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         caption += `${childName.toUpperCase()}${index < divorceData.children.length - 1 ? ',' : ''}\n`;
       });
       caption += `MINOR CHILD${divorceData.children.length > 1 ? 'REN' : ''}`;
@@ -410,7 +411,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Jurisdiction statement
    */
   getJurisdictionStatement(divorceData) {
-    return `Petitioner has been a domiciliary of the State of Texas for at least six months and a resident of ${divorceData.county || '[COUNTY]'} County, Texas, for at least ninety days immediately preceding the filing of this suit.`;
+    return `Petitioner has been a domiciliary of the State of Texas for at least six months and a resident of ${divorceData.county || placeholder('COUNTY')} County, Texas, for at least ninety days immediately preceding the filing of this suit.`;
   }
 
   /**
@@ -564,13 +565,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let paragraphNum = divorceData._paragraphNum || 9;
 
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
-      items.push({
-        number: paragraphNum++,
-        content: 'No children were born or adopted of this marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'No children were born or adopted of this marriage.');
     } else {
       items.push({
         number: paragraphNum++,
@@ -580,7 +575,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
       if (divorceData.children && divorceData.children.length > 0) {
         divorceData.children.forEach((child, index) => {
-          const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+          const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
           // Attorney round-3 (2026-08-30): use shared year-only fallback
           // so `birthYear`-only and bare-year DOBs render.
           const birthDate = typeof child === 'object' ? this.formatChildDob(child) : null;
@@ -594,13 +589,7 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         });
       }
 
-      items.push({
-        number: paragraphNum++,
-        content: 'No other children were born to or adopted by Petitioner and Respondent during the marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'No other children were born to or adopted by Petitioner and Respondent during the marriage.');
 
       // Texas conservatorship language
       items.push({
@@ -632,15 +621,12 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // "There exists community property…" ALLEGES a community estate. Plead
-    // it only on an affirmative hasProperty === true; silence, a confirmed
-    // or facts-derived no-property statement (Mari's TX petition, live
-    // audit 2026-08), or an agreed division go through the base gate.
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // "There exists community property…" ALLEGES a community estate. Plead
+  // it only on an affirmative hasProperty === true; silence, a confirmed
+  // or facts-derived no-property statement (Mari's TX petition, live
+  // audit 2026-08), or an agreed division go through the base gate.
+  // Called by the base ONLY when that gate passes.
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -757,8 +743,8 @@ class TexasDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
-    const county = divorceData.county || '[COUNTY]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
+    const county = divorceData.county || placeholder('COUNTY');
 
     return `STATE OF TEXAS
 COUNTY OF ${county.toUpperCase()}

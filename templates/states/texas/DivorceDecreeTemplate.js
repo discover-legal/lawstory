@@ -3,7 +3,8 @@
 // Complies with Texas Family Code and Texas Rules of Civil Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList, partitionByCharacter } = require('../../core/dataShapes');
 const { resolveSpousalSupportDecision } = require('../../core/spousalSupport');
@@ -141,7 +142,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `DISTRICT COURT OF ${countyUpper} COUNTY, TEXAS`;
   }
 
@@ -159,7 +160,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -180,20 +181,20 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     caption += `IN THE MATTER OF\n`;
     caption += `THE MARRIAGE OF\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
     caption += `${petitioner}\n`;
     caption += `Petitioner,\n\n`;
 
     caption += `AND\n\n`;
 
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     caption += `${respondent}\n`;
     caption += `Respondent`;
 
     if (divorceData.hasMinorChildren === true && divorceData.children && divorceData.children.length > 0) {
       caption += `\n\nAND IN THE INTEREST OF\n`;
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         caption += `${childName.toUpperCase()}${index < divorceData.children.length - 1 ? ',' : ''}\n`;
       });
       caption += `MINOR CHILD${divorceData.children.length > 1 ? 'REN' : ''}`;
@@ -224,8 +225,8 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     // field is not evidence of self-representation.
     const petitionerAppearance = representationPhrase(
       divorceData.petitionerRepresentation,
-      'in person and through attorney of record',
-      'in person, pro se',
+      'appeared in person and through attorney of record',
+      'appeared in person, pro se',
     );
 
     // Truthful respondent appearance. serviceMethod 'publication' (TRCP 109
@@ -268,7 +269,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       respondentLine = `${respondent}, although duly cited, did not appear.`;
     }
 
-    text += `${petitioner} appeared ${petitionerAppearance}.\n\n`;
+    text += `${petitioner} ${petitionerAppearance}.\n\n`;
     text += `${respondentLine}\n\n`;
     text += `A jury was waived. All matters in controversy were submitted to the Court.`;
 
@@ -287,7 +288,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'JURISDICTION AND DOMICILE',
-      text: `The Court finds that the pleadings of the parties are in due form and contain all the allegations, information, and prerequisites required by law. The Court finds that it has jurisdiction of this case and of all the parties and that at least sixty days have elapsed since the date the suit was filed. The Court further finds that, at the time this suit was filed, Petitioner had been a domiciliary of Texas for the preceding six-month period and a resident of ${divorceData.county || '[COUNTY]'} County for the preceding ninety-day period.`,
+      text: `The Court finds that the pleadings of the parties are in due form and contain all the allegations, information, and prerequisites required by law. The Court finds that it has jurisdiction of this case and of all the parties and that at least sixty days have elapsed since the date the suit was filed. The Court further finds that, at the time this suit was filed, Petitioner had been a domiciliary of Texas for the preceding six-month period and a resident of ${divorceData.county || placeholder('COUNTY')} County for the preceding ninety-day period.`,
       type: 'jurisdiction'
     };
   }
@@ -465,7 +466,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -491,7 +492,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
       // Primary residence
       items.push({
-        content: `IT IS ORDERED AND DECREED that ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} shall have the exclusive right to designate the primary residence of the child(ren) within ${divorceData.residenceRestriction || divorceData.county || '[COUNTY]'} County, Texas, and contiguous counties.`,
+        content: `IT IS ORDERED AND DECREED that ${primaryResidenceOrBlank(resolvePrimaryResidenceName(divorceData))} shall have the exclusive right to designate the primary residence of the child(ren) within ${divorceData.residenceRestriction || divorceData.county || placeholder('COUNTY')} County, Texas, and contiguous counties.`,
         type: 'order'
       });
     } else if (custody.kind === 'sole_petitioner' || custody.kind === 'sole_respondent' || custody.kind === 'legacy_sole') {
@@ -519,7 +520,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -573,7 +574,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     if (divorceData.childSupportAmount) {
       items.push({
-        content: `IT IS ORDERED AND DECREED that ${obligor} is obligated to pay and shall pay to ${obligee} child support of $${divorceData.childSupportAmount} per month, with the first payment being due and payable on the 1st day of ${divorceData.childSupportStartMonth || '[MONTH]'}, ${divorceData.childSupportStartYear || '[YEAR]'}, and a like payment being due and payable on the 1st day of each month thereafter until the first month following the date of the earliest occurrence of one of the events described below.`,
+        content: `IT IS ORDERED AND DECREED that ${obligor} is obligated to pay and shall pay to ${obligee} child support of $${divorceData.childSupportAmount} per month, with the first payment being due and payable on the 1st day of ${divorceData.childSupportStartMonth || placeholder('MONTH')}, ${divorceData.childSupportStartYear || placeholder('YEAR')}, and a like payment being due and payable on the 1st day of each month thereafter until the first month following the date of the earliest occurrence of one of the events described below.`,
         type: 'order'
       });
     } else {
@@ -630,7 +631,7 @@ class TexasDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         type: 'finding'
       });
       items.push({
-        content: `IT IS ORDERED AND DECREED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${decision.amount || '[AMOUNT]'} per month, beginning on ${this.formatDate(decision.startDate) || '[DATE]'} and continuing for a period of ${decision.duration || '[DURATION]'}.`,
+        content: `IT IS ORDERED AND DECREED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${decision.amount || placeholder('AMOUNT')} per month, beginning on ${this.formatDate(decision.startDate) || placeholder('DATE')} and continuing for a period of ${decision.duration || placeholder('DURATION')}.`,
         type: 'order'
       });
     } else if (decision.outcome === 'reserve') {

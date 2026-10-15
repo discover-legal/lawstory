@@ -1,3 +1,4 @@
+const { placeholder } = require('../../templates/core/placeholders');
 /**
  * Alberta Statement of Claim for Divorce — Section V (Children).
  *
@@ -58,7 +59,7 @@ describe('Alberta petition Section V — children', () => {
     expect(body).not.toMatch(/no minor children/i);
     expect(body).toMatch(/There are minor children of the marriage/);
     // Name is a required field — keep as sentinel so the denylist catches it.
-    expect(body).toMatch(/\[CHILD NAME\]/);
+    expect(body).toContain(placeholder('CHILD NAME'));
     // DOB renders as a visible fill-in blank + Draft note, NOT `[BIRTH DATE]`.
     expect(body).not.toMatch(/\[BIRTH DATE\]/);
     expect(body).toMatch(/born _{6,}/);

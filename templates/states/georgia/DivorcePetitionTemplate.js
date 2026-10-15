@@ -3,6 +3,7 @@
 // Complies with O.C.G.A. § 19-5-1 et seq. (Divorce) and Georgia Superior Court rules
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { resolveGroundsForDivorce } = require('./groundsResolver');
 
 // Leading soft-hedge words that make an already-hedged suspected-location
@@ -308,7 +309,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     return `Superior Court of ${countyName} County, Georgia`;
   }
 
@@ -326,7 +327,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -358,8 +359,8 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     }
     caption += '\n';
 
-    const petitioner = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -472,7 +473,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue reason
    */
   getVenueReason(divorceData) {
-    const county = divorceData.county || '[COUNTY]';
+    const county = divorceData.county || placeholder('COUNTY');
     // Nonresident-defendant venue: when the petitioner has affirmed the
     // Defendant's whereabouts are unknown (or that Defendant has left
     // Georgia — Amara v-round-2 audit, 2026-08 — Defendant moved to
@@ -595,13 +596,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let paragraphNum = divorceData._paragraphNum || 9;
 
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There are no minor children born of or adopted during this marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'There are no minor children born of or adopted during this marriage.');
     } else {
       items.push({
         number: paragraphNum++,
@@ -621,7 +616,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
           const dobDisplay = childDob || '__________________';
           const childInfo = typeof child === 'string'
             ? child
-            : `${child.name || '[CHILD NAME]'}, born ${dobDisplay}`;
+            : `${child.name || placeholder('CHILD NAME')}, born ${dobDisplay}`;
           items.push({
             number: paragraphNum++,
             content: `Child ${index + 1}: ${childInfo}`,
@@ -630,13 +625,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         });
       }
 
-      items.push({
-        number: paragraphNum++,
-        content: 'No other children were born of or adopted by the parties during this marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'No other children were born of or adopted by the parties during this marriage.');
     }
 
     // Agreed child arrangements (custody enum, primary residence, agreed
@@ -736,7 +725,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     });
 
     minors.forEach((child, i) => {
-      const name = typeof child === 'string' ? child : (child.name || `[CHILD ${i + 1} NAME]`);
+      const name = typeof child === 'string' ? child : (child.name || placeholder(`CHILD ${i + 1} NAME`));
       const dob = typeof child === 'object'
         ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth)
         : null;
@@ -838,15 +827,9 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 12;
 
@@ -981,7 +964,7 @@ class GeorgiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `I, ${name}, Plaintiff, being duly sworn, state that the allegations of the foregoing Complaint for Divorce are true and correct to the best of my knowledge and belief.
 
 _________________________________

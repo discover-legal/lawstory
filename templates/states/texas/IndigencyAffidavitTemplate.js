@@ -4,7 +4,8 @@
 // Misc. Docket No. 15-9171
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
 /**
@@ -78,7 +79,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -91,7 +92,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(data) {
     let caption = '';
 
-    const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
+    const courtName = (data.court || data.courtName || placeholder('COURT NAME')).toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
     const caseNumber = caseNumberOrBlank(data.caseNumber);
@@ -99,8 +100,8 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
 
     // Party identifiers: affiant is the party filing; respondent/opposing party may or may not be known
     // captionUpper preserves McPherson/DiCaprio style internal capitals.
-    const petitioner = captionUpper(data.petitioner || data.affiantName || '[PETITIONER/PLAINTIFF NAME]');
-    const respondent = captionUpper(data.respondent || data.defendant || '[RESPONDENT/DEFENDANT NAME]');
+    const petitioner = captionUpper(data.petitioner || data.affiantName || placeholder('PETITIONER/PLAINTIFF NAME'));
+    const respondent = captionUpper(data.respondent || data.defendant || placeholder('RESPONDENT/DEFENDANT NAME'));
 
     caption += `${petitioner}\n\n`;
     caption += `V.\n\n`;
@@ -132,7 +133,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Introduction text
    */
   generateIntroduction(data) {
-    const name = data.affiantName || '[NAME]';
+    const name = data.affiantName || placeholder('NAME');
     return `I, ${name}, declare under penalty of perjury that the following is true and correct:`;
   }
 
@@ -197,7 +198,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {Object} Signature block
    */
   generateSignatureBlock(affiantName) {
-    const name = affiantName || '[NAME]';
+    const name = affiantName || placeholder('NAME');
     return {
       line: '_________________________________',
       name,
@@ -337,7 +338,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
    * @private
    */
   _buildIndigencyFacts(data) {
-    const affiantName = data.affiantName || '[NAME]';
+    const affiantName = data.affiantName || placeholder('NAME');
     const items = [];
     let n = 1;
 
@@ -351,7 +352,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
     // Fact 2: Monthly income
     const incomeSource = data.incomeSource
       ? data.incomeSource.trim()
-      : '[describe sources, e.g., employment, government assistance, self-employment]';
+      : inlineDraftBlank('describe your income sources, e.g., employment, government assistance, self-employment');
 
     const incomeAmt = (data.monthlyIncome !== undefined && data.monthlyIncome !== null)
       ? `$${Number(data.monthlyIncome).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -366,7 +367,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
     // Fact 3: Monthly expenses
     const expenseDetails = data.expenseDetails
       ? data.expenseDetails.trim()
-      : '[describe major expense categories, e.g., rent/mortgage, utilities, food, transportation, medical]';
+      : inlineDraftBlank('describe your major expense categories, e.g., rent/mortgage, utilities, food, transportation, medical');
 
     const expenseAmt = (data.monthlyExpenses !== undefined && data.monthlyExpenses !== null)
       ? `$${Number(data.monthlyExpenses).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -381,7 +382,7 @@ class TexasIndigencyAffidavitTemplate extends BaseAffidavitTemplate {
     // Fact 4: Assets
     const assets = data.assets
       ? data.assets.trim()
-      : '[describe real property, vehicles, bank accounts, and other significant assets, or state "none"]';
+      : inlineDraftBlank('describe real property, vehicles, bank accounts, and other significant assets, or state "none"');
 
     items.push({
       number: n++,

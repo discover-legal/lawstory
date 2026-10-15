@@ -3,6 +3,7 @@
 // Complies with N.C.G.S. Chapter 50 (§ 50-6 et seq.; § 50-1 was repealed in 1971)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -93,7 +94,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `GENERAL COURT OF JUSTICE\nDISTRICT COURT DIVISION\n${countyUpper} COUNTY`;
   }
 
@@ -111,7 +112,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -125,7 +126,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let caption = '';
 
     // North Carolina General Court of Justice
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     caption += `STATE OF NORTH CAROLINA\n`;
     caption += `IN THE GENERAL COURT OF JUSTICE\n`;
     caption += `DISTRICT COURT DIVISION\n`;
@@ -135,8 +136,8 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `FILE NO. ${caseNumberOrBlank(divorceData.caseNumber)}\n\n`;
 
     // Party names — NC uses Plaintiff/Defendant
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -162,7 +163,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    */
   getJurisdictionStatement(divorceData) {
     const petitioner = divorceData.petitionerName || 'Plaintiff';
-    const county = divorceData.county || '[COUNTY]';
+    const county = divorceData.county || placeholder('COUNTY');
     return `${petitioner} has been a resident of the State of North Carolina for at least six (6) months immediately preceding the filing of this Complaint, satisfying the residency requirement of N.C.G.S. § 50-8. ${petitioner} is a resident of ${county} County, North Carolina.`;
   }
 
@@ -172,7 +173,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue reason
    */
   getVenueReason(divorceData) {
-    return `the Plaintiff resides in ${divorceData.county || '[COUNTY]'} County, North Carolina, pursuant to N.C.G.S. § 50-3`;
+    return `the Plaintiff resides in ${divorceData.county || placeholder('COUNTY')} County, North Carolina, pursuant to N.C.G.S. § 50-3`;
   }
 
   /**
@@ -188,7 +189,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     // formatDate returns null on freeform text ("a few months ago") — fall
     // back to the denylist sentinel so the generate route surfaces a
     // 422 rather than emitting the narrative verbatim (v12-B base fix).
-    const separationDate = this.formatDate(divorceData.separationDate) || '[DATE OF SEPARATION]';
+    const separationDate = this.formatDate(divorceData.separationDate) || placeholder('DATE OF SEPARATION');
 
     items.push({
       number: paragraphNum++,
@@ -214,7 +215,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     // formatDate returns null on freeform text ("a few months ago") — fall
     // back to the denylist sentinel so the generate route surfaces a
     // 422 rather than emitting the narrative verbatim (v12-B base fix).
-    const separationDate = this.formatDate(divorceData.separationDate) || '[DATE OF SEPARATION]';
+    const separationDate = this.formatDate(divorceData.separationDate) || placeholder('DATE OF SEPARATION');
 
     if (grounds === 'incurable_insanity') {
       return 'The parties have lived separate and apart for five (5) years, such separation having been caused by the incurable insanity of the Defendant, pursuant to N.C.G.S. § 50-5.';
@@ -234,13 +235,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let paragraphNum = divorceData._paragraphNum || 10;
 
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There are no minor children born of or adopted during this marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'There are no minor children born of or adopted during this marriage.');
     } else {
       items.push({
         number: paragraphNum++,
@@ -249,7 +244,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -300,15 +295,9 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -399,7 +388,7 @@ class NorthCarolinaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, being duly sworn, say that I am the Plaintiff in the above action; that I have read the foregoing Complaint and know the contents thereof; that the same is true of my own knowledge, except those matters therein stated on information and belief, and as to those matters I believe it to be true.
 
 _________________________________

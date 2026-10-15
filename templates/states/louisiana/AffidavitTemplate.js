@@ -4,6 +4,7 @@
 //                La. R.S. 14:123 (false swearing / perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -50,7 +51,7 @@ class LouisianaAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     let caption = '';
 
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -58,8 +59,8 @@ class LouisianaAffidavitTemplate extends BaseAffidavitTemplate {
     const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `DOCKET NO. ${caseNumber.toUpperCase()}\n\n`;
 
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Petitioner,\n\n`;
@@ -94,7 +95,7 @@ class LouisianaAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateVenue(county) {
     // Accept either parish or county parameter for compatibility
-    const parishName = county || '[PARISH]';
+    const parishName = county || placeholder('PARISH');
     const parishFormatted = parishName.charAt(0).toUpperCase() + parishName.slice(1).toLowerCase();
     return `Parish of ${parishFormatted}`;
   }
@@ -163,7 +164,7 @@ Bar Roll / Notary ID: ____________
       labelStyle: 'letters',
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

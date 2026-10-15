@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -73,7 +74,7 @@ class KenyaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court station',
-      districtPlaceholder: '[COURT STATION]',
+      districtPlaceholder: placeholder('COURT STATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -122,7 +123,7 @@ class KenyaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const station = (county || '[STATION]').toUpperCase();
+    const station = (county || placeholder('STATION')).toUpperCase();
     return `CHIEF MAGISTRATE'S COURT AT ${station}`;
   }
 
@@ -132,12 +133,12 @@ class KenyaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Marriage Act, 2014, s.2) or Kadhi's Court (Islamic marriages).
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -180,7 +181,7 @@ class KenyaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Kenya venue reason — Petitioner or Respondent resides in this court station.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COURT STATION]';
+    const location = divorceData.county || placeholder('COURT STATION');
     return `the Petitioner or Respondent resides within the jurisdiction of the court station at ${location}`;
   }
 
@@ -248,7 +249,7 @@ class KenyaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Oaths and Statutory Declarations Act (Cap 15).
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, the Petitioner herein, make oath and say that the contents of this Petition are true to the best of my knowledge, information, and belief.`;
   }
 

@@ -1,6 +1,7 @@
 // templates/states/tamil_nadu/AffidavitTemplate.js
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class TamilNaduAffidavitTemplate extends BaseAffidavitTemplate {
@@ -11,7 +12,7 @@ class TamilNaduAffidavitTemplate extends BaseAffidavitTemplate {
   constructor() {
     super();
     this.metadata = require('./metadata.json');
-    this.state = this.metadata.stateCode; this.stateName = this.metadata.stateName; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: '[DISTRICT]', filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
+    this.state = this.metadata.stateCode; this.stateName = this.metadata.stateName; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: placeholder('DISTRICT'), filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
     this.requiredFields = this.metadata.requiredFields; this.sections.perjuryStatement = false;
   }
   generateHeader() { return 'IN THE FAMILY COURT AT CHENNAI'; }
@@ -19,8 +20,8 @@ class TamilNaduAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(d) {
     const court = d.court || d.courtName || 'FAMILY COURT, CHENNAI';
     const loc = (d.county || d.city || 'Chennai').toUpperCase();
-    const p = d.plaintiff || d.petitionerName || '[PETITIONER NAME]';
-    const r = d.defendant || d.respondentName || '[RESPONDENT NAME]';
+    const p = d.plaintiff || d.petitionerName || placeholder('PETITIONER NAME');
+    const r = d.defendant || d.respondentName || placeholder('RESPONDENT NAME');
     return { courtName: court, caseNumber: d.caseNumber, plaintiff: p, defendant: r, formatted: `${court.toUpperCase()}\n${loc}\n\nCase No. ${caseNumberOrBlank(d.caseNumber)}\n\n${p.toUpperCase()}\nPetitioner\n\nVersus\n\n${r.toUpperCase()}\nRespondent` };
   }
   performStateSpecificValidation(d) {

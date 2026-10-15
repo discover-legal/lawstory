@@ -3,7 +3,8 @@
 // Complies with California Family Code and California Rules of Court
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList, partitionByCharacter } = require('../../core/dataShapes');
 const { resolveSpousalSupportDecision } = require('../../core/spousalSupport');
@@ -112,7 +113,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `SUPERIOR COURT OF CALIFORNIA, COUNTY OF ${countyUpper}`;
   }
 
@@ -130,7 +131,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -151,12 +152,12 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     // deliberately keeps (McPherson, DiCaprio, van der Berg, O'Brien-Hatch)
     // instead of destroying them with `.toUpperCase()` — live California
     // audit surfaced "McPHERSON" corrupted to "MCPHERSON".
-    const petitioner = divorceData.petitionerName ? captionUpper(divorceData.petitionerName) : '[PETITIONER NAME]';
+    const petitioner = divorceData.petitionerName ? captionUpper(divorceData.petitionerName) : placeholder('PETITIONER NAME');
     caption += `Petitioner: ${petitioner}\n\n`;
 
     caption += `and\n\n`;
 
-    const respondent = divorceData.respondentName ? captionUpper(divorceData.respondentName) : '[RESPONDENT NAME]';
+    const respondent = divorceData.respondentName ? captionUpper(divorceData.respondentName) : placeholder('RESPONDENT NAME');
     caption += `Respondent: ${respondent}`;
 
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
@@ -190,15 +191,15 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This proceeding came on for hearing on ${this.formatDate(divorceData.hearingDate) || '___________________'} in Department ____.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Petitioner ${divorceData.petitionerName || '[PETITIONER NAME]'} appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'in pro per (self-represented)')}.\n\n`;
+      text += `Petitioner ${divorceData.petitionerName || placeholder('PETITIONER NAME')} ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared in pro per (self-represented)', 'did not appear')}.\n\n`;
 
       if (divorceData.respondentAppeared) {
-        text += `Respondent ${divorceData.respondentName || '[RESPONDENT NAME]'} appeared and submitted to the judgment.\n\n`;
+        text += `Respondent ${divorceData.respondentName || placeholder('RESPONDENT NAME')} appeared and submitted to the judgment.\n\n`;
       } else {
-        text += `Respondent ${divorceData.respondentName || '[RESPONDENT NAME]'} having been properly served, did not appear, and default was entered.\n\n`;
+        text += `Respondent ${divorceData.respondentName || placeholder('RESPONDENT NAME')} having been properly served, did not appear, and default was entered.\n\n`;
       }
     } else {
-      text += `Petitioner appeared ${representationPhrase(divorceData.petitionerRepresentation, 'with counsel', 'in pro per')}.\n\n`;
+      text += `Petitioner ${representationPhrase(divorceData.petitionerRepresentation, 'appeared with counsel', 'appeared in pro per', 'did not appear')}.\n\n`;
       text += `Respondent ${divorceData.respondentAppeared ? 'appeared' : 'did not appear'}.`;
     }
 
@@ -245,7 +246,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       ? `\n(Draft — insert exact ${dateNotes.join(' and ')} before filing)`
       : '';
 
-    let text = `The Court finds:\n\n1. This Court has jurisdiction over this proceeding.\n\n2. The residency requirements of Family Code § 2320 have been met. Petitioner has been a resident of California for at least six months and of ${divorceData.county || '[COUNTY]'} County for at least three months immediately preceding the filing of this Petition.\n\n3. ${waitingPeriodMet}\n\n4. The parties were married on ${marriageDisplay} and separated on ${separationDisplay}.${dateDraftNote}\n\n5. Irreconcilable differences have caused the irremediable breakdown of the marriage.`;
+    let text = `The Court finds:\n\n1. This Court has jurisdiction over this proceeding.\n\n2. The residency requirements of Family Code § 2320 have been met. Petitioner has been a resident of California for at least six months and of ${divorceData.county || placeholder('COUNTY')} County for at least three months immediately preceding the filing of this Petition.\n\n3. ${waitingPeriodMet}\n\n4. The parties were married on ${marriageDisplay} and separated on ${separationDisplay}.${dateDraftNote}\n\n5. Irreconcilable differences have caused the irremediable breakdown of the marriage.`;
 
     // Adult-children statement: when the case data records children but
     // none are minors, name them here rather than erase them (live
@@ -347,7 +348,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateDissolutionSection(divorceData) {
     return {
       title: 'DISSOLUTION',
-      text: `IT IS ORDERED that the marriage of Petitioner ${divorceData.petitionerName || '[PETITIONER NAME]'} and Respondent ${divorceData.respondentName || '[RESPONDENT NAME]'} is dissolved, and the parties are restored to the status of single persons, effective ${this.formatDate(divorceData.divorceDate) || 'the date this Judgment is entered'}.`,
+      text: `IT IS ORDERED that the marriage of Petitioner ${divorceData.petitionerName || placeholder('PETITIONER NAME')} and Respondent ${divorceData.respondentName || placeholder('RESPONDENT NAME')} is dissolved, and the parties are restored to the status of single persons, effective ${this.formatDate(divorceData.divorceDate) || 'the date this Judgment is entered'}.`,
       type: 'dissolution'
     };
   }
@@ -380,8 +381,8 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     // spouse is that spouse's SOLE PROPERTY — never call it "separate
     // property" (which has a specific §770 meaning about pre-marital /
     // gifted / inherited property). Live California audit, 2026-08.
-    const petitionerName = divorceData.petitionerName || '[PETITIONER NAME]';
-    const respondentName = divorceData.respondentName || '[RESPONDENT NAME]';
+    const petitionerName = divorceData.petitionerName || placeholder('PETITIONER NAME');
+    const respondentName = divorceData.respondentName || placeholder('RESPONDENT NAME');
     const prenupTail = this.hasPrenupAgreement(divorceData)
       ? ', subject to any confirmation of separate character under the parties\' premarital agreement'
       : '';
@@ -555,7 +556,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -599,7 +600,7 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -710,10 +711,10 @@ class CaliforniaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         type: 'finding'
       });
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${decision.amount || '[AMOUNT]'} per month, beginning ${this.formatDate(decision.startDate) || '[DATE]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${decision.amount || placeholder('AMOUNT')} per month, beginning ${this.formatDate(decision.startDate) || placeholder('DATE')}.`,
         type: 'order'
       });
-      const marriageLength = divorceData.marriageLengthYears || '[LENGTH]';
+      const marriageLength = divorceData.marriageLengthYears || placeholder('LENGTH');
       if (marriageLength >= 10 || divorceData.longTermMarriage) {
         items.push({
           content: 'This is a marriage of long duration (10+ years). The Court retains jurisdiction over spousal support indefinitely.',

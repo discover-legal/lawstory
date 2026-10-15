@@ -1,4 +1,5 @@
 'use strict';
+const { placeholder } = require('./placeholders');
 
 /**
  * BaseDocument
@@ -89,7 +90,7 @@ class BaseDocument {
   }
 
   generateSignatureBlock(signerName, title = 'Pro Se') {
-    const name = signerName || '[NAME]';
+    const name = signerName || placeholder('NAME');
     return {
       line:      '_________________________________',
       name,

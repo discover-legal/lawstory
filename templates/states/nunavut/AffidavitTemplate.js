@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -64,8 +65,8 @@ class NunavutAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'NUNAVUT COURT OF JUSTICE';
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n\n` +

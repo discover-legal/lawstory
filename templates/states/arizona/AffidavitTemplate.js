@@ -3,6 +3,7 @@
 // Governing Law: A.R.S. § 13-2702 (Perjury), A.R.S. § 41-311 (Notary — forms of notarial acts)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -41,7 +42,7 @@ class ArizonaAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name - use 'court' field (matches schema), fallback to courtName for backwards compatibility
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -51,8 +52,8 @@ class ArizonaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `CASE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Add party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()}\n\n`;
     caption += `V.\n\n`;
@@ -77,7 +78,7 @@ class ArizonaAffidavitTemplate extends BaseAffidavitTemplate {
     // Properly capitalize county name (title case for each word)
     const countyName = county
       ? county.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
-      : '[COUNTY]';
+      : placeholder('COUNTY');
     return `County of ${countyName}`;
   }
 
@@ -126,7 +127,7 @@ class ArizonaAffidavitTemplate extends BaseAffidavitTemplate {
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true,
         specificFormat: 'Arizona courts require each exhibit to have a cover page with the exhibit letter centered at the top and a brief description of the document.'

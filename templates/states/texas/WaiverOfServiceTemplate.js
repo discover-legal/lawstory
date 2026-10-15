@@ -3,7 +3,8 @@
 // Complies with Tex. R. Civ. P. 119a
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 
 /**
  * Texas Waiver of Service Template
@@ -77,7 +78,7 @@ class TexasWaiverOfServiceTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -90,14 +91,14 @@ class TexasWaiverOfServiceTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(data) {
     let caption = '';
 
-    const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
+    const courtName = (data.court || data.courtName || placeholder('COURT NAME')).toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
     const caseNumber = caseNumberOrBlank(data.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
-    const petitioner = (data.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (data.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (data.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (data.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     caption += `${petitioner}\n`;
     caption += `Petitioner,\n\n`;
@@ -197,7 +198,7 @@ class TexasWaiverOfServiceTemplate extends BaseAffidavitTemplate {
    * @returns {Object} Signature block object
    */
   generateSignatureBlock(respondentName) {
-    const name = respondentName || '[RESPONDENT NAME]';
+    const name = respondentName || placeholder('RESPONDENT NAME');
     return {
       line: '_________________________________',
       name,
@@ -333,10 +334,10 @@ class TexasWaiverOfServiceTemplate extends BaseAffidavitTemplate {
    * @private
    */
   _buildWaiverBody(data) {
-    const respondentName = data.respondentName || '[RESPONDENT NAME]';
+    const respondentName = data.respondentName || placeholder('RESPONDENT NAME');
     const petitionTitle = data.petitionTitle
       ? data.petitionTitle.trim()
-      : '[PETITION TITLE, e.g., Original Petition for Divorce]';
+      : inlineDraftBlank('title of the petition you were served, e.g., Original Petition for Divorce');
 
     const items = [];
 

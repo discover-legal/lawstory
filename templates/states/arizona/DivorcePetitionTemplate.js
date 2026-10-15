@@ -3,6 +3,7 @@
 // Complies with Arizona Revised Statutes Title 25 and Arizona Rules of Family Law Procedure
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -103,7 +104,7 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    return `Superior Court of Arizona in ${county || '[COUNTY]'} County`;
+    return `Superior Court of Arizona in ${county || placeholder('COUNTY')} County`;
   }
 
   /**
@@ -123,7 +124,7 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let caption = '';
 
     // Petitioner info block (left side)
-    caption += `${divorceData.petitionerName || '[PETITIONER NAME]'}\n`;
+    caption += `${divorceData.petitionerName || placeholder('PETITIONER NAME')}\n`;
     caption += `${divorceData.petitionerAddress || '______________________________'}\n`;
     caption += `${divorceData.petitionerCity || '__________________'}, ${divorceData.petitionerState || 'AZ'} ${divorceData.petitionerZip || '__________'}\n`;
     caption += `Telephone: ${divorceData.petitionerPhone || '______________'}\n`;
@@ -131,11 +132,11 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     // Court header
     caption += `IN THE SUPERIOR COURT OF THE STATE OF ARIZONA\n`;
-    caption += `IN AND FOR THE COUNTY OF ${(divorceData.county || '[COUNTY]').toUpperCase()}\n\n`;
+    caption += `IN AND FOR THE COUNTY OF ${(divorceData.county || placeholder('COUNTY')).toUpperCase()}\n\n`;
 
     // Parties and case info
-    const petitioner = divorceData.petitionerName || '[PETITIONER NAME]';
-    const respondent = divorceData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = divorceData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = divorceData.respondentName || placeholder('RESPONDENT NAME');
 
     caption += `In re the Marriage of:\n\n`;
     caption += `${petitioner.toUpperCase()},\n`;
@@ -196,13 +197,7 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     let paragraphNum = divorceData._paragraphNum || 9;
 
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There are no minor children common to the parties.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'There are no minor children common to the parties.');
     } else {
       items.push({
         number: paragraphNum++,
@@ -211,7 +206,7 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -258,15 +253,9 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -357,8 +346,8 @@ class ArizonaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
-    const county = divorceData.county || '[COUNTY]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
+    const county = divorceData.county || placeholder('COUNTY');
 
     return `STATE OF ARIZONA
 COUNTY OF ${county.toUpperCase()}

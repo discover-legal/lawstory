@@ -603,18 +603,21 @@ class PDFService {
 
   /**
    * Split a verification text into its sworn statement and the trailing
-   * signature/jurat block, which must never break across pages. The jurat
-   * starts at the first signature rule ("_____") paragraph, or failing
-   * that at the "subscribed / sworn … before me" paragraph.
+   * signature/jurat block, which must never break across pages. The block
+   * starts at whichever comes first: a signature-rule ("_____") paragraph
+   * or the "subscribed / sworn / affirmed … before me" paragraph.
    * @param {string} text
    * @returns {{body: string, jurat: string}}
    */
   static splitJurat(text) {
     const paragraphs = String(text || '').split(/\n{2,}/);
-    let start = paragraphs.findIndex((p) => /^_{5,}/.test(p.trim()));
-    if (start === -1) {
-      start = paragraphs.findIndex((p) => /\b(subscribed|sworn|affirmed)\b[\s\S]*\bbefore me\b/i.test(p));
-    }
+    // Whichever comes FIRST starts the block: a signature rule, or the
+    // "sworn / affirmed … before me" commissioner block (Alberta puts the
+    // jurat before the deponent's signature line).
+    const rule = paragraphs.findIndex((p) => /^_{5,}/.test(p.trim()));
+    const sworn = paragraphs.findIndex((p) => /\b(subscribed|sworn|affirmed)\b[\s\S]*\bbefore me\b/i.test(p));
+    const candidates = [rule, sworn].filter((i) => i > 0);
+    const start = candidates.length > 0 ? Math.min(...candidates) : -1;
     if (start <= 0) return { body: String(text || ''), jurat: '' };
     return {
       body: paragraphs.slice(0, start).join('\n\n'),
@@ -730,7 +733,7 @@ class PDFService {
           doc.font('Times-Roman');
           doc.text(block.line || '_'.repeat(40));
           doc.moveDown(0.3);
-          doc.text(block.name || '[NAME]');
+          doc.text(block.name || '______________');
           doc.moveDown(0.3);
           doc.text(block.title || '');
           doc.moveDown(2);
@@ -884,7 +887,7 @@ class PDFService {
 
     doc.text(sigBlock.line || '_'.repeat(40));
     doc.moveDown(0.3);
-    doc.text(sigBlock.name || '[NAME]');
+    doc.text(sigBlock.name || '______________');
     doc.moveDown(0.3);
     doc.text(sigBlock.title || 'Affiant');
 
@@ -1687,7 +1690,7 @@ class PDFService {
             spacing: { before: 240 }
           }));
           children.push(new docx.Paragraph({
-            children: [new docx.TextRun({ text: block.name || '[NAME]', size: 24 })]
+            children: [new docx.TextRun({ text: block.name || '______________', size: 24 })]
           }));
           children.push(new docx.Paragraph({
             children: [new docx.TextRun({ text: block.title || '', size: 24 })],
@@ -1709,7 +1712,7 @@ class PDFService {
       children: [new docx.TextRun({ text: sigBlock.line || '_'.repeat(40), size: 24 })]
     }));
     children.push(new docx.Paragraph({
-      children: [new docx.TextRun({ text: sigBlock.name || '[NAME]', size: 24 })]
+      children: [new docx.TextRun({ text: sigBlock.name || '______________', size: 24 })]
     }));
     children.push(new docx.Paragraph({
       children: [new docx.TextRun({ text: sigBlock.title || '', size: 24 })]

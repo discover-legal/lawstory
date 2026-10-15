@@ -1,5 +1,6 @@
 'use strict';
 const { createIndiaDivorcePetitionTemplate } = require('../../core/IndiaTemplateFactory');
+const { placeholder } = require('../../core/placeholders');
 const Base = createIndiaDivorcePetitionTemplate({ stateCode: 'IN_UP', stateName: 'Uttar Pradesh', defaultCourt: 'Family Court, Lucknow', defaultCity: 'Lucknow', stampPaperValue: 'INR 10', metadataPath: '../states/uttar_pradesh/metadata.json' });
 
 // Indian terminology (see templates/core/terminology.js): the caption is the
@@ -16,7 +17,7 @@ class Template extends Base {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'District',
-      districtPlaceholder: '[DISTRICT]',
+      districtPlaceholder: placeholder('DISTRICT'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',

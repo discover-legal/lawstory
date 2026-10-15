@@ -1,6 +1,7 @@
 // templates/states/northern_territory_au/DivorcePetitionTemplate.js
 'use strict';
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class NorthernTerritoryAUDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -10,7 +11,7 @@ class NorthernTerritoryAUDivorcePetitionTemplate extends BaseDivorcePetitionTemp
   // "COUNTY OF" caption lines and no "X County" body phrasing.
   constructor() {
     super();
-    this.state = 'NT_AU'; this.stateName = 'Northern Territory'; this.countryCode = 'AU'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'Territory', districtTerm: 'Registry', districtPlaceholder: '[REGISTRY]', filerLabel: 'Applicant', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' }; this.documentTitle = 'APPLICATION FOR DIVORCE';
+    this.state = 'NT_AU'; this.stateName = 'Northern Territory'; this.countryCode = 'AU'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'Territory', districtTerm: 'Registry', districtPlaceholder: placeholder('REGISTRY'), filerLabel: 'Applicant', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' }; this.documentTitle = 'APPLICATION FOR DIVORCE';
     try { this.metadata = require('./metadata.json'); } catch (e) { this.metadata = null; }
     this.requiredFields = ['petitionerName', 'respondentName', 'state', 'county', 'marriageDate', 'groundsForDivorce'];
     this.residencyRequirements = { stateMonths: 12, countyDays: 0, description: 'Australian citizen, domiciled, or 12-month resident (s.39(3)).' };
@@ -22,8 +23,8 @@ class NorthernTerritoryAUDivorcePetitionTemplate extends BaseDivorcePetitionTemp
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted: [`IN THE ${courtName}`, '', `${this.getCaseNumberLabel()}: ${caseNumber}`, '', `IN THE MATTER OF THE FAMILY LAW ACT 1975 (CTH)`, '', `BETWEEN:`, '', `${applicant}`, `Applicant`, '', `AND`, '', `${respondent}`, `Respondent`].join('\n') };
   }
   getJurisdictionStatement() { return `Either the Applicant or the Respondent is an Australian citizen, is domiciled in Australia, or has been ordinarily resident in Australia for at least twelve months (Family Law Act 1975 (Cth), s.39(3)).`; }
@@ -45,7 +46,7 @@ class NorthernTerritoryAUDivorcePetitionTemplate extends BaseDivorcePetitionTemp
     }
     return { title: 'ORDERS SOUGHT', items, nextParagraphNumber: divorceData._paragraphNum || 15 };
   }
-  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || '[APPLICANT NAME]'}, the Applicant, solemnly affirm that this Application is true and correct.`; }
+  getVerificationText(divorceData) { return `I, ${divorceData.petitionerName || placeholder('APPLICANT NAME')}, the Applicant, solemnly affirm that this Application is true and correct.`; }
   getGroundsText() { return 'The marriage has broken down irretrievably (s.48(1)). The parties have lived separately and apart for a continuous period of at least 12 months immediately preceding the date of filing of this Application (s.48(2)).'; }
 }
 module.exports = NorthernTerritoryAUDivorcePetitionTemplate;

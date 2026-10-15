@@ -6,6 +6,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -49,7 +50,7 @@ class NovaScotiaAffidavitTemplate extends BaseAffidavitTemplate {
    * not by "County of" — see Nova Scotia Civil Procedure Rules, Rule 4.
    */
   generateVenue(county) {
-    const location = (county || '[COURT LOCATION]').toUpperCase();
+    const location = (county || placeholder('COURT LOCATION')).toUpperCase();
     return `AT ${location}`;
   }
 
@@ -60,10 +61,10 @@ class NovaScotiaAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'SUPREME COURT OF NOVA SCOTIA';
-    const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('LOCATION')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n` +

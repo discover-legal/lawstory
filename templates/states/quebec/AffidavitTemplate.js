@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -49,7 +50,7 @@ class QuebecAffidavitTemplate extends BaseAffidavitTemplate {
    * Quebec uses judicial districts, not counties.
    */
   generateVenue(county) {
-    const district = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `DISTRICT OF ${district}`;
   }
 
@@ -58,10 +59,10 @@ class QuebecAffidavitTemplate extends BaseAffidavitTemplate {
    * Superior Court (Cour supérieure) uses judicial district and "No. :" file number.
    */
   generateCaseCaption(affidavitData) {
-    const district = (affidavitData.county || affidavitData.city || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (affidavitData.county || affidavitData.city || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || '[PLAINTIFF / DEMANDEUR]';
-    const defendant = affidavitData.defendant || affidavitData.respondentName || '[DEFENDANT / DÉFENDEUR]';
+    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PLAINTIFF / DEMANDEUR');
+    const defendant = affidavitData.defendant || affidavitData.respondentName || placeholder('DEFENDANT / DÉFENDEUR');
 
     const formatted =
       `SUPERIOR COURT\n` +

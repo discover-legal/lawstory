@@ -3,6 +3,7 @@
 // Governing Law: N.C.G.S. § 11-7, N.C.G.S. § 14-209, N.C.G.S. § 10B-20, N.C.G.S. § 10B-40
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -49,7 +50,7 @@ class NorthCarolinaAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Formatted venue
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -63,7 +64,7 @@ class NorthCarolinaAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name — North Carolina General Court of Justice
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -73,8 +74,8 @@ class NorthCarolinaAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `FILE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // Party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -151,7 +152,7 @@ My commission expires: ___________`;
       labelStyle: 'letters', // A, B, C...
       requireCoverPage: false,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

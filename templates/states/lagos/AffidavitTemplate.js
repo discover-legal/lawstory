@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -41,7 +42,7 @@ class LagosAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Judicial division',
-      districtPlaceholder: '[JUDICIAL DIVISION]',
+      districtPlaceholder: placeholder('JUDICIAL DIVISION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -62,7 +63,7 @@ class LagosAffidavitTemplate extends BaseAffidavitTemplate {
    * Lagos venue — judicial division of filing.
    */
   generateVenue(county) {
-    const location = (county || '[JUDICIAL DIVISION]').toUpperCase();
+    const location = (county || placeholder('JUDICIAL DIVISION')).toUpperCase();
     return `${location} JUDICIAL DIVISION`;
   }
 
@@ -72,10 +73,10 @@ class LagosAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF LAGOS STATE';
-    const location = (affidavitData.county || affidavitData.city || '[JUDICIAL DIVISION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('JUDICIAL DIVISION')).toUpperCase();
     const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `IN THE ${court.toUpperCase()}\n` +

@@ -1,7 +1,8 @@
 // templates/states/karnataka/DivorceDecreeTemplate.js
 'use strict';
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -12,7 +13,7 @@ class KarnatakaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   // caption lines and no "X County" body phrasing.
   constructor() {
     super();
-    this.state = 'IN_KA'; this.stateName = 'Karnataka'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: '[DISTRICT]', filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
+    this.state = 'IN_KA'; this.stateName = 'Karnataka'; this.countryCode = 'IN'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'State', districtTerm: 'District', districtPlaceholder: placeholder('DISTRICT'), filerLabel: 'Petitioner', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
     this.documentTitle = 'DECREE OF DIVORCE';
     try { this.metadata = require('./metadata.json'); } catch (e) { this.metadata = null; }
     this.requiredFields = ['petitionerName', 'respondentName', 'state', 'county', 'caseNumber', 'marriageDate'];
@@ -33,8 +34,8 @@ class KarnatakaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county || divorceData.city)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted: `IN THE ${courtName}\n\n${this.getCaseNumberLabel()} ${caseNumber}\n\nIN THE MATTER OF:\n\n${petitioner}\nPetitioner\n\nVersus\n\n${respondent}\nRespondent` };
   }
 
@@ -54,7 +55,7 @@ class KarnatakaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (divorceData.hasMinorChildren === false || !divorceData.children || divorceData.children.length === 0) return null;
     const items = [];
     items.push({ content: 'The Court orders the following custody arrangement in the best interest of the child(ren):', type: 'finding' });
-    divorceData.children.forEach((child, i) => { const info = typeof child === 'string' ? child : `${child.name || '[CHILD NAME]'}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || '[BIRTH DATE]'}`; items.push({ content: `${i + 1}. ${info}`, type: 'child_item' }); });
+    divorceData.children.forEach((child, i) => { const info = typeof child === 'string' ? child : `${child.name || placeholder('CHILD NAME')}, born ${this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) || placeholder('BIRTH DATE')}`; items.push({ content: `${i + 1}. ${info}`, type: 'child_item' }); });
     // Safety rule: only positively recognized custody values render a joint or
     // sole order; anything ambiguous renders neutral as-agreed language —
     // NEVER a sole order (see templates/core/parenting.js).
@@ -73,7 +74,7 @@ class KarnatakaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       items.push({ content: `IT IS ORDERED that ${soleCustodianName} shall have sole custody.`, type: 'order' });
       items.push({ content: `IT IS ORDERED that ${otherParentName} shall have visitation rights.`, type: 'order' });
     } else {
-      items.push({ content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).', type: 'order' });
+      items.push({ content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'), type: 'order' });
     }
     if (custody.kind !== 'joint' && residenceName && residenceName !== soleCustodianName) {
       items.push({ content: `IT IS ORDERED that the child(ren) shall primarily reside with ${residenceName}.`, type: 'order' });
@@ -93,7 +94,7 @@ class KarnatakaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (!divorceData.spousalSupportAwarded && !divorceData.spousalSupportWaived) return null;
     const items = [];
     if (divorceData.spousalSupportWaived) items.push({ content: 'IT IS ORDERED that neither party shall claim maintenance from the other.', type: 'order' });
-    else items.push({ content: `IT IS ORDERED under HMA s.25 that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay INR ${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for ${divorceData.spousalSupportDuration || '[DURATION]'}.`, type: 'order' });
+    else items.push({ content: `IT IS ORDERED under HMA s.25 that ${divorceData.spousalSupportPayor || divorceData.respondentName || 'Respondent'} shall pay INR ${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`, type: 'order' });
     return { title: 'PERMANENT ALIMONY / MAINTENANCE', items, type: 'spousal_support' };
   }
 

@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 
 /**
  * Hong Kong Divorce Petition Template
@@ -69,7 +70,7 @@ class HongKongDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -126,12 +127,12 @@ class HongKongDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Form 2 (Petition for Divorce) under the Matrimonial Causes Rules (Cap 179A).
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -167,7 +168,7 @@ class HongKongDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * or have a substantial connection with HK at the date of the petition.
    */
   getJurisdictionStatement(divorceData) {
-    return 'The Petitioner states that this Honourable Court has jurisdiction to hear this Petition by reason of the fact that [the Petitioner/the Respondent] is domiciled in Hong Kong / has been habitually resident in Hong Kong for a continuous period of at least three years immediately preceding the presentation of this Petition / had a substantial connection with Hong Kong at the date of the presentation of this Petition, as required by section 3 of the Matrimonial Causes Ordinance (Cap 179).';
+    return 'The Petitioner states that this Honourable Court has jurisdiction to hear this Petition by reason of the fact that ' + inlineDraftBlank('name the party — the Petitioner or the Respondent — and strike the jurisdiction grounds below that do not apply') + ' is domiciled in Hong Kong / has been habitually resident in Hong Kong for a continuous period of at least three years immediately preceding the presentation of this Petition / had a substantial connection with Hong Kong at the date of the presentation of this Petition, as required by section 3 of the Matrimonial Causes Ordinance (Cap 179).';
   }
 
   /**
@@ -243,7 +244,7 @@ class HongKongDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * The Petitioner swears before a Commissioner for Oaths.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, the Petitioner named in this Petition, make oath and say that the facts stated in this Petition are true to the best of my knowledge, information and belief.`;
   }
 

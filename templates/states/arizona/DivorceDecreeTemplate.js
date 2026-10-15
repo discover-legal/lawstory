@@ -3,7 +3,8 @@
 // Complies with Arizona Revised Statutes Title 25 and Arizona Rules of Family Law Procedure
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, primaryResidenceOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -90,7 +91,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `SUPERIOR COURT OF ARIZONA IN AND FOR ${countyUpper} COUNTY`;
   }
 
@@ -108,7 +109,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `IN AND FOR THE COUNTY OF ${countyUpper}`;
   }
 
@@ -121,17 +122,17 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     let caption = '';
 
     caption += `IN THE SUPERIOR COURT OF THE STATE OF ARIZONA\n`;
-    caption += `IN AND FOR THE COUNTY OF ${(divorceData.county || '[COUNTY]').toUpperCase()}\n\n`;
+    caption += `IN AND FOR THE COUNTY OF ${(divorceData.county || placeholder('COUNTY')).toUpperCase()}\n\n`;
 
     caption += `In re the Marriage of:\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
     caption += `${petitioner},\n`;
     caption += `Petitioner,\n\n`;
 
     caption += `and\n\n`;
 
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     caption += `${respondent},\n`;
     caption += `Respondent.`;
 
@@ -162,15 +163,15 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     text += `This matter came before the Court on ${this.formatDate(divorceData.hearingDate) || '___________________'}.\n\n`;
 
     if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `Petitioner, ${divorceData.petitionerName || '[PETITIONER NAME]'}, appeared ${representationPhrase(divorceData.petitionerRepresentation, 'through counsel', 'self-represented')}.\n\n`;
+      text += `Petitioner, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appeared through counsel', 'appeared self-represented', 'did not appear')}.\n\n`;
 
       if (divorceData.respondentAppeared) {
-        text += `Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, appeared and consented to the entry of this Decree.\n\n`;
+        text += `Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, appeared and consented to the entry of this Decree.\n\n`;
       } else {
-        text += `Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, having been properly served, did not appear. Default was entered.\n\n`;
+        text += `Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, having been properly served, did not appear. Default was entered.\n\n`;
       }
     } else {
-      text += `Petitioner appeared ${representationPhrase(divorceData.petitionerRepresentation, 'through counsel', 'self-represented')}.\n\n`;
+      text += `Petitioner ${representationPhrase(divorceData.petitionerRepresentation, 'appeared through counsel', 'appeared self-represented', 'did not appear')}.\n\n`;
       text += `Respondent ${divorceData.respondentAppeared ? 'appeared' : 'did not appear after proper service'}.\n\n`;
     }
 
@@ -191,7 +192,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'FINDINGS OF FACT AND CONCLUSIONS OF LAW',
-      text: `1. The Court has jurisdiction over this matter and the parties pursuant to A.R.S. § 25-312.\n\n2. At least one party has been domiciled in Arizona for ninety (90) days prior to filing, as required by A.R.S. § 25-312.\n\n3. At least sixty (60) days have elapsed since service of the Petition and Summons, as required by A.R.S. § 25-329.\n\n4. A Preliminary Injunction was issued and served in accordance with A.R.S. § 25-315(A).\n\n5. The marriage between the parties is irretrievably broken with no reasonable prospect of reconciliation.\n\n6. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE]'}.`,
+      text: `1. The Court has jurisdiction over this matter and the parties pursuant to A.R.S. § 25-312.\n\n2. At least one party has been domiciled in Arizona for ninety (90) days prior to filing, as required by A.R.S. § 25-312.\n\n3. At least sixty (60) days have elapsed since service of the Petition and Summons, as required by A.R.S. § 25-329.\n\n4. A Preliminary Injunction was issued and served in accordance with A.R.S. § 25-315(A).\n\n5. The marriage between the parties is irretrievably broken with no reasonable prospect of reconciliation.\n\n6. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE')}.`,
       type: 'jurisdiction'
     };
   }
@@ -224,7 +225,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     // Property to Petitioner
     items.push({
-      content: `IT IS ORDERED that the following community and quasi-community property is awarded to Petitioner ${divorceData.petitionerName || '[PETITIONER NAME]'} as sole and separate property:`,
+      content: `IT IS ORDERED that the following community and quasi-community property is awarded to Petitioner ${divorceData.petitionerName || placeholder('PETITIONER NAME')} as sole and separate property:`,
       type: 'order'
     });
 
@@ -241,7 +242,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     // Property to Respondent
     items.push({
-      content: `IT IS ORDERED that the following community and quasi-community property is awarded to Respondent ${divorceData.respondentName || '[RESPONDENT NAME]'} as sole and separate property:`,
+      content: `IT IS ORDERED that the following community and quasi-community property is awarded to Respondent ${divorceData.respondentName || placeholder('RESPONDENT NAME')} as sole and separate property:`,
       type: 'order'
     });
 
@@ -292,7 +293,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -336,7 +337,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -457,7 +458,7 @@ class ArizonaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || '[DATE]'} and continuing for ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month, beginning ${this.formatDate(divorceData.spousalSupportStartDate) || placeholder('DATE')} and continuing for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
     }

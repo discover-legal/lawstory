@@ -3,6 +3,7 @@
 // Governing Law: N.Y. C.P.L.R. § 2106, N.Y. Executive Law § 137, N.Y. Real Property Law § 309-B
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -43,7 +44,7 @@ class NewYorkAffidavitTemplate extends BaseAffidavitTemplate {
     let caption = '';
 
     // Court name - use 'court' field (matches schema), fallback to courtName for backwards compatibility
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `${courtName}\n\n`;
@@ -53,8 +54,8 @@ class NewYorkAffidavitTemplate extends BaseAffidavitTemplate {
     caption += `INDEX NO. ${indexNumber.toUpperCase()}\n\n`;
 
     // Add party names
-    const plaintiff = affidavitData.plaintiff || '[PLAINTIFF NAME]';
-    const defendant = affidavitData.defendant || '[DEFENDANT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PLAINTIFF NAME');
+    const defendant = affidavitData.defendant || placeholder('DEFENDANT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Plaintiff,\n\n`;
@@ -136,7 +137,7 @@ My commission expires: ___________`;
       labelStyle: 'letters', // A, B, C... (numbers also acceptable)
       requireCoverPage: false,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },
@@ -171,7 +172,7 @@ My commission expires: ___________`;
    * @returns {string} Formatted venue
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY NAME]';
+    const countyName = county || placeholder('COUNTY NAME');
     return `STATE OF NEW YORK    )\n                     ) ss.:\nCOUNTY OF ${countyName.toUpperCase()}  )`;
   }
 }

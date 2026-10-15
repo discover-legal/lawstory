@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * Nova Scotia Divorce Petition Template
@@ -64,7 +65,7 @@ class NovaScotiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Court location',
       districtStyle: 'plain',
-      districtPlaceholder: '[LOCATION]',
+      districtPlaceholder: placeholder('LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -114,7 +115,7 @@ class NovaScotiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const location = (county || '[LOCATION]').toUpperCase();
+    const location = (county || placeholder('LOCATION')).toUpperCase();
     return `SUPREME COURT OF NOVA SCOTIA (FAMILY DIVISION) — ${location}`;
   }
 
@@ -133,7 +134,7 @@ class NovaScotiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Nova Scotia venue reason — Petitioner or Respondent resides in this location.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[LOCATION]';
+    const location = divorceData.county || placeholder('LOCATION');
     return `the Petitioner or Respondent resides in ${location}`;
   }
 
@@ -212,7 +213,7 @@ class NovaScotiaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * NS uses "Petitioner" and "Respondent".
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, Petitioner, make oath and say (or solemnly affirm) that the facts stated in this Petition for Divorce are true, to the best of my knowledge, information, and belief.`;
   }
 

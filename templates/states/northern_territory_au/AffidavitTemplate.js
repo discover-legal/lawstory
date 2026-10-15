@@ -2,6 +2,7 @@
 // Oaths, Affidavits and Declarations Act 2010 (NT)
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class NorthernTerritoryAUAffidavitTemplate extends BaseAffidavitTemplate {
@@ -12,7 +13,7 @@ class NorthernTerritoryAUAffidavitTemplate extends BaseAffidavitTemplate {
   constructor() {
     super();
     this.metadata = require('./metadata.json');
-    this.state = this.metadata.stateCode; this.stateName = this.metadata.stateName; this.countryCode = 'AU'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'Territory', districtTerm: 'Registry', districtPlaceholder: '[REGISTRY]', filerLabel: 'Applicant', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
+    this.state = this.metadata.stateCode; this.stateName = this.metadata.stateName; this.countryCode = 'AU'; this.terminology = { ...this.terminology, jurisdictionLabel: null, districtLabel: null, districtStyle: 'plain', jurisdictionTerm: 'Territory', districtTerm: 'Registry', districtPlaceholder: placeholder('REGISTRY'), filerLabel: 'Applicant', responderLabel: 'Respondent', selfRepresentedLabel: 'Self-Represented' };
     this.requiredFields = this.metadata.requiredFields; this.sections.perjuryStatement = false;
     this.formatting = { fontSize: '12pt', fontFamily: 'Times New Roman', lineHeight: '1.5', margin: '2.54cm', paperSize: 'A4' };
   }
@@ -22,8 +23,8 @@ class NorthernTerritoryAUAffidavitTemplate extends BaseAffidavitTemplate {
     const court = affidavitData.court || affidavitData.courtName || 'FEDERAL CIRCUIT AND FAMILY COURT OF AUSTRALIA';
     const location = (affidavitData.county || affidavitData.city || 'DARWIN').toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
     return { courtName: court, caseNumber: affidavitData.caseNumber, plaintiff: applicant, defendant: respondent, formatted: `${court.toUpperCase()}\nREGISTRY: ${location}\n\nFile Number: ${fileNo}\n\n${applicant.toUpperCase()}\nApplicant\n\n— and —\n\n${respondent.toUpperCase()}\nRespondent` };
   }
   performStateSpecificValidation(affidavitData) {
@@ -33,7 +34,7 @@ class NorthernTerritoryAUAffidavitTemplate extends BaseAffidavitTemplate {
   }
   generateNotaryBlock(affidavitData) {
     const city = affidavitData.county || affidavitData.city || 'Darwin';
-    return `Sworn/Affirmed at ${city},\nin the Northern Territory,\non the _____ day of _________________, _______.\n\nBefore me:\n\n________________________________\n[Name]\nJustice of the Peace / Solicitor / Commissioner for Oaths`;
+    return `Sworn/Affirmed at ${city},\nin the Northern Territory,\non the _____ day of _________________, _______.\n\nBefore me:\n\n________________________________\n${placeholder('Name')}\nJustice of the Peace / Solicitor / Commissioner for Oaths`;
   }
 }
 module.exports = NorthernTerritoryAUAffidavitTemplate;

@@ -3,7 +3,8 @@
 // Complies with R.C. § 3105.01 et seq. (Ohio Divorce statutes)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -68,7 +69,7 @@ class OhioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COURT OF COMMON PLEAS, ${countyUpper} COUNTY, OHIO, DOMESTIC RELATIONS DIVISION`;
   }
 
@@ -87,8 +88,8 @@ class OhioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CASE NO. ${caseNumber}\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -119,7 +120,7 @@ class OhioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     return {
       title: 'FINDINGS OF FACT',
-      text: `The Court finds that it has jurisdiction over the parties and the subject matter of this action. Plaintiff has satisfied the residency requirements of R.C. § 3105.03, having been a resident of Ohio for at least six (6) months and a resident of ${divorceData.county || '[COUNTY]'} County for at least ninety (90) days immediately preceding the filing of the Complaint. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE OF MARRIAGE]'}${divorceData.separationDate ? ` and have been living separate and apart since on or about ${this.formatDate(divorceData.separationDate)}` : ''}. ${groundsText} This cause was heard no sooner than forty-two (42) days after service of process on Defendant, as required by R.C. § 3105.10.`,
+      text: `The Court finds that it has jurisdiction over the parties and the subject matter of this action. Plaintiff has satisfied the residency requirements of R.C. § 3105.03, having been a resident of Ohio for at least six (6) months and a resident of ${divorceData.county || placeholder('COUNTY')} County for at least ninety (90) days immediately preceding the filing of the Complaint. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE OF MARRIAGE')}${divorceData.separationDate ? ` and have been living separate and apart since on or about ${this.formatDate(divorceData.separationDate)}` : ''}. ${groundsText} This cause was heard no sooner than forty-two (42) days after service of process on Defendant, as required by R.C. § 3105.10.`,
       type: 'jurisdiction'
     };
   }
@@ -213,7 +214,7 @@ class OhioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -262,7 +263,7 @@ class OhioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -367,7 +368,7 @@ class OhioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month for a period of ${divorceData.spousalSupportDuration || '[DURATION]'}, or until further order of this Court.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal support to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month for a period of ${divorceData.spousalSupportDuration || placeholder('DURATION')}, or until further order of this Court.`,
         type: 'order'
       });
 
@@ -455,7 +456,7 @@ ENTERED AND JOURNALIZED this _____ day of _______________, 20___.
 _________________________________
 JUDGE, COURT OF COMMON PLEAS
 DOMESTIC RELATIONS DIVISION
-${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY, OHIO` : '[COUNTY] COUNTY, OHIO'}`,
+${divorceData.county ? `${divorceData.county.toUpperCase()} COUNTY, OHIO` : (placeholder('COUNTY') + ' COUNTY, OHIO')}`,
       type: 'judgment'
     };
   }

@@ -4,6 +4,7 @@
 //                W. Va. Code §61-5-2 (perjury)
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -46,7 +47,7 @@ class WestVirginiaAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     let caption = '';
 
-    let courtName = affidavitData.court || affidavitData.courtName || '[COURT NAME]';
+    let courtName = affidavitData.court || affidavitData.courtName || placeholder('COURT NAME');
     courtName = courtName.toUpperCase();
 
     caption += `IN THE ${courtName}\n\n`;
@@ -54,8 +55,8 @@ class WestVirginiaAffidavitTemplate extends BaseAffidavitTemplate {
     const caseNumber = caseNumberOrBlank(affidavitData.caseNumber);
     caption += `CIVIL ACTION NO. ${caseNumber.toUpperCase()}\n\n`;
 
-    const plaintiff = affidavitData.plaintiff || '[PETITIONER NAME]';
-    const defendant = affidavitData.defendant || '[RESPONDENT NAME]';
+    const plaintiff = affidavitData.plaintiff || placeholder('PETITIONER NAME');
+    const defendant = affidavitData.defendant || placeholder('RESPONDENT NAME');
 
     caption += `${plaintiff.toUpperCase()},\n`;
     caption += `    Petitioner,\n\n`;
@@ -88,7 +89,7 @@ class WestVirginiaAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyName = county || '[COUNTY]';
+    const countyName = county || placeholder('COUNTY');
     // West Virginia uses title case for venue
     const countyFormatted = countyName.charAt(0).toUpperCase() + countyName.slice(1).toLowerCase();
     return `County of ${countyFormatted}`;
@@ -151,7 +152,7 @@ My commission expires: ___________
       labelStyle: 'letters',
       requireCoverPage: true,
       coverPageFormat: {
-        title: 'EXHIBIT [LABEL]',
+        title: ('EXHIBIT ' + placeholder('LABEL')),
         centered: true,
         description: true
       },

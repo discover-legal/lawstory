@@ -23,7 +23,7 @@ const previewRenderer = {
     // Canadian provinces get "PROVINCE OF X" and no county line.
     const header = `${venueHeaderLines(affidavitData.state, affidavitData.county).join('\n')}\n\n`;
 
-    const intro = `I, ${affidavitData.affiantName || '[NAME]'}, being first duly sworn, depose and state as follows:\n\n`;
+    const intro = `I, ${affidavitData.affiantName || '______________'}, being first duly sworn, depose and state as follows:\n\n`;
 
     const factsText = items.length > 0
       ? items.map((f, idx) => `${idx + 1}. ${f.displayContent}`).join('\n\n')

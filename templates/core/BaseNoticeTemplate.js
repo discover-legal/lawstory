@@ -8,6 +8,7 @@
  */
 
 const BaseDocument = require('./BaseDocument');
+const { placeholder } = require('./placeholders');
 
 class BaseNoticeTemplate extends BaseDocument {
   constructor(stateCode, stateName) {
@@ -21,19 +22,19 @@ class BaseNoticeTemplate extends BaseDocument {
   }
 
   generateAddressee(data) {
-    const toName    = data.respondentName || data.recipientName || '[RECIPIENT NAME]';
-    const toAddress = data.respondentAddress || data.recipientAddress || '[RECIPIENT ADDRESS]';
+    const toName    = data.respondentName || data.recipientName || placeholder('RECIPIENT NAME');
+    const toAddress = data.respondentAddress || data.recipientAddress || placeholder('RECIPIENT ADDRESS');
     return `TO:\n${toName}\n${toAddress}`;
   }
 
   generateSender(data) {
-    const fromName    = data.petitionerName || data.senderName || '[SENDER NAME]';
-    const fromAddress = data.petitionerAddress || data.senderAddress || '[SENDER ADDRESS]';
+    const fromName    = data.petitionerName || data.senderName || placeholder('SENDER NAME');
+    const fromAddress = data.petitionerAddress || data.senderAddress || placeholder('SENDER ADDRESS');
     return `FROM:\n${fromName}\n${fromAddress}`;
   }
 
   generateSubjectLine(subject) {
-    return `RE: ${subject || '[SUBJECT]'}`;
+    return `RE: ${subject || placeholder('SUBJECT')}`;
   }
 
   processBody(bodyParagraphs = []) {
@@ -41,7 +42,7 @@ class BaseNoticeTemplate extends BaseDocument {
   }
 
   generateClosing(signerName) {
-    const name = signerName || '[NAME]';
+    const name = signerName || placeholder('NAME');
     return `Respectfully,\n\n\n_________________________________\n${name}\nPro Se`;
   }
 
@@ -52,7 +53,7 @@ class BaseNoticeTemplate extends BaseDocument {
     const addressee    = this.generateAddressee(data);
     const subjectLine  = this.generateSubjectLine(data.subject);
     const body         = this.processBody(data.facts || data.bodyParagraphs || []);
-    const signerName   = data.petitionerName || data.senderName || data.affiantName || '[NAME]';
+    const signerName   = data.petitionerName || data.senderName || data.affiantName || placeholder('NAME');
     const closing      = this.generateClosing(signerName);
     const footer       = this.generateFooter();
 

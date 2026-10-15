@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -56,7 +57,7 @@ class BCDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Registry',
       districtStyle: 'plain',
-      districtPlaceholder: '[REGISTRY]',
+      districtPlaceholder: placeholder('REGISTRY'),
       filerLabel: 'Claimant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -104,7 +105,7 @@ class BCDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const registry = (county || '[REGISTRY]').toUpperCase();
+    const registry = (county || placeholder('REGISTRY')).toUpperCase();
     return `SUPREME COURT OF BRITISH COLUMBIA — ${registry} REGISTRY`;
   }
 
@@ -114,12 +115,12 @@ class BCDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * BC uses "Notice of Family Claim" initiated by a "Claimant".
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const claimant = (divorceData.petitionerName || '[CLAIMANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const claimant = (divorceData.petitionerName || placeholder('CLAIMANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -160,7 +161,7 @@ class BCDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * BC venue reason — Claimant or Respondent resides in this registry.
    */
   getVenueReason(divorceData) {
-    const registry = divorceData.county || '[REGISTRY]';
+    const registry = divorceData.county || placeholder('REGISTRY');
     return `the Claimant or Respondent resides in the ${registry} registry district`;
   }
 
@@ -247,7 +248,7 @@ class BCDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Correct party label is "Claimant" (BC Supreme Court Family Rules, BC Reg. 169/2009).
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[CLAIMANT NAME]';
+    const name = divorceData.petitionerName || placeholder('CLAIMANT NAME');
     return `I, ${name}, Claimant, make oath and say (or solemnly affirm) that the contents of this Notice of Family Claim are true, to the best of my knowledge, information, and belief.`;
   }
 }

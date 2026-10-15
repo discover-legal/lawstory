@@ -5,6 +5,8 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { draftBlank, inlineDraftBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 const { resolveSpousalSupportDecision } = require('../../core/spousalSupport');
@@ -58,7 +60,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       districtLabel: null,
       districtTerm: 'Judicial district',
       districtStyle: 'plain',
-      districtPlaceholder: '[JUDICIAL DISTRICT]',
+      districtPlaceholder: placeholder('JUDICIAL DISTRICT'),
       filerLabel: 'Plaintiff',
       responderLabel: 'Defendant',
       selfRepresentedLabel: 'Self-Represented',
@@ -94,7 +96,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   }
 
   getDefaultCourt(county) {
-    const district = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `COURT OF KING'S BENCH OF ALBERTA — JUDICIAL DISTRICT OF ${district}`;
   }
 
@@ -112,7 +114,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const district = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `JUDICIAL DISTRICT OF ${district}`;
   }
 
@@ -136,8 +138,8 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const caseDraftNote = hasCaseNumber
       ? ''
       : '\n(Draft — insert case number before filing)';
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     const formatted = (
       `IN THE ${courtName}\n\n` +
@@ -185,7 +187,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.hasProperty === false) {
       items.push({
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have family property to distribute under the Family Property Act, RSA 2000, c. F-4.7, or a written agreement, before filing. Silence on this line may be treated as no property, waiving your claim.)',
+        content: draftBlank('confirm whether you and your spouse have family property to distribute under the Family Property Act, RSA 2000, c. F-4.7, or a written agreement, before filing. Silence on this line may be treated as no property, waiving your claim.'),
         type: 'property_draft_note'
       });
     } else {
@@ -257,7 +259,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         const childDob = this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth);
         const dobDisplay = childDob || '__________________';
         const draftNote = childDob ? '' : '\n(Draft — insert exact date of birth before filing)';
-        childInfo = `${child.name || '[CHILD NAME]'}, born ${dobDisplay}${draftNote}`;
+        childInfo = `${child.name || placeholder('CHILD NAME')}, born ${dobDisplay}${draftNote}`;
       }
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
@@ -287,8 +289,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
           content:
             'IT IS ORDERED that the parties shall determine the child(ren)\'s primary residence ' +
             'by agreement, or, failing agreement, in accordance with a parenting schedule filed ' +
-            'with this Court: __________________________ (Draft — name the parent with whom the child(ren) ' +
-            'primarily reside).',
+            'with this Court: ' + inlineDraftBlank('name the parent with whom the child(ren) primarily reside') + '.',
           type: 'order'
         });
       }
@@ -316,7 +317,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement) (Divorce Act, RSC 1985, c. 3, s.16.1).',
+        content: ('IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + ' (Divorce Act, RSC 1985, c. 3, s.16.1).'),
         type: 'order'
       });
     }
@@ -396,7 +397,7 @@ class AlbertaDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     if (decision.outcome === 'award') {
       items.push({
-        content: `IT IS ORDERED pursuant to s.15.2 of the Divorce Act, RSC 1985, c. 3, that ${payor} shall pay spousal support to ${payee} in the amount of $${decision.amount || '[AMOUNT]'} per month for ${decision.duration || '[DURATION]'}.`,
+        content: `IT IS ORDERED pursuant to s.15.2 of the Divorce Act, RSC 1985, c. 3, that ${payor} shall pay spousal support to ${payee} in the amount of $${decision.amount || placeholder('AMOUNT')} per month for ${decision.duration || placeholder('DURATION')}.`,
         type: 'order'
       });
     } else if (decision.outcome === 'reserve') {

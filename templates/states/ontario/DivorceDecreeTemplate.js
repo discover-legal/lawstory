@@ -5,10 +5,11 @@
 'use strict';
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 const { resolveSpousalSupportDecision } = require('../../core/spousalSupport');
-const { representationPhrase } = require('../../core/blanks');
+const { representationPhrase, draftBlank, inlineDraftBlank } = require('../../core/blanks');
 const {
   custodyDisputePosition,
   incomeImputationPosition,
@@ -55,7 +56,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       jurisdictionTerm: 'Province',
       districtTerm: 'Court location',
       districtStyle: 'plain',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -90,7 +91,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   }
 
   getDefaultCourt(county) {
-    const city = (county || '[CITY]').toUpperCase();
+    const city = (county || placeholder('CITY')).toUpperCase();
     return `SUPERIOR COURT OF JUSTICE — ${city}`;
   }
 
@@ -108,7 +109,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const location = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const location = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `${location}`;
   }
 
@@ -132,8 +133,8 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const draftNote = hasCaseNumber
       ? ''
       : '(Draft — insert case number before filing)\n';
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const formatted = (
       `IN THE ${courtName}\n\n` +
@@ -206,7 +207,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
     } else if (divorceData.hasProperty === false) {
       items.push({
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have net family property to equalize under the Family Law Act, RSO 1990, c. F.3, or a written agreement, before filing. Silence on this line may be treated as no equalization owing, waiving your claim.)',
+        content: draftBlank('confirm whether you and your spouse have net family property to equalize under the Family Law Act, RSO 1990, c. F.3, or a written agreement, before filing. Silence on this line may be treated as no equalization owing, waiving your claim.'),
         type: 'property_draft_note'
       });
     } else {
@@ -244,8 +245,9 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
       if (!divorceData.petitionerProperty && !divorceData.respondentProperty && !divorceData.equalizationPayment) {
         items.push({
-          content: 'IT IS ORDERED that each party retains the personal property currently in that party\'s possession, subject to any equalization payment required under the Family Law Act, RSO 1990, c. F.3.',
-          type: 'order'
+          // Nothing itemized: the draft orders no division by default.
+          content: draftBlank('state who keeps each item of property (or the equalization payment, if any) under the Family Law Act, RSO 1990, c. F.3, before filing; the proposed order divides nothing until you do.'),
+          type: 'property_draft_note'
         });
       }
     }
@@ -287,7 +289,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       const dobDisplay = childDob || '__________________';
       const childInfo = typeof child === 'string'
         ? child
-        : `${child.name || '[CHILD NAME]'}, born ${dobDisplay}`;
+        : `${child.name || placeholder('CHILD NAME')}, born ${dobDisplay}`;
       items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
     });
 
@@ -330,7 +332,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement) (Divorce Act, RSC 1985, c. 3, s.16.3).',
+        content: ('IT IS ORDERED that the parties shall exercise decision-making responsibility for the child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + ' (Divorce Act, RSC 1985, c. 3, s.16.3).'),
         type: 'order'
       });
     }
@@ -355,8 +357,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
         content:
           'IT IS ORDERED that the parties shall determine the child(ren)\'s primary residence ' +
           'by agreement, or, failing agreement, in accordance with a parenting schedule filed ' +
-          'with this Court: __________________________ (Draft — name the parent with whom the child(ren) ' +
-          'primarily reside).',
+          'with this Court: ' + inlineDraftBlank('name the parent with whom the child(ren) primarily reside') + '.',
         type: 'order'
       });
     }
@@ -496,7 +497,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     if (details.length > 0) {
       // Non-operative content — surface the drafter's note as an in-line
       // comment (never as an operative order) and demand a real schedule.
-      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: __________________________ (Draft — insert specific parenting schedule (weekday/weekend, holidays, exchanges) before filing). (Drafter note: ${details})${nonAlienation}`;
+      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: ${inlineDraftBlank('insert specific parenting schedule (weekday/weekend, holidays, exchanges) before filing')}. (Drafter note: ${details})${nonAlienation}`;
     }
     return 'IT IS ORDERED that each party shall have parenting time with the child(ren) as agreed in writing by the parties, or, failing agreement, in accordance with a parenting schedule to be filed with this Court.' + nonAlienation;
   }
@@ -554,7 +555,7 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
 
     if (decision.outcome === 'award') {
       items.push({
-        content: `IT IS ORDERED pursuant to s.15.2 of the Divorce Act, RSC 1985, c. 3, that ${payor} shall pay spousal support to ${payee} in the amount of $${decision.amount || '[AMOUNT]'} per month for ${decision.duration || '[DURATION]'}.`,
+        content: `IT IS ORDERED pursuant to s.15.2 of the Divorce Act, RSC 1985, c. 3, that ${payor} shall pay spousal support to ${payee} in the amount of $${decision.amount || placeholder('AMOUNT')} per month for ${decision.duration || placeholder('DURATION')}.`,
         type: 'order'
       });
     } else if (decision.outcome === 'reserve') {

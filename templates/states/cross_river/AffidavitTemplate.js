@@ -1,6 +1,7 @@
 // templates/states/cross_river/AffidavitTemplate.js
 'use strict';
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class CrossRiverAffidavitTemplate extends BaseAffidavitTemplate {
@@ -22,7 +23,7 @@ class CrossRiverAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Judicial division',
-      districtPlaceholder: '[JUDICIAL DIVISION]',
+      districtPlaceholder: placeholder('JUDICIAL DIVISION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -31,13 +32,13 @@ class CrossRiverAffidavitTemplate extends BaseAffidavitTemplate {
     this.sections.perjuryStatement = false;
   }
   generateHeader() { return 'IN THE HIGH COURT OF CROSS RIVER STATE'; }
-  generateVenue(county) { return `${(county || '[JUDICIAL DIVISION]').toUpperCase()} JUDICIAL DIVISION`; }
+  generateVenue(county) { return `${(county || placeholder('JUDICIAL DIVISION')).toUpperCase()} JUDICIAL DIVISION`; }
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'HIGH COURT OF CROSS RIVER STATE';
-    const location = (affidavitData.county || affidavitData.city || '[JUDICIAL DIVISION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('JUDICIAL DIVISION')).toUpperCase();
     const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || '[PETITIONER NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
     const formatted = `IN THE ${court.toUpperCase()}\n${location} JUDICIAL DIVISION\n\nSuit No. ${suitNo}\n\n${petitioner.toUpperCase()}\nPetitioner\n\n— AND —\n\n${respondent.toUpperCase()}\nRespondent`;
     return { courtName: court, caseNumber: affidavitData.caseNumber, plaintiff: petitioner, defendant: respondent, formatted };
   }

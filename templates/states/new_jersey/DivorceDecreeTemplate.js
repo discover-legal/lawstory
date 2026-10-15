@@ -3,7 +3,8 @@
 // Complies with N.J.S.A. 2A:34-2 et seq. (New Jersey divorce statutes)
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName, resolveNonResidentialParentName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -67,7 +68,7 @@ class NewJerseyDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `SUPERIOR COURT OF NEW JERSEY, CHANCERY DIVISION, FAMILY PART, ${countyUpper} COUNTY`;
   }
 
@@ -86,8 +87,8 @@ class NewJerseyDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     const docketNum = caseNumberOrBlank(divorceData.caseNumber);
     caption += `DOCKET NO. ${docketNum}\n\n`;
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${plaintiff},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -112,7 +113,7 @@ class NewJerseyDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
   generateJurisdictionSection(divorceData) {
     return {
       title: 'FINDINGS OF FACT',
-      text: `The Court finds that it has jurisdiction over this action and the parties. Plaintiff has satisfied the residency requirements of N.J.S.A. 2A:34-10, having been a bona fide resident of New Jersey for the requisite period prior to filing. The parties were married on ${this.formatDate(divorceData.marriageDate) || '[DATE OF MARRIAGE]'}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The grounds for divorce have been established by competent and credible evidence. The Court finds that the marriage is irretrievably broken and that a divorce should be granted.`,
+      text: `The Court finds that it has jurisdiction over this action and the parties. Plaintiff has satisfied the residency requirements of N.J.S.A. 2A:34-10, having been a bona fide resident of New Jersey for the requisite period prior to filing. The parties were married on ${this.formatDate(divorceData.marriageDate) || placeholder('DATE OF MARRIAGE')}${divorceData.marriageLocation ? ` in ${divorceData.marriageLocation}` : ''}. The grounds for divorce have been established by competent and credible evidence. The Court finds that the marriage is irretrievably broken and that a divorce should be granted.`,
       type: 'jurisdiction'
     };
   }
@@ -206,7 +207,7 @@ class NewJerseyDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate ? `${index + 1}. ${childName}, born ${birthDate}` : `${index + 1}. ${childName}`,
@@ -251,7 +252,7 @@ class NewJerseyDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -363,7 +364,7 @@ class NewJerseyDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay ${alimonyType.replace('_', ' ')} alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month, commencing ${this.formatDate(divorceData.spousalSupportStartDate) || '[DATE]'}, and continuing for ${divorceData.spousalSupportDuration || '[DURATION]'}.`,
+        content: `IT IS ORDERED that ${payor} shall pay ${alimonyType.replace('_', ' ')} alimony to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month, commencing ${this.formatDate(divorceData.spousalSupportStartDate) || placeholder('DATE')}, and continuing for ${divorceData.spousalSupportDuration || placeholder('DURATION')}.`,
         type: 'order'
       });
 

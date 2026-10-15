@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 // The six sheriffdoms of Scotland (for the Form G1 "SHERIFFDOM OF ... AT ..." heading)
@@ -66,7 +67,7 @@ class ScotlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Sheriffdom',
-      districtPlaceholder: '[SHERIFFDOM]',
+      districtPlaceholder: placeholder('SHERIFFDOM'),
       filerLabel: 'Pursuer',
       responderLabel: 'Defender',
       selfRepresentedLabel: 'Party Litigant',
@@ -122,24 +123,24 @@ class ScotlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   getDefaultCourt(county) {
     const value = (county || '').trim().toUpperCase();
     if (!value) {
-      return 'SHERIFFDOM OF [SHERIFFDOM] AT [PLACE]';
+      return ('SHERIFFDOM OF ' + placeholder('SHERIFFDOM') + ' AT ' + placeholder('PLACE'));
     }
     if (SCOTTISH_SHERIFFDOMS.includes(value)) {
-      return `SHERIFFDOM OF ${value} AT [PLACE]`;
+      return `SHERIFFDOM OF ${value} AT ${placeholder('PLACE')}`;
     }
-    return `SHERIFFDOM OF [SHERIFFDOM] AT ${value}`;
+    return `SHERIFFDOM OF ${placeholder('SHERIFFDOM')} AT ${value}`;
   }
 
   /**
    * Scotland case caption uses "Pursuer" and "Defender".
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const pursuer = (divorceData.petitionerName || '[PURSUER NAME]').toUpperCase();
-    const defender = (divorceData.respondentName || '[DEFENDER NAME]').toUpperCase();
+    const pursuer = (divorceData.petitionerName || placeholder('PURSUER NAME')).toUpperCase();
+    const defender = (divorceData.respondentName || placeholder('DEFENDER NAME')).toUpperCase();
 
     // Form G1 headings begin "SHERIFFDOM OF ..." with no "IN THE" prefix.
     const heading = courtName.startsWith('SHERIFFDOM') ? courtName : `IN THE ${courtName}`;
@@ -181,7 +182,7 @@ class ScotlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Scotland venue reason.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COURT LOCATION]';
+    const location = divorceData.county || placeholder('COURT LOCATION');
     return `the Pursuer or Defender resides within the sheriffdom of ${location}`;
   }
 
@@ -247,7 +248,7 @@ class ScotlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Scotland verification — sworn affidavit, not Statement of Truth.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PURSUER NAME]';
+    const name = divorceData.petitionerName || placeholder('PURSUER NAME');
     return `I, ${name}, Pursuer, do solemnly and sincerely declare that the facts stated in this Initial Writ and the accompanying affidavit are true, to the best of my knowledge, information, and belief.`;
   }
 

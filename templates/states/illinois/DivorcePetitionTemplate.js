@@ -3,6 +3,7 @@
 // Complies with 750 ILCS 5 (Illinois Marriage and Dissolution of Marriage Act)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -97,7 +98,7 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    return `Circuit Court of ${county || '[COUNTY]'} County, Illinois`;
+    return `Circuit Court of ${county || placeholder('COUNTY')} County, Illinois`;
   }
 
   /**
@@ -121,8 +122,8 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     caption += `${courtName.toUpperCase()}\n\n`;
 
     // Parties
-    const petitioner = divorceData.petitionerName || '[PETITIONER NAME]';
-    const respondent = divorceData.respondentName || '[RESPONDENT NAME]';
+    const petitioner = divorceData.petitionerName || placeholder('PETITIONER NAME');
+    const respondent = divorceData.respondentName || placeholder('RESPONDENT NAME');
 
     caption += `In re the Marriage of:\n\n`;
     caption += `${petitioner.toUpperCase()},\n`;
@@ -160,9 +161,9 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const petitioner = divorceData.petitionerName || 'Petitioner';
 
     if (divorceData.bothResidents) {
-      return `Both ${petitioner} and Respondent have been residents of the State of Illinois for more than 90 days. ${petitioner} has been a resident of ${divorceData.county || '[COUNTY]'} County, Illinois.`;
+      return `Both ${petitioner} and Respondent have been residents of the State of Illinois for more than 90 days. ${petitioner} has been a resident of ${divorceData.county || placeholder('COUNTY')} County, Illinois.`;
     }
-    return `${petitioner} has been a resident of the State of Illinois for more than 90 days and is a resident of ${divorceData.county || '[COUNTY]'} County, Illinois.`;
+    return `${petitioner} has been a resident of the State of Illinois for more than 90 days and is a resident of ${divorceData.county || placeholder('COUNTY')} County, Illinois.`;
   }
 
   /**
@@ -200,7 +201,7 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -233,23 +234,17 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      // The financial-disclosure recital is procedural — required whatever
-      // the property posture — so it survives the base property gate.
-      const section = super.generatePropertySection(divorceData);
-      section.items.push({
-        number: section.nextParagraphNumber++,
-        content: 'A Financial Affidavit is being filed with this Petition as required by 750 ILCS 5/501(a)(1).',
-        type: 'financial_disclosure'
-      });
-      return section;
-    }
+  /**
+   * Procedural recital required whatever the property posture.
+   * @returns {string[]}
+   */
+  getPropertyProceduralRecitals(_divorceData) {
+    return ['A Financial Affidavit is being filed with this Petition as required by 750 ILCS 5/501(a)(1).'];
+  }
 
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -265,12 +260,6 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       type: 'property_request'
     });
 
-    // Illinois requires Financial Affidavit
-    items.push({
-      number: paragraphNum++,
-      content: 'A Financial Affidavit is being filed with this Petition as required by 750 ILCS 5/501(a)(1).',
-      type: 'financial_disclosure'
-    });
 
     return {
       title: 'PROPERTY AND DEBTS',
@@ -346,7 +335,7 @@ class IllinoisDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
 
     return `Under penalties as provided by law pursuant to Section 1-109 of the Code of Civil Procedure, the undersigned certifies that the statements set forth in this instrument are true and correct, except as to matters therein stated to be on information and belief, and as to such matters the undersigned certifies as aforesaid that the undersigned verily believes the same to be true.
 

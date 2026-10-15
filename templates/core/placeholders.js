@@ -1,34 +1,37 @@
 'use strict';
 
 /**
- * Generic detection of template placeholder tokens.
+ * Template placeholders as STRUCTURED MARKERS, never free text.
  *
- * Templates must render unknown values as visible fill-in blanks
- * ("____ (Draft — …)"), never as bracketed placeholders. A bracketed token
- * that reaches a download is a template bug: `[PETITIONER NAME]` or
- * `[PRIMARY RESIDENCE — set out the parent…]` printed into a court draft.
+ * A template that has no value for something emits `placeholder('PETITIONER
+ * NAME')` (optionally with an instruction: `placeholder('PRIMARY RESIDENCE',
+ * 'set out the parent …')`). The marker is the head wrapped in Unicode
+ * private-use delimiters that no user, court or keyboard ever types, so:
  *
- * Rather than a hand-maintained denylist of known tokens, a placeholder is
- * recognized by SHAPE: square brackets around an ALL-CAPS head of two or
- * more characters, optionally followed by an em/en-dash and a lowercase
- * instruction:
+ *   - the generate / packet guards report ONLY real template gaps — a
+ *     user's own "[REDACTED]", "[sic]", "[ON]" or "Smith v. Jones [ONCA]"
+ *     is ordinary text and passes untouched;
+ *   - the editor preview and the PDF/DOCX choke point turn each marker into
+ *     the same visible fill-in blank (with the instruction as a Draft note)
+ *     and never rewrite user text.
  *
- *   [CASE NUMBER]   [SUIT NUMBER]   [COURT REF. NUMBER]   [NUMBER]/[YEAR]
- *   [PRIMARY RESIDENCE — set out the parent with whom …]
+ * Marker grammar:  U+E000 head [U+E002 instruction] U+E001
  *
- * Not placeholders (never matched or explicitly allowed):
- *   - a single-letter checkbox mark such as "[X]" (head < 2 characters);
- *   - lowercase / sentence-case bracketed text ("[sic]", "[Print, type, or
- *     stamp commissioned name…]");
- *   - COURT_COMPLETED tokens — marks a court or notary fills in after the
- *     filer signs ([SEAL], [NOTARY SEAL], [JUDGE SIGNATURE]) and recitals
- *     the template deliberately leaves "TO BE COMPLETED BY THE COURT".
+ * Templates must not contain raw bracket placeholders; a source-scan test
+ * (__tests__/templates/core/no-raw-placeholders.test.js) enforces it.
  */
 
-// Head: starts with a capital, ALL-CAPS words/digits/punctuation, ends on a
-// capital, digit, or ")". Optional " — instruction" tail up to the bracket.
-const PLACEHOLDER_SOURCE = "\\[([A-Z][A-Z0-9 ,.'’&/()_-]*[A-Z0-9)])(?:\\s*[—–]\\s*([^\\]\\n]*))?\\]";
+const { FILL_BLANK, inlineDraftBlank } = require('./blanks');
 
+const OPEN = '\uE000';
+const SEP = '\uE002';
+const CLOSE = '\uE001';
+const MARKER_SOURCE = `${OPEN}([^${OPEN}${SEP}${CLOSE}]+)(?:${SEP}([^${OPEN}${SEP}${CLOSE}]*))?${CLOSE}`;
+
+/**
+ * Marks the court, a notary or the clerk fill in after the filer signs. They
+ * print as blanks but never block a download.
+ */
 const COURT_COMPLETED = new Set([
   'DATE',
   'SEAL',
@@ -38,8 +41,8 @@ const COURT_COMPLETED = new Set([
   'LABEL',
 ]);
 
-// Friendlier wording for the 422 message / UI prompt. Labels only — the
-// DETECTION is generic; any head not listed is reported lowercased.
+// Friendlier wording for the 422 message / UI prompt. Labels only; any head
+// not listed is reported lowercased.
 const FRIENDLY_LABELS = {
   MOVANT: 'movant name',
   DECLARANT: 'declarant name',
@@ -58,38 +61,49 @@ const FRIENDLY_LABELS = {
   SUBJECT: 'subject line',
 };
 
-function labelFor(head) {
-  return FRIENDLY_LABELS[head] || head.toLowerCase();
+/**
+ * The ONE way a template says "this value is missing".
+ * @param {string} head - What is missing, e.g. 'PETITIONER NAME'
+ * @param {string} [instruction] - What the filer should put there
+ * @returns {string} A marker string, safe to concatenate and upper-case
+ */
+function placeholder(head, instruction) {
+  const h = String(head).trim();
+  const i = instruction == null ? '' : String(instruction).trim();
+  return i ? `${OPEN}${h}${SEP}${i}${CLOSE}` : `${OPEN}${h}${CLOSE}`;
 }
 
-function isCourtCompleted(head, instruction) {
-  if (COURT_COMPLETED.has(head)) return true;
-  return /TO BE COMPLETED BY THE COURT/.test(`${head} ${instruction || ''}`.toUpperCase());
+function isCourtCompleted(head) {
+  return COURT_COMPLETED.has(String(head).trim().toUpperCase());
+}
+
+function labelFor(head) {
+  const h = String(head).trim();
+  return FRIENDLY_LABELS[h.toUpperCase()] || h.toLowerCase();
 }
 
 /**
- * Every placeholder token in a string, excluding court-completed marks.
+ * Every placeholder marker in a string, excluding court-completed marks.
  * @param {string} text
- * @returns {Array<{token: string, head: string, instruction: string|null}>}
+ * @returns {Array<{marker: string, head: string, instruction: string|null}>}
  */
 function findPlaceholders(text) {
-  if (typeof text !== 'string' || !text.includes('[')) return [];
+  if (typeof text !== 'string' || !text.includes(OPEN)) return [];
   const out = [];
-  const re = new RegExp(PLACEHOLDER_SOURCE, 'g');
+  const re = new RegExp(MARKER_SOURCE, 'g');
   let m;
   while ((m = re.exec(text)) !== null) {
     const head = m[1].trim();
-    const instruction = m[2] ? m[2].trim() : null;
-    if (isCourtCompleted(head, instruction)) continue;
-    out.push({ token: m[0], head, instruction });
+    if (isCourtCompleted(head)) continue;
+    out.push({ marker: m[0], head, instruction: m[2] ? m[2].trim() : null });
   }
   return out;
 }
 
 /**
- * Human-readable missing-field labels for every placeholder found anywhere
- * in a built document structure (deduplicated, sorted). Serializing the
- * whole structure covers every section shape any template emits.
+ * Human-readable missing-field labels for every marker anywhere in a built
+ * document structure (deduplicated, sorted). Only markers count — free text
+ * the user wrote can never trip it.
  * @param {*} structure
  * @returns {string[]}
  */
@@ -101,39 +115,27 @@ function findUnfilledPlaceholders(structure) {
     return [];
   }
   if (!serialized) return [];
-  // JSON escapes newlines/quotes; the token grammar contains neither, so
-  // scanning the serialized form is equivalent to scanning each string.
   const labels = new Set();
-  for (const { head } of findPlaceholders(serialized)) {
-    labels.add(labelFor(head));
-  }
+  for (const { head } of findPlaceholders(serialized)) labels.add(labelFor(head));
   return Array.from(labels).sort();
 }
 
 /**
- * Replace every placeholder in a string with a visible fill-in blank,
- * keeping any instruction as a Draft note. Used as the last line of
- * defence before a document is rendered to PDF/DOCX, where even
- * court-completed marks ([DATE], [SEAL], …) print as blanks to complete by
- * hand; only "… TO BE COMPLETED BY THE COURT" recitals are kept verbatim.
+ * Replace every marker in a string with a visible fill-in blank, keeping any
+ * instruction as a Draft note. Text outside markers is never touched.
  * @param {string} text
  * @returns {string}
  */
 function blankPlaceholders(text) {
-  if (typeof text !== 'string' || !text.includes('[')) return text;
-  return text.replace(new RegExp(PLACEHOLDER_SOURCE, 'g'), (token, head, instruction) => {
-    if (/TO BE COMPLETED BY THE COURT/.test(`${head} ${instruction || ''}`.toUpperCase())) return token;
-    return instruction && instruction.trim()
-      ? `______________ (Draft — ${instruction.trim()})`
-      : '______________';
-  });
+  if (typeof text !== 'string' || !text.includes(OPEN)) return text;
+  return text.replace(new RegExp(MARKER_SOURCE, 'g'), (_m, _head, instruction) =>
+    (instruction && instruction.trim() ? inlineDraftBlank(instruction.trim()) : FILL_BLANK));
 }
 
 /**
- * blankPlaceholders applied to every string in a structure (objects and
- * arrays walked; other values untouched). The PDF/DOCX choke point and the
- * editor preview both use it, so the preview shows exactly the blanks the
- * download will.
+ * blankPlaceholders applied to every string in a structure. The PDF/DOCX
+ * choke point and the editor preview both use it, so the preview shows
+ * exactly the blanks the download will.
  * @param {*} value
  * @returns {*}
  */
@@ -149,10 +151,11 @@ function blankPlaceholdersDeep(value) {
 }
 
 module.exports = {
-  blankPlaceholdersDeep,
-  PLACEHOLDER_SOURCE,
-  COURT_COMPLETED,
+  placeholder,
   findPlaceholders,
   findUnfilledPlaceholders,
   blankPlaceholders,
+  blankPlaceholdersDeep,
+  COURT_COMPLETED,
+  MARKER_SOURCE,
 };

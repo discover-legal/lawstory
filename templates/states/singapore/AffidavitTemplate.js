@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -43,7 +44,7 @@ class SingaporeAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -75,8 +76,8 @@ class SingaporeAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY JUSTICE COURTS';
     const suitNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const defendant = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const plaintiff = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const defendant = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n\n` +
@@ -123,7 +124,7 @@ class SingaporeAffidavitTemplate extends BaseAffidavitTemplate {
       `this _____ day of _________________, _______.\n\n` +
       `Before me:\n\n` +
       `________________________________\n` +
-      `[Name]\n` +
+      `${placeholder('Name')}\n` +
       `Commissioner for Oaths`
     );
   }

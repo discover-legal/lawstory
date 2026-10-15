@@ -8,6 +8,7 @@
  */
 
 const BaseDocument = require('./BaseDocument');
+const { placeholder } = require('./placeholders');
 
 class BaseMotionTemplate extends BaseDocument {
   constructor(stateCode, stateName) {
@@ -21,7 +22,7 @@ class BaseMotionTemplate extends BaseDocument {
   }
 
   generateIntroduction(data) {
-    const name = data.movantName || data.petitionerName || data.affiantName || '[MOVANT]';
+    const name = data.movantName || data.petitionerName || data.affiantName || placeholder('MOVANT');
     return `${name.toUpperCase()}, appearing Pro Se, respectfully moves this Court for the relief requested below, and in support thereof states:`;
   }
 
@@ -53,7 +54,7 @@ class BaseMotionTemplate extends BaseDocument {
     const intro       = this.generateIntroduction(data);
     const facts       = this.processFacts(data.facts || []);
     const prayer      = this.generatePrayer(data.reliefRequested || []);
-    const signerName  = data.movantName || data.petitionerName || data.affiantName || '[NAME]';
+    const signerName  = data.movantName || data.petitionerName || data.affiantName || placeholder('NAME');
     const signatureBlock = this.generateSignatureBlock(signerName);
     const footer      = this.generateFooter();
 

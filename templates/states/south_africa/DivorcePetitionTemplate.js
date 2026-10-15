@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -66,7 +67,7 @@ class SouthAfricaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Division',
-      districtPlaceholder: '[DIVISION]',
+      districtPlaceholder: placeholder('DIVISION'),
       filerLabel: 'Plaintiff',
       responderLabel: 'Defendant',
       selfRepresentedLabel: 'Self-Represented',
@@ -115,7 +116,7 @@ class SouthAfricaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const division = (county || '[DIVISION]').toUpperCase();
+    const division = (county || placeholder('DIVISION')).toUpperCase();
     return `HIGH COURT OF SOUTH AFRICA (${division})`;
   }
 
@@ -124,12 +125,12 @@ class SouthAfricaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Combined Summons format — "In the matter between" style.
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -171,7 +172,7 @@ class SouthAfricaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * South Africa venue reason — domicile falls within the court's division.
    */
   getVenueReason(divorceData) {
-    const division = divorceData.county || '[DIVISION]';
+    const division = divorceData.county || placeholder('DIVISION');
     return `the Plaintiff is domiciled within the area of jurisdiction of the ${division}`;
   }
 
@@ -254,7 +255,7 @@ class SouthAfricaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * "Plaintiff" label per SA practice.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `I, ${name}, the Plaintiff in this action, do hereby make oath and state that the facts set out in the Particulars of Claim are true and correct to the best of my knowledge and belief.`;
   }
 

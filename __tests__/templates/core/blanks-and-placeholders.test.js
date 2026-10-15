@@ -14,9 +14,11 @@ const {
   primaryResidenceOrBlank,
 } = require('../../../templates/core/blanks');
 const {
+  placeholder,
   findPlaceholders,
   findUnfilledPlaceholders,
   blankPlaceholders,
+  blankPlaceholdersDeep,
 } = require('../../../templates/core/placeholders');
 
 describe('caseNumberOrBlank', () => {
@@ -49,12 +51,13 @@ describe('pregnancyAverment', () => {
 
 describe('representationPhrase', () => {
   test('missing representation is NOT self-representation', () => {
-    const out = representationPhrase(undefined, 'with counsel', 'pro se');
-    expect(out).not.toBe('pro se');
-    expect(out).toMatch(/Draft — confirm representation before filing: appeared with counsel, appeared pro se, or did not appear/);
+    const out = representationPhrase(undefined, 'appeared with counsel', 'appeared pro se');
+    expect(out).not.toBe('appeared pro se');
+    // The verb lives inside each option, so "Petitioner ____" reads correctly once filled in.
+    expect(out).toBe("__________________________ (Draft — insert 'appeared with counsel', 'appeared pro se', or 'did not appear')");
   });
-  test.each([['attorney', 'with counsel'], ['lawyer', 'with counsel'], ['self', 'pro se'], ['pro_se', 'pro se']])('%p → %p', (v, want) => {
-    expect(representationPhrase(v, 'with counsel', 'pro se')).toBe(want);
+  test.each([['attorney', 'appeared with counsel'], ['lawyer', 'appeared with counsel'], ['self', 'appeared pro se'], ['pro_se', 'appeared pro se']])('%p → %p', (v, want) => {
+    expect(representationPhrase(v, 'appeared with counsel', 'appeared pro se')).toBe(want);
   });
 });
 
@@ -65,39 +68,46 @@ describe('primaryResidenceOrBlank', () => {
   });
 });
 
-describe('generic placeholder grammar', () => {
-  test('catches any bracketed ALL-CAPS token, with or without an instruction tail', () => {
-    const heads = findPlaceholders(
-      'Case No. [CASE NUMBER]; [COURT REF. NUMBER]; [NUMBER]/[YEAR]; ' +
-      'with this Court: [PRIMARY RESIDENCE — set out the parent with whom the child(ren) primarily reside].'
-    ).map((p) => p.head);
-    expect(heads).toEqual(['CASE NUMBER', 'COURT REF. NUMBER', 'NUMBER', 'YEAR', 'PRIMARY RESIDENCE']);
+describe('placeholder markers', () => {
+  test('templates mark gaps with placeholder(); only markers are found', () => {
+    const text = `Case No. ${placeholder('CASE NUMBER')} with this Court: ${placeholder('PRIMARY RESIDENCE', 'set out the parent')}.`;
+    expect(findPlaceholders(text).map((p) => [p.head, p.instruction])).toEqual([
+      ['CASE NUMBER', null],
+      ['PRIMARY RESIDENCE', 'set out the parent'],
+    ]);
   });
 
-  test('legitimate bracketed text is not a placeholder', () => {
-    const legit = [
-      'Physical custody is awarded to: [X] Petitioner', // checkbox mark
-      '[Print, type, or stamp commissioned name of notary or deputy clerk.]',
-      'Judge [Smith]',
-      'section 12(b)[3]',
-      '[ ] SNAP (food stamps)',
-      'Signed on [DATE]. [NOTARY SEAL] [SEAL] [JUDGE SIGNATURE] EXHIBIT [LABEL]',
-      'Respondent: [APPEARANCE, SERVICE, AND DEFAULT STATUS — TO BE COMPLETED BY THE COURT].',
-    ];
-    for (const text of legit) expect(findPlaceholders(text)).toEqual([]);
+  test('user text that merely LOOKS like a token is never a placeholder', () => {
+    const userText = [
+      'He called me [EXPLETIVE] in front of the kids.',
+      'The bank statement is [REDACTED] for privacy.',
+      'We moved to [ON] in 2019; Smith v. Jones [ONCA] applies; see [II] and [A-1].',
+      'Physical custody is awarded to: [X] Petitioner',
+    ].join(' ');
+    expect(findPlaceholders(userText)).toEqual([]);
+    expect(findUnfilledPlaceholders({ facts: [{ content: userText }] })).toEqual([]);
+    expect(blankPlaceholders(userText)).toBe(userText);
+  });
+
+  test('court-completed marks print as blanks but never block', () => {
+    const text = `Signed on ${placeholder('DATE')}. ${placeholder('NOTARY SEAL')}`;
+    expect(findPlaceholders(text)).toEqual([]);
+    expect(blankPlaceholders(text)).toBe('Signed on ______________. ______________');
   });
 
   test('findUnfilledPlaceholders scans a whole structure and labels the gaps', () => {
     const labels = findUnfilledPlaceholders({
-      sections: { caption: { petitioner: '[PETITIONER NAME]' }, body: [{ text: 'born [BIRTH DATE]' }, { text: '[SOMETHING NEW — fill me in]' }] },
+      sections: {
+        caption: { petitioner: placeholder('PETITIONER NAME').toUpperCase() },
+        body: [{ text: `born ${placeholder('BIRTH DATE')}` }, { text: placeholder('SOMETHING NEW', 'fill me in') }],
+      },
     });
     expect(labels).toEqual(['child birth date', 'petitioner name', 'something new']);
   });
 
-  test('blankPlaceholders keeps an instruction as a Draft note', () => {
-    expect(blankPlaceholders('with this Court: [PRIMARY RESIDENCE — set out the parent].'))
-      .toBe('with this Court: ______________ (Draft — set out the parent).');
-    expect(blankPlaceholders('Case No. [CASE NUMBER]')).toBe('Case No. ______________');
-    expect(blankPlaceholders('[X] Petitioner')).toBe('[X] Petitioner');
+  test('blankPlaceholders keeps an instruction as a Draft note and leaves the rest of the string alone', () => {
+    expect(blankPlaceholders(`with this Court: ${placeholder('PRIMARY RESIDENCE', 'set out the parent')}. [REDACTED]`))
+      .toBe('with this Court: __________________________ (Draft — set out the parent). [REDACTED]');
+    expect(blankPlaceholdersDeep({ a: [`Case No. ${placeholder('CASE NUMBER')}`], n: 3 })).toEqual({ a: ['Case No. ______________'], n: 3 });
   });
 });

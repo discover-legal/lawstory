@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { asList, propertyAgreementProse } = require('../../core/dataShapes');
 const { caseNumberOrBlank, draftBlank, primaryResidenceOrBlank } = require('../../core/blanks');
 const {
@@ -66,7 +67,7 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Court location',
       districtStyle: 'plain',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -116,7 +117,7 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const city = (county || '[CITY]').toUpperCase();
+    const city = (county || placeholder('CITY')).toUpperCase();
     return `SUPERIOR COURT OF JUSTICE — ${city}`;
   }
 
@@ -127,14 +128,14 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Court File No. assigned by the Superior Court of Justice.
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     // Unassigned Court File No. renders the same fill-in blank in the
     // preview as in the PDF (never a [COURT FILE NUMBER] token).
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -194,7 +195,7 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Ontario venue reason — Applicant or Respondent resides in this court location.
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[COURT LOCATION]';
+    const location = divorceData.county || placeholder('COURT LOCATION');
     return `the Applicant or Respondent resides in ${location}`;
   }
 
@@ -241,85 +242,40 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     return `The parties have agreed that ${payor} shall pay child support to ${payee} in the amount of $${divorceData.childSupportAmount} per month, consistent with the Federal Child Support Guidelines, SOR/97-175.`;
   }
 
-  /**
-   * Ontario property section — Family Law Act equalization of net family
-   * property. Ontario is NOT a community-property jurisdiction, so the base
-   * class's "community/marital property" language must never appear here
-   * (the Ontario decree template carries the same guard).
-   * @param {Object} divorceData - Divorce data
-   * @returns {Object} Property section
-   */
-  generatePropertySection(divorceData) {
-    const items = [];
-    let paragraphNum = divorceData._paragraphNum || 12;
+  // ── Property & debts: Family Law Act equalization vocabulary. Ontario is
+  // NOT a community-property jurisdiction, so the base text hooks are
+  // overridden; the posture logic (and its safety gate) stays in the base.
 
-    // SAFETY GATE (attorney review, 2026-08): mirror the base — a nil
-    // NFP finding waives an equalization claim and may render ONLY on
-    // an affirmative user-confirmed statement.
-    const nilPropertyConfirmed =
-      divorceData.hasProperty === false &&
-      (divorceData.noPropertyConfirmed === true ||
-        (typeof divorceData.propertyAgreement === 'string' &&
-          divorceData.propertyAgreement.trim() !== ''));
-    if (nilPropertyConfirmed) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There is no net family property to be equalized under the Family Law Act, RSO 1990, c. F.3.',
-        type: 'property_info'
-      });
-    } else if (divorceData.hasProperty === false) {
-      items.push({
-        number: paragraphNum++,
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have net family property to equalize under the Family Law Act, RSO 1990, c. F.3, or a written agreement, before filing. Silence on this line may be treated as no equalization owing, waiving your claim.)',
-        type: 'property_draft_note'
-      });
-    } else if (this.hasAgreedPropertyDivision(divorceData)) {
-      for (const content of this.getPropertyAgreementPleadings(divorceData)) {
-        items.push({
-          number: paragraphNum++,
-          content,
-          type: 'property_agreement'
-        });
-      }
-    } else if (divorceData.hasProperty === true) {
-      // Affirmative "we have property" — allege only that property exists;
-      // its kinds (real property, accounts, …) are never assumed.
-      items.push({
-        number: paragraphNum++,
-        content: 'The parties acquired property during the marriage.',
-        type: 'property_info'
-      });
+  getNilPropertyStatement() {
+    return 'There is no net family property to be equalized under the Family Law Act, RSO 1990, c. F.3.';
+  }
 
-      items.push({
-        number: paragraphNum++,
-        content: 'The Applicant requests an equalization of the parties\' net family property pursuant to Part I of the Family Law Act, RSO 1990, c. F.3.',
-        type: 'property_request'
-      });
-    } else {
-      // Silence — never allege an estate the filer did not describe. The
-      // equalization claim stays in the relief section.
-      items.push({
-        number: paragraphNum++,
-        content: draftBlank('confirm whether you and your spouse have net family property to equalize under the Family Law Act, RSO 1990, c. F.3, or a written agreement, before filing.'),
-        type: 'property_draft_note'
-      });
-    }
+  getPropertyDraftNote(divorceData) {
+    const base = 'confirm whether you and your spouse have net family property to equalize under the Family Law Act, RSO 1990, c. F.3, or a written agreement, before filing.';
+    return draftBlank(divorceData.hasProperty === false
+      ? `${base} Silence on this line may be treated as no equalization owing, waiving your claim.`
+      : base);
+  }
 
-    // Debts are alleged only on an affirmative signal (hasDebts === true or
-    // an itemized debt list) — silence is not "the parties have debts".
-    if (this.hasAffirmativeDebtSignal(divorceData)) {
-      items.push({
-        number: paragraphNum++,
-        content: 'The parties have accumulated debts during the marriage. The Applicant requests that the Court allocate responsibility for such debts in a just and equitable manner.',
-        type: 'debt_info'
-      });
-    }
+  // Affirmative "we have property" — allege only that property exists; its
+  // kinds (real property, accounts, …) are never assumed.
+  getPropertyAllegations() {
+    return [
+      'The parties acquired property during the marriage.',
+      'The Applicant requests an equalization of the parties\' net family property pursuant to Part I of the Family Law Act, RSO 1990, c. F.3.',
+    ];
+  }
 
-    return {
-      title: 'VI. PROPERTY AND DEBTS',
-      items,
-      nextParagraphNumber: paragraphNum
-    };
+  getDebtAllegation() {
+    return 'The parties have accumulated debts during the marriage. The Applicant requests that the Court allocate responsibility for such debts in a just and equitable manner.';
+  }
+
+  getNilDebtStatement() {
+    return 'The parties have no debts to be allocated.';
+  }
+
+  getDebtDraftNote() {
+    return draftBlank('confirm whether you and your spouse have any debts to allocate before filing. Silence on this line may leave you solely responsible for any debt that is not allocated.');
   }
 
   /**
@@ -450,7 +406,7 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Correct party label is "Applicant" (Family Law Rules, O. Reg. 114/99).
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[APPLICANT NAME]';
+    const name = divorceData.petitionerName || placeholder('APPLICANT NAME');
     return `I, ${name}, Applicant, make oath and say (or solemnly affirm) that the contents of this Application are true, to the best of my knowledge, information, and belief.`;
   }
 

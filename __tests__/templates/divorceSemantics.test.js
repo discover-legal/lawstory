@@ -128,8 +128,12 @@ describe('resolveCustodyArrangement', () => {
     }
   });
 
-  it('treats a missing value as the non-explicit historical joint default', () => {
-    expect(resolveCustodyArrangement({})).toEqual({ kind: 'joint', raw: null, explicit: false });
+  it('treats a missing value as unspecified — silence is not an arrangement', () => {
+    expect(resolveCustodyArrangement({})).toEqual({ kind: 'unspecified', raw: null, explicit: false });
+  });
+
+  it('reads the interview\'s custodyArrangement when custodyType is absent', () => {
+    expect(resolveCustodyArrangement({ custodyArrangement: 'joint' })).toMatchObject({ kind: 'joint', explicit: true });
   });
 });
 
@@ -209,14 +213,11 @@ describe('decree custody orders (US base)', () => {
     expect(doc.validation.warnings.join(' ')).toMatch(/not recognized/i);
   });
 
-  it('missing custodyType keeps the historical joint default wording byte-for-byte', () => {
+  it('missing custodyType proposes no custody order — a neutral as-agreed blank', () => {
     const doc = baseDecree({ custodyType: undefined, primaryResidence: undefined });
-    expect(doc.fullText).toContain(
-      'IT IS ORDERED that Avery Quinn and Jordan Quinn are awarded joint legal custody of the minor child(ren).'
-    );
-    expect(doc.fullText).toContain(
-      'IT IS ORDERED that Avery Quinn shall have primary physical custody and the right to designate the primary residence of the child(ren).'
-    );
+    expect(doc.fullText).not.toContain('are awarded joint legal custody');
+    expect(doc.fullText).not.toContain('shall have primary physical custody');
+    expect(doc.fullText).toContain("as agreed by the parties: __________________________ (Draft — set out the parties' decision-making agreement)");
   });
 
   it("legacy exact 'sole' still renders its historical sole order", () => {

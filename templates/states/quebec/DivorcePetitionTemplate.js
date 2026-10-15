@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -64,7 +65,7 @@ class QuebecDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Judicial district',
       districtStyle: 'plain',
-      districtPlaceholder: '[JUDICIAL DISTRICT]',
+      districtPlaceholder: placeholder('JUDICIAL DISTRICT'),
       filerLabel: 'Applicant',
       responderLabel: 'Defendant',
       selfRepresentedLabel: 'Self-Represented',
@@ -112,7 +113,7 @@ class QuebecDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getDefaultCourt(county) {
-    const district = (county || '[JUDICIAL DISTRICT]').toUpperCase();
+    const district = (county || placeholder('JUDICIAL DISTRICT')).toUpperCase();
     return `SUPERIOR COURT (COUR SUPÉRIEURE) — DISTRICT OF ${district}`;
   }
 
@@ -122,12 +123,12 @@ class QuebecDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Quebec is a civil law jurisdiction — not "Petitioner/Respondent".
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     const caption = [
       `${courtName}`,
@@ -167,7 +168,7 @@ class QuebecDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Quebec venue reason — Plaintiff or Defendant resides in this judicial district.
    */
   getVenueReason(divorceData) {
-    const district = divorceData.county || '[JUDICIAL DISTRICT]';
+    const district = divorceData.county || placeholder('JUDICIAL DISTRICT');
     return `the Plaintiff or Defendant resides in the judicial district of ${district}`;
   }
 
@@ -257,7 +258,7 @@ class QuebecDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Correct party label is "Applicant" (Demandeur/Demanderesse) per Quebec civil law.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `I, ${name}, Applicant (Demandeur/Demanderesse), solemnly affirm that the facts stated in this Application for Divorce are true, to the best of my knowledge, information, and belief.`;
   }
 }

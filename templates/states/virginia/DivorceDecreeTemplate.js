@@ -3,7 +3,8 @@
 // Complies with Va. Code § 20-91 et seq.
 
 const BaseDivorceDecreeTemplate = require('../../core/BaseDivorceDecreeTemplate');
-const { caseNumberOrBlank, representationPhrase } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, representationPhrase, inlineDraftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const { asList } = require('../../core/dataShapes');
 
@@ -79,7 +80,7 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const jurisdictionName = county || '[COUNTY/CITY]';
+    const jurisdictionName = county || placeholder('COUNTY/CITY');
     const upper = jurisdictionName.toUpperCase();
     if (upper.startsWith('CITY OF')) {
       return `CIRCUIT COURT OF THE ${upper}`;
@@ -101,7 +102,7 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const upper = (county || '[COUNTY]').toUpperCase();
+    const upper = (county || placeholder('COUNTY')).toUpperCase();
     if (upper.startsWith('CITY OF')) {
       return upper;
     }
@@ -123,8 +124,8 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `CASE NO. ${caseNumber}\n\n`;
 
-    const petitioner = (divorceData.petitionerName || '[COMPLAINANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('COMPLAINANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${petitioner},\n`;
     caption += `Complainant,\n\n`;
@@ -159,14 +160,14 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
     let text = '';
 
     if (divorceData.isUncontested && divorceData.byAffidavit) {
-      text += `This cause came before the Court on the Report of the Commissioner in Chancery and the Affidavit of Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, there being no exceptions thereto filed by either party. The Court, having reviewed and considered said Report and Affidavit and being fully advised in the premises,`;
+      text += `This cause came before the Court on the Report of the Commissioner in Chancery and the Affidavit of Complainant, ${divorceData.petitionerName || placeholder('COMPLAINANT')}, there being no exceptions thereto filed by either party. The Court, having reviewed and considered said Report and Affidavit and being fully advised in the premises,`;
     } else if (divorceData.isUncontested || divorceData.appearanceType === 'agreed') {
-      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se')},`;
-      text += ` Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${divorceData.respondentAppeared ? 'appearing and announcing agreement' : 'having been duly served and not appearing'},`;
+      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || placeholder('COMPLAINANT')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
+      text += ` Defendant, ${divorceData.respondentName || placeholder('DEFENDANT')}, ${divorceData.respondentAppeared ? 'appearing and announcing agreement' : 'having been duly served and not appearing'},`;
       text += ` and the Court, having heard the evidence, reviewed the record, and being fully advised in the premises,`;
     } else {
-      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || '[COMPLAINANT]'}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se')},`;
-      text += ` and Defendant, ${divorceData.respondentName || '[DEFENDANT]'}, ${divorceData.respondentAppeared ? 'appearing' : 'although duly served with process, not appearing'},`;
+      text += `This cause came on for hearing, Complainant, ${divorceData.petitionerName || placeholder('COMPLAINANT')}, ${representationPhrase(divorceData.petitionerRepresentation, 'appearing by and through counsel', 'appearing pro se', 'not appearing')},`;
+      text += ` and Defendant, ${divorceData.respondentName || placeholder('DEFENDANT')}, ${divorceData.respondentAppeared ? 'appearing' : 'although duly served with process, not appearing'},`;
       text += ` and the Court, having heard the evidence, examined the witnesses, reviewed the record, and being fully advised in the premises,`;
     }
 
@@ -184,9 +185,9 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
    * @returns {Object} Jurisdiction section
    */
   generateJurisdictionSection(divorceData) {
-    const marriageDate = this.formatDate(divorceData.marriageDate) || '[DATE]';
-    const separationDate = this.formatDate(divorceData.separationDate) || '[DATE]';
-    const county = divorceData.county || '[COUNTY/CITY]';
+    const marriageDate = this.formatDate(divorceData.marriageDate) || placeholder('DATE');
+    const separationDate = this.formatDate(divorceData.separationDate) || placeholder('DATE');
+    const county = divorceData.county || placeholder('COUNTY/CITY');
     const hasChildren = divorceData.hasMinorChildren === true || (divorceData.children && divorceData.children.length > 0);
     const hasSeparationAgreement = divorceData.hasSeparationAgreement === true;
 
@@ -311,7 +312,7 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
     });
 
     divorceData.children.forEach((child, index) => {
-      const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+      const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
       const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
       items.push({
         content: birthDate
@@ -351,7 +352,7 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
       // Unrecognized/undecided arrangement — neutral order with an explicit
       // placeholder for the parties' actual agreement. Never default to sole.
       items.push({
-        content: 'IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: __________________________ (Draft — set out the parties\' decision-making agreement).',
+        content: ('IT IS ORDERED that the parties shall exercise legal custody and decision-making responsibility for the minor child(ren) as agreed by the parties: ' + inlineDraftBlank('set out the parties\' decision-making agreement') + '.'),
         type: 'order'
       });
     }
@@ -463,7 +464,7 @@ class VirginiaDecreeTemplate extends BaseDivorceDecreeTemplate {
       });
 
       items.push({
-        content: `IT IS ORDERED that ${payor} shall pay spousal support and maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || '[AMOUNT]'} per month${divorceData.spousalSupportStartDate ? `, beginning ${this.formatDate(divorceData.spousalSupportStartDate)}` : ''}.`,
+        content: `IT IS ORDERED that ${payor} shall pay spousal support and maintenance to ${payee} in the amount of $${divorceData.spousalSupportAmount || placeholder('AMOUNT')} per month${divorceData.spousalSupportStartDate ? `, beginning ${this.formatDate(divorceData.spousalSupportStartDate)}` : ''}.`,
         type: 'order'
       });
 
@@ -580,7 +581,7 @@ ${divorceData.judgeName ? divorceData.judgeName.toUpperCase() : ''}`,
 
     // Warn about independent cities
     if (divorceData.county && !divorceData.county.toUpperCase().startsWith('CITY OF')) {
-      warnings.push('Virginia has independent cities not within any county (e.g., Richmond, Alexandria, Virginia Beach). If the suit was filed in an independent city, the county field should read "City of [Name]".');
+      warnings.push(('Virginia has independent cities not within any county (e.g., Richmond, Alexandria, Virginia Beach). If the suit was filed in an independent city, the county field should read "City of ' + placeholder('Name') + '".'));
     }
 
     // Separation period check for no-fault

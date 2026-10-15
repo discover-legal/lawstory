@@ -77,9 +77,15 @@ describe.each(JURISDICTIONS)('%s petition — silence', (dir) => {
 });
 
 describe.each(JURISDICTIONS)('%s petition — affirmative answers still plead', (dir) => {
-  test('hasProperty:true + hasDebts:true never renders the property Draft note', () => {
+  test('hasProperty:true + hasDebts:true pleads the property AND debt allegations (no Draft note)', () => {
     const doc = petition(dir, { ...WITH_CHILD, hasProperty: true, hasDebts: true });
+    const property = doc.sections.propertyInfo.items.map((i) => i.content).join('\n');
     expect(doc.sections.propertyInfo.items.some((i) => i.type === 'property_draft_note')).toBe(false);
+    expect(property).toMatch(PROPERTY_ALLEGATION);
+    // Debts appear as an allegation or (where the jurisdiction pleads them
+    // only as relief) in the prayer.
+    const relief = (doc.sections.reliefRequested?.items || []).map((i) => i.content).join('\n');
+    expect(`${property}\n${relief}`).toMatch(/\bdebts?\b|liabilities|estate/i);
   });
 
   test('eitherPartyPregnant:false is pleaded wherever a pregnancy averment is carried', () => {

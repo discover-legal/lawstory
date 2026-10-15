@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 class RiversDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
@@ -25,7 +26,7 @@ class RiversDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'State',
       districtTerm: 'Judicial division',
-      districtPlaceholder: '[JUDICIAL DIVISION]',
+      districtPlaceholder: placeholder('JUDICIAL DIVISION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -40,13 +41,13 @@ class RiversDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getCaseNumberLabel() { return 'Suit No.'; }
-  getDefaultCourt(county) { return `HIGH COURT OF RIVERS STATE — ${(county || '[JUDICIAL DIVISION]').toUpperCase()} JUDICIAL DIVISION`; }
+  getDefaultCourt(county) { return `HIGH COURT OF RIVERS STATE — ${(county || placeholder('JUDICIAL DIVISION')).toUpperCase()} JUDICIAL DIVISION`; }
 
   generateCaseCaption(divorceData) {
     const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county)).toUpperCase();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
-    const petitioner = (divorceData.petitionerName || '[PETITIONER NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const petitioner = (divorceData.petitionerName || placeholder('PETITIONER NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
     const caption = [`IN THE ${courtName}`, '', `Suit No. ${caseNumber}`, '', `IN THE MATTER OF THE MATRIMONIAL CAUSES ACT, CAP M7 LFN 2004`, '', `BETWEEN:`, '', `${petitioner}`, `Petitioner`, '', `AND`, '', `${respondent}`, `Respondent`].join('\n');
     return { courtName, caseNumber: divorceData.caseNumber, petitioner: divorceData.petitionerName, respondent: divorceData.respondentName, formatted: caption };
   }
@@ -56,7 +57,7 @@ class RiversDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVenueReason(divorceData) {
-    const location = divorceData.county || '[JUDICIAL DIVISION]';
+    const location = divorceData.county || placeholder('JUDICIAL DIVISION');
     return `the Petitioner resides within the ${location} Judicial Division of Rivers State`;
   }
 
@@ -89,7 +90,7 @@ class RiversDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, the Petitioner herein, make oath and state that the facts deposed to in this Petition are true and correct to the best of my knowledge, information, and belief.`;
   }
 

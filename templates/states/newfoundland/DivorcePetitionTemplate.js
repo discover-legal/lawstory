@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * Newfoundland and Labrador Divorce Application Template
@@ -59,7 +60,7 @@ class NewfoundlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Court location',
       districtStyle: 'plain',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Petitioner',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -222,7 +223,7 @@ class NewfoundlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue reason
    */
   getVenueReason(divorceData) {
-    const location = divorceData.county || divorceData.city || '[location]';
+    const location = divorceData.county || divorceData.city || placeholder('location');
     return `the Petitioner resides in ${location}`;
   }
 
@@ -232,7 +233,7 @@ class NewfoundlandDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
     return `I, ${name}, Petitioner, solemnly declare that the facts stated in this Petition are true to the best of my knowledge and belief, and I make this solemn declaration conscientiously believing it to be true.`;
   }
 }

@@ -4,6 +4,7 @@
 // Complies with Servicemembers Civil Relief Act (SCRA), 50 U.S.C. § 3931
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
@@ -89,7 +90,7 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `COUNTY OF ${countyUpper}`;
   }
 
@@ -102,15 +103,15 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
   generateCaseCaption(data) {
     let caption = '';
 
-    const courtName = (data.court || data.courtName || '[COURT NAME]').toUpperCase();
+    const courtName = (data.court || data.courtName || placeholder('COURT NAME')).toUpperCase();
     caption += `IN THE ${courtName}\n\n`;
 
     const caseNumber = caseNumberOrBlank(data.caseNumber);
     caption += `CAUSE NO. ${caseNumber.toUpperCase()}\n\n`;
 
     // captionUpper preserves McPherson/DiCaprio style internal capitals.
-    const petitioner = captionUpper(data.affiantName || data.petitioner || '[PETITIONER NAME]');
-    const respondent = captionUpper(data.respondentName || data.respondent || '[RESPONDENT NAME]');
+    const petitioner = captionUpper(data.affiantName || data.petitioner || placeholder('PETITIONER NAME'));
+    const respondent = captionUpper(data.respondentName || data.respondent || placeholder('RESPONDENT NAME'));
 
     caption += `${petitioner}\n`;
     caption += `Petitioner,\n\n`;
@@ -143,7 +144,7 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {string} Introduction text
    */
   generateIntroduction(data) {
-    const name = data.affiantName || '[NAME]';
+    const name = data.affiantName || placeholder('NAME');
     return `I, ${name}, being duly sworn, depose and state as follows:`;
   }
 
@@ -211,7 +212,7 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
    * @returns {Object} Signature block object
    */
   generateSignatureBlock(affiantName) {
-    const name = affiantName || '[NAME]';
+    const name = affiantName || placeholder('NAME');
     return {
       line: '_________________________________',
       name,
@@ -361,7 +362,7 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
    * @private
    */
   _buildStatusFinding(militaryStatus, respondentName) {
-    const name = respondentName || '[RESPONDENT NAME]';
+    const name = respondentName || placeholder('RESPONDENT NAME');
 
     switch (militaryStatus) {
       case 'not_military':
@@ -400,8 +401,8 @@ class TexasMilitaryStatusAffidavitTemplate extends BaseAffidavitTemplate {
    * @private
    */
   _buildMilitaryStatusFacts(data) {
-    const affiantName = data.affiantName || '[PETITIONER NAME]';
-    const respondentName = data.respondentName || '[RESPONDENT NAME]';
+    const affiantName = data.affiantName || placeholder('PETITIONER NAME');
+    const respondentName = data.respondentName || placeholder('RESPONDENT NAME');
     const searchDate = data.searchDate ? data.searchDate.trim() : '______________';
     const searchMethod = data.searchMethod
       ? data.searchMethod.trim()

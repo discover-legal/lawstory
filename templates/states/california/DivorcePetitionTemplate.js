@@ -3,6 +3,7 @@
 // Complies with California Family Code and California Rules of Court
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 const { captionUpper } = require('../../core/nameCase');
 
@@ -213,7 +214,7 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    return `Superior Court of California, County of ${county || '[COUNTY]'}`;
+    return `Superior Court of California, County of ${county || placeholder('COUNTY')}`;
   }
 
   /**
@@ -230,7 +231,7 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Venue text
    */
   generateVenue(county) {
-    return `COUNTY OF ${(county || '[COUNTY]').toUpperCase()}`;
+    return `COUNTY OF ${(county || placeholder('COUNTY')).toUpperCase()}`;
   }
 
   /**
@@ -257,7 +258,7 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Jurisdiction statement
    */
   getJurisdictionStatement(divorceData) {
-    return `Petitioner has been a resident of the State of California for at least six months and of ${divorceData.county || '[COUNTY]'} County for at least three months immediately preceding the filing of this Petition. (Family Code § 2320)`;
+    return `Petitioner has been a resident of the State of California for at least six months and of ${divorceData.county || placeholder('COUNTY')} County for at least three months immediately preceding the filing of this Petition. (Family Code § 2320)`;
   }
 
   /**
@@ -441,7 +442,7 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         type: 'children_info'
       });
       childArr.forEach((child) => {
-        const name = typeof child === 'string' ? child : (child && child.name) || '[CHILD NAME]';
+        const name = typeof child === 'string' ? child : (child && child.name) || placeholder('CHILD NAME');
         // Attorney round-3 (2026-08-30): route through formatChildDob
         // so `birthYear` and bare-year DOBs render instead of blank.
         const birthDate = typeof child === 'object' && child
@@ -487,13 +488,7 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
     } else {
       // True no-children case.
-      items.push({
-        number: paragraphNum++,
-        content: `No children were born or adopted of this marriage.`,
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, `No children were born or adopted of this marriage.`);
     }
 
     // Agreed child arrangements (custody enum, primary residence, agreed
@@ -656,15 +651,9 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -829,7 +818,7 @@ class CaliforniaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PETITIONER NAME]';
+    const name = divorceData.petitionerName || placeholder('PETITIONER NAME');
 
     return `I declare under penalty of perjury under the laws of the State of California that the foregoing is true and correct.
 

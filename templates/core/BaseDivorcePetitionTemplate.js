@@ -12,11 +12,12 @@
 // template from the registry. `node:crypto` is a built-in and always
 // resolvable, so the divorce templates load and register reliably.
 const { randomUUID: uuidv4 } = require('node:crypto');
+const { inlineDraftBlank, caseNumberOrBlank, pregnancyAverment, draftBlank, primaryResidenceOrBlank } = require('./blanks');
+const { placeholder } = require('./placeholders');
 const { DEFAULT_TERMS, districtPhrase } = require('./terminology');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('./parenting');
 const { asList, propertyAgreementProse, PROPERTY_AGREEMENT_STATUS_TOKENS } = require('./dataShapes');
 const { yearOnlyOf } = require('./canadianHelpers');
-const { sanitizeCaseNumber, pregnancyAverment, draftBlank, primaryResidenceOrBlank } = require('./blanks');
 
 // Round-3 attorney review (2026-08-30): live personas (Mari TX, David NY)
 // arrived with `hasProperty`/`hasDebts` UNSET but a facts[] array that
@@ -105,7 +106,7 @@ const escapeHtml = (str) => {
  * "Salt Lake County". Catalogs and conversational extraction use both
  * shapes, while the legal templates add the jurisdictional "County" label.
  */
-const normalizeCountyName = (county, fallback = '[COUNTY]') =>
+const normalizeCountyName = (county, fallback = placeholder('COUNTY')) =>
   String(county || fallback).replace(/\s+county$/i, '').trim();
 
 /**
@@ -493,8 +494,7 @@ class BaseDivorcePetitionTemplate {
 
     // Case number — reject literal "null"/"undefined" sentinels.
     const caseLabel = this.getCaseNumberLabel();
-    const caseNumberClean = sanitizeCaseNumber(divorceData.caseNumber);
-    const caseNumber = caseNumberClean || '____________________';
+    const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
     caption += `${caseLabel} ${caseNumber}\n\n`;
 
     // Party names in family law format
@@ -530,7 +530,7 @@ class BaseDivorcePetitionTemplate {
         `          ${t.responderLabel}.`,
       ],
       right: [
-        `${caseLabel} ${caseNumberClean || '_______________'}`,
+        `${caseLabel} ${caseNumber}`,
         '',
         'Judge _______________',
       ],
@@ -597,7 +597,7 @@ class BaseDivorcePetitionTemplate {
    * @returns {string} Default court name
    */
   getDefaultCourt(county) {
-    return `COURT OF ${(county || '[COUNTY]').toUpperCase()} COUNTY`;
+    return `COURT OF ${(county || placeholder('COUNTY')).toUpperCase()} COUNTY`;
   }
 
   /**
@@ -622,7 +622,7 @@ class BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: `${t.filerLabel}, ${divorceData.petitionerName || '[PETITIONER NAME]'}, is a resident of ${this.districtPhrase(divorceData.county)}, ${this.stateName}.`,
+      content: `${t.filerLabel}, ${divorceData.petitionerName || placeholder('PETITIONER NAME')}, is a resident of ${this.districtPhrase(divorceData.county)}, ${this.stateName}.`,
       type: 'party_identification'
     });
 
@@ -634,7 +634,7 @@ class BaseDivorcePetitionTemplate {
     // alternative service will be requested; otherwise use the stored
     // address as-is.
     const respondentResidenceClause = this.getRespondentResidenceClause(divorceData);
-    let respondentContent = `${t.responderLabel}, ${divorceData.respondentName || '[RESPONDENT NAME]'}, ${respondentResidenceClause}.`;
+    let respondentContent = `${t.responderLabel}, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, ${respondentResidenceClause}.`;
     // When the residence clause pleaded alternative service, append the
     // jurisdiction-specific Draft note explaining the procedural next step
     // (e.g., TX TRCP 106/109 due-diligence affidavit; GA §9-11-4(f)(1)(A)
@@ -985,7 +985,7 @@ class BaseDivorcePetitionTemplate {
         // this method rather than relying on this default.
         return 'The marriage has become insupportable because of discord or conflict of personalities that destroys the legitimate ends of the marriage relationship and prevents any reasonable expectation of reconciliation.';
       case 'separation':
-        return `The parties have lived separate and apart without cohabitation for a period of at least ${divorceData.separationPeriod || '[PERIOD]'}.`;
+        return `The parties have lived separate and apart without cohabitation for a period of at least ${divorceData.separationPeriod || placeholder('PERIOD')}.`;
       case 'abandonment':
         return `${t.responderLabel} voluntarily left ${t.filerLabel} with intention of abandonment and remained away for at least ${divorceData.abandonmentPeriod || 'one year'}.`;
       case 'cruelty':
@@ -1035,15 +1035,12 @@ class BaseDivorcePetitionTemplate {
         });
       }
 
-      // Add statement about no other children. Whether another child is
-      // expected is a separate averment, rendered only from an affirmative
-      // answer (getPregnancyAverment) — never assumed.
-      items.push({
-        number: paragraphNum++,
-        content: `No other children were born to or adopted by ${this.terminology.filerLabel} and ${this.terminology.responderLabel} during the marriage.`,
-        type: 'children_info'
-      });
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(
+        items,
+        paragraphNum,
+        divorceData,
+        `No other children were born to or adopted by ${this.terminology.filerLabel} and ${this.terminology.responderLabel} during the marriage.`,
+      );
 
       // Plead the arrangements the parties actually reached (custody enum,
       // primary residence, agreed child support). Unknown data keeps the
@@ -1158,124 +1155,151 @@ class BaseDivorcePetitionTemplate {
   }
 
   /**
-   * Generate property information section
+   * Generate the property and debts section.
+   *
+   * One safe-by-default pipeline for every jurisdiction:
+   *   1. When the record affirmatively says the parties own property
+   *      (shouldPleadPropertyBoilerplate), a jurisdiction's
+   *      `propertyBoilerplateSection()` hook pleads its own allegation +
+   *      statutory request. The hook is NEVER called otherwise, so a new
+   *      override cannot allege an estate from silence.
+   *   2. Every other posture renders here: a confirmed nil finding, an
+   *      unconfirmed-nil or unknown Draft-note blank, or the agreed
+   *      division — in the jurisdiction's vocabulary via the text hooks
+   *      (getNilPropertyStatement, getPropertyDraftNote, …).
+   *   3. Claim-preserving requests (getPropertyClaimsPreserved) render
+   *      beside a Draft note; procedural recitals
+   *      (getPropertyProceduralRecitals) render in every posture.
    *
    * @param {Object} divorceData - The divorce data
    * @returns {Object} Property section
    */
   generatePropertySection(divorceData) {
+    const own = this.shouldPleadPropertyBoilerplate(divorceData)
+      ? this.propertyBoilerplateSection(divorceData)
+      : null;
+    const section = own || this.gatedPropertySection(divorceData);
+    let paragraphNum = section.nextParagraphNumber;
+    for (const content of this.getPropertyProceduralRecitals(divorceData)) {
+      section.items.push({ number: paragraphNum++, content, type: 'financial_disclosure' });
+    }
+    section.nextParagraphNumber = paragraphNum;
+    return section;
+  }
+
+  /**
+   * Hook: the jurisdiction's own property allegation + request, called ONLY
+   * when shouldPleadPropertyBoilerplate passes. Return a section
+   * ({ title, items, nextParagraphNumber }) or null to use the base text.
+   * @param {Object} _divorceData - The divorce data
+   * @returns {Object|null}
+   */
+  propertyBoilerplateSection(_divorceData) {
+    return null;
+  }
+
+  /** Hook: dispositive "no property" finding (confirmed postures only). */
+  getNilPropertyStatement() {
+    return 'The parties own no community or marital property to be divided.';
+  }
+
+  /** Hook: Draft note when property is unknown, or "no" but unconfirmed. */
+  getPropertyDraftNote(divorceData) {
+    const base = 'confirm whether you and your spouse have any marital/community property to divide, or a written agreement dividing it, before filing.';
+    return draftBlank(divorceData.hasProperty === false
+      ? `${base} Silence on this line may be treated as no property, waiving your claim.`
+      : base);
+  }
+
+  /** Hook: the base allegation + request when no boilerplate hook pleads. */
+  getPropertyAllegations() {
+    return [
+      'The parties have accumulated community/marital property during the marriage.',
+      `${this.terminology.filerLabel} requests that the Court divide the community/marital property in a just and right manner.`,
+    ];
+  }
+
+  /** Hook: debt allegation (affirmative signal only). */
+  getDebtAllegation() {
+    return `The parties have accumulated debts during the marriage. ${this.terminology.filerLabel} requests that the Court allocate responsibility for such debts in a just and equitable manner.`;
+  }
+
+  /** Hook: dispositive "no debts" statement (confirmed only). */
+  getNilDebtStatement() {
+    return 'The parties have no marital debts to be divided.';
+  }
+
+  /** Hook: Draft note for an unconfirmed "no debts". */
+  getDebtDraftNote() {
+    return draftBlank('confirm whether you and your spouse have any marital debts to allocate before filing. Silence on this line may leave you solely responsible for any debt that is not allocated.');
+  }
+
+  /**
+   * Hook: procedural recitals that belong in the property section whatever
+   * the posture (e.g. Illinois' Financial Affidavit statement). Default none.
+   * @param {Object} _divorceData - The divorce data
+   * @returns {string[]}
+   */
+  getPropertyProceduralRecitals(_divorceData) {
+    return [];
+  }
+
+  /**
+   * The base property/debt section for every posture the boilerplate hook
+   * does not plead (see generatePropertySection).
+   * @param {Object} divorceData - The divorce data
+   * @returns {Object} Property section
+   */
+  gatedPropertySection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 12;
+    const push = (content, type) => items.push({ number: paragraphNum++, content, type });
 
     // SAFETY GATE (attorney review, 2026-08): "there is no property to be
     // divided" is a dispositive nil-finding that waives a party's claim to
-    // marital property. It may render ONLY when the profile carries an
-    // AFFIRMATIVE, user-confirmed statement — `hasProperty === false`
-    // together with a corroborating signal (`noPropertyConfirmed === true`
-    // OR a described `propertyAgreement`). Otherwise emit a visible
-    // Draft-note blank so the self-rep filer must confirm before filing.
-    // Nil finding fires on either:
-    //   (a) hasProperty === false + a corroborating signal
-    //       (noPropertyConfirmed === true OR a described propertyAgreement),
-    //   (b) noPropertyConfirmed === true on its own — an affirmative
-    //       user-confirmed "no property" from the intake that shouldn't
-    //       fall through into the boilerplate community-property allegation
-    //       even when hasProperty was never explicitly set to false
-    //       (Mari's TX petition, live audit 2026-08).
+    // marital property. It renders ONLY on an affirmative, user-confirmed
+    // statement: noPropertyConfirmed, a described agreement with
+    // hasProperty === false, or a facts-derived "no property" (Mari TX
+    // round 3). Anything else is a Draft-note blank.
     const factsSayNoProperty = this.factsIndicateNoProperty(divorceData);
     const nilPropertyConfirmed =
       divorceData.noPropertyConfirmed === true ||
-      (divorceData.hasProperty === false &&
-        (typeof divorceData.propertyAgreement === 'string' &&
-          divorceData.propertyAgreement.trim() !== '')) ||
-      // Round-3 attorney review (Mari TX): facts[] explicitly said
-      // "no property, no house, no retirement" but the structured
-      // hasProperty flag never landed. Treat the fact as authoritative.
+      // A status token ("pending", "contested") is not an agreement (Sarah
+      // AB round 3) — hasAgreedPropertyDivision applies the polarity rules.
+      (divorceData.hasProperty === false && this.hasAgreedPropertyDivision(divorceData)) ||
       factsSayNoProperty;
     if (nilPropertyConfirmed) {
-      items.push({
-        number: paragraphNum++,
-        content: 'The parties own no community or marital property to be divided.',
-        type: 'property_info'
-      });
+      push(this.getNilPropertyStatement(), 'property_info');
     } else if (divorceData.hasProperty === false) {
-      // Silence-derived "no property" — refuse to fabricate. Draft note.
-      items.push({
-        number: paragraphNum++,
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have any marital/community property to divide, or a written agreement dividing it, before filing. Silence on this line may be treated as no property, waiving your claim.)',
-        type: 'property_draft_note'
-      });
+      push(this.getPropertyDraftNote(divorceData), 'property_draft_note');
     } else if (this.hasAgreedPropertyDivision(divorceData)) {
       // The parties described an agreed division — plead it instead of the
       // generic "divide in a just and right manner" boilerplate.
-      for (const content of this.getPropertyAgreementPleadings(divorceData)) {
-        items.push({
-          number: paragraphNum++,
-          content,
-          type: 'property_agreement'
-        });
-      }
+      for (const content of this.getPropertyAgreementPleadings(divorceData)) push(content, 'property_agreement');
     } else if (divorceData.hasProperty === true) {
-      items.push({
-        number: paragraphNum++,
-        content: 'The parties have accumulated community/marital property during the marriage.',
-        type: 'property_info'
-      });
-
-      items.push({
-        number: paragraphNum++,
-        content: `${this.terminology.filerLabel} requests that the Court divide the community/marital property in a just and right manner.`,
-        type: 'property_request'
-      });
+      const [allegation, ...requests] = this.getPropertyAllegations();
+      push(allegation, 'property_info');
+      for (const r of requests) push(r, 'property_request');
     } else {
-      // SAFETY GATE: neither an affirmative "we have property" flag nor a
-      // confirmed no-property finding — refuse to fabricate a
-      // community-property allegation. Emit a Draft-note blank so the
-      // self-rep filer must confirm whether marital property exists
-      // before filing.
-      items.push({
-        number: paragraphNum++,
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have any marital/community property to divide, or a written agreement dividing it, before filing.)',
-        type: 'property_draft_note'
-      });
+      push(this.getPropertyDraftNote(divorceData), 'property_draft_note');
     }
 
-    // Round-3 attorney review (David NY): a debts boilerplate paragraph
-    // rendered against a silent transcript. Only emit when we have an
-    // affirmative signal (hasDebts === true, an itemized list on either
-    // side, or an explicit facts-derived "we have debts" cue); silence
-    // OR a facts-derived "no debts" statement suppress the paragraph.
+    // Debts: alleged only on an affirmative signal; a nil statement only on
+    // a confirmed "no debts"; an unconfirmed "no" is a Draft note; silence
+    // renders nothing (David NY round 3).
     const factsSayNoDebts = this.factsIndicateNoDebts(divorceData);
     if (this.hasAffirmativeDebtSignal(divorceData)) {
-      items.push({
-        number: paragraphNum++,
-        content: `The parties have accumulated debts during the marriage. ${this.terminology.filerLabel} requests that the Court allocate responsibility for such debts in a just and equitable manner.`,
-        type: 'debt_info'
-      });
+      push(this.getDebtAllegation(), 'debt_info');
     } else if (divorceData.noDebtsConfirmed === true || factsSayNoDebts) {
-      // Dispositive nil finding — only on an affirmative, user-confirmed
-      // "no debts" (mirrors the decree's debt gate).
-      items.push({
-        number: paragraphNum++,
-        content: 'The parties have no marital debts to be divided.',
-        type: 'debt_info'
-      });
+      push(this.getNilDebtStatement(), 'debt_info');
     } else if (divorceData.hasDebts === false) {
-      // Unconfirmed "no debts" — a nil allegation would leave unallocated
-      // debt with whoever signed for it. Draft note, like property.
-      items.push({
-        number: paragraphNum++,
-        content: draftBlank('confirm whether you and your spouse have any marital debts to allocate before filing. Silence on this line may leave you solely responsible for any debt that is not allocated.'),
-        type: 'debts_draft_note'
-      });
+      push(this.getDebtDraftNote(), 'debts_draft_note');
     }
 
     // Unknown / unconfirmed posture: keep the jurisdiction's claim-
     // preserving requests (claims are not allegations).
     if (items.some((item) => item.type === 'property_draft_note')) {
-      for (const content of this.getPropertyClaimsPreserved(divorceData)) {
-        items.push({ number: paragraphNum++, content, type: 'property_claim' });
-      }
+      for (const content of this.getPropertyClaimsPreserved(divorceData)) push(content, 'property_claim');
     }
 
     return {
@@ -1378,6 +1402,26 @@ class BaseDivorcePetitionTemplate {
    */
   getPregnancyAverment(divorceData) {
     return pregnancyAverment(divorceData, { authority: this.getPregnancyAvermentAuthority() });
+  }
+
+  /**
+   * The "no other children" statement followed by its own pregnancy
+   * averment. Whether another child is expected is never folded into the
+   * children statement ("…, and none are expected" / "the wife is not now
+   * pregnant"); it renders from a recorded answer or as a Draft-note blank
+   * (getPregnancyAverment). Every jurisdiction's children section uses this.
+   *
+   * @param {Array} items - The section's items (mutated)
+   * @param {number} paragraphNum - Next paragraph number
+   * @param {Object} divorceData - The divorce data
+   * @param {string} statement - The jurisdiction's no-(other-)children sentence
+   * @param {string} [type] - Item type for the statement
+   * @returns {number} The next paragraph number
+   */
+  appendNoOtherChildren(items, paragraphNum, divorceData, statement, type = 'children_info') {
+    items.push({ number: paragraphNum++, content: statement, type });
+    items.push(this.pregnancyItem(divorceData, paragraphNum++));
+    return paragraphNum;
   }
 
   /**
@@ -1637,7 +1681,7 @@ class BaseDivorcePetitionTemplate {
     } else if (divorceData.spousalSupportRequested === false) {
       // Silence-derived: leave the ask open with a Draft note the filer
       // must confirm — never a fabricated release.
-      reliefItems.push('________________________________________ (Draft — confirm whether you have agreed on spousal support before filing; silence on this line may be treated as no agreement.);');
+      reliefItems.push((inlineDraftBlank('confirm whether you have agreed on spousal support before filing; silence on this line may be treated as no agreement.') + ';'));
     }
 
     // Add name change if requested

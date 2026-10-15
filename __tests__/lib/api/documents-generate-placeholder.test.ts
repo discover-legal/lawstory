@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { NextRequest } from 'next/server';
+import { placeholder } from '@/templates/core/placeholders';
 
 const mockQuery = jest.fn();
 
@@ -24,8 +25,8 @@ const generateDivorcePetitionWithPlaceholders = jest.fn(() => ({
     caption: {
       // Two of the denylisted tokens land in the caption — the check must
       // dedupe missing-field labels and list both.
-      petitioner: '[PETITIONER NAME]',
-      respondent: '[RESPONDENT NAME]',
+      petitioner: placeholder('PETITIONER NAME'),
+      respondent: placeholder('RESPONDENT NAME'),
       court:      'District Court, Travis County, Texas',
     },
     body: [

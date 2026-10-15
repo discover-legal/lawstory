@@ -12,6 +12,7 @@ import {
   toErrorResponse,
 } from '@/lib/api/errors';
 import { ALL_STATES, ALL_PROVINCES, isInternationalEnabled } from '@/lib/api/catalog-data';
+import { findUnfilledPlaceholders } from '@/templates/core/placeholders';
 import { paymentsEnabled } from '@/lib/api/stripe';
 import {
   buildDocumentStructure,
@@ -74,15 +75,13 @@ function sanitizeFilename(input: string | undefined, fallback: string): string {
   return trimmed || fallback;
 }
 
-// Placeholder detection is generic (templates/core/placeholders.js): any
-// bracketed ALL-CAPS token — "[PETITIONER NAME]", "[PRIMARY RESIDENCE —
-// set out …]" — except court-completed marks ([SEAL], [NOTARY SEAL],
-// [JUDGE SIGNATURE], [DATE], [LABEL], "… TO BE COMPLETED BY THE COURT").
-// Templates render optional unknowns as fill-in blanks, so a token that
-// survives to here means required data is missing.
-const { findUnfilledPlaceholders } = require('@/templates/core/placeholders') as {
-  findUnfilledPlaceholders: (structure: unknown) => string[];
-};
+// Placeholder detection acts only on the structured markers templates emit
+// through templates/core/placeholders.js `placeholder()` — never on free
+// text, so a user's own "[REDACTED]" or "Smith v. Jones [ONCA]" can't trip
+// it. Court-completed marks ([SEAL], [NOTARY SEAL], [JUDGE SIGNATURE],
+// [DATE], [LABEL]) print as blanks without blocking. Templates render
+// optional unknowns as fill-in blanks, so a marker that survives to here
+// means required data is missing.
 
 type PdfServiceResult = {
   success: boolean;

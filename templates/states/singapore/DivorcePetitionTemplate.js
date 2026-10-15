@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -67,7 +68,7 @@ class SingaporeDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court location',
-      districtPlaceholder: '[COURT LOCATION]',
+      districtPlaceholder: placeholder('COURT LOCATION'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -124,12 +125,12 @@ class SingaporeDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Women's Charter proceedings use Originating Application filed in Family Justice Courts.
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
-    const respondent = (divorceData.respondentName || '[RESPONDENT NAME]').toUpperCase();
+    const applicant = (divorceData.petitionerName || placeholder('APPLICANT NAME')).toUpperCase();
+    const respondent = (divorceData.respondentName || placeholder('RESPONDENT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -194,13 +195,13 @@ class SingaporeDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
 
     items.push({
       number: paragraphNum++,
-      content: `The Applicant, ${divorceData.petitionerName || '[APPLICANT NAME]'}, is domiciled in or habitually resident in the Republic of Singapore.`,
+      content: `The Applicant, ${divorceData.petitionerName || placeholder('APPLICANT NAME')}, is domiciled in or habitually resident in the Republic of Singapore.`,
       type: 'party_identification'
     });
 
     items.push({
       number: paragraphNum++,
-      content: `The Respondent, ${divorceData.respondentName || '[RESPONDENT NAME]'}, is ${divorceData.respondentAddress ? `resident at ${divorceData.respondentAddress}` : 'a resident of Singapore'}.`,
+      content: `The Respondent, ${divorceData.respondentName || placeholder('RESPONDENT NAME')}, is ${divorceData.respondentAddress ? `resident at ${divorceData.respondentAddress}` : 'a resident of Singapore'}.`,
       type: 'party_identification'
     });
 
@@ -282,7 +283,7 @@ class SingaporeDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Perjury is an offence under the Penal Code 1871, s.181/191.
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[APPLICANT NAME]';
+    const name = divorceData.petitionerName || placeholder('APPLICANT NAME');
     return `I, ${name}, the Applicant, do solemnly swear (or affirm) that the facts stated in this Originating Application for Divorce are true to the best of my knowledge, information, and belief.`;
   }
 
@@ -324,7 +325,7 @@ class SingaporeDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Singapore signature block uses "Applicant" label.
    */
   generateSignatureBlock(petitionerName) {
-    const name = petitionerName || '[APPLICANT NAME]';
+    const name = petitionerName || placeholder('APPLICANT NAME');
     return {
       line: '_________________________________',
       name,

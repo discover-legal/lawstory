@@ -3,6 +3,7 @@
 // Complies with MCL § 552.6 et seq. (Michigan divorce statutes)
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
+const { placeholder } = require('../../core/placeholders');
 
 /**
  * Michigan Complaint for Divorce Template
@@ -89,7 +90,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Court name
    */
   getDefaultCourt(county) {
-    const countyUpper = (county || '[COUNTY]').toUpperCase();
+    const countyUpper = (county || placeholder('COUNTY')).toUpperCase();
     return `IN THE _____ JUDICIAL CIRCUIT COURT FOR ${countyUpper} COUNTY, STATE OF MICHIGAN\nFAMILY DIVISION`;
   }
 
@@ -101,7 +102,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   generateCaseCaption(divorceData) {
     let caption = '';
 
-    const countyUpper = (divorceData.county || '[COUNTY]').toUpperCase();
+    const countyUpper = (divorceData.county || placeholder('COUNTY')).toUpperCase();
     const circuit = divorceData.judicialCircuit || '_____';
 
     caption += `IN THE ${circuit} JUDICIAL CIRCUIT COURT FOR ${countyUpper} COUNTY, STATE OF MICHIGAN\n`;
@@ -110,8 +111,8 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     const caseNumber = divorceData.caseNumber || `${new Date().getFullYear()}-______-${countyUpper.substring(0,2)}-DM`;
     caption += `CASE NO. ${caseNumber}\n\n`;
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     caption += `${plaintiff},\n`;
     caption += `     Plaintiff,\n\n`;
@@ -127,7 +128,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     }
 
     return {
-      courtName: `${circuit} Judicial Circuit Court, ${divorceData.county || '[County]'} County, Michigan, Family Division`,
+      courtName: `${circuit} Judicial Circuit Court, ${divorceData.county || placeholder('County')} County, Michigan, Family Division`,
       caseNumber: divorceData.caseNumber,
       petitioner: divorceData.petitionerName,
       respondent: divorceData.respondentName,
@@ -142,7 +143,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    */
   getJurisdictionStatement(divorceData) {
     const plaintiff = divorceData.petitionerName || 'Plaintiff';
-    return `${plaintiff} has been domiciled in the State of Michigan for at least 180 days and a resident of ${divorceData.county || '[COUNTY]'} County for at least 10 days immediately preceding the filing of this Complaint, as required by MCL § 552.9.`;
+    return `${plaintiff} has been domiciled in the State of Michigan for at least 180 days and a resident of ${divorceData.county || placeholder('COUNTY')} County for at least 10 days immediately preceding the filing of this Complaint, as required by MCL § 552.9.`;
   }
 
   /**
@@ -190,7 +191,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       });
 
       divorceData.children.forEach((child, index) => {
-        const childName = typeof child === 'string' ? child : (child.name || '[CHILD NAME]');
+        const childName = typeof child === 'string' ? child : (child.name || placeholder('CHILD NAME'));
         const birthDate = typeof child === 'object' ? this.formatDate(child.birthDate ?? child.dob ?? child.dateOfBirth) : null;
         items.push({
           number: paragraphNum++,
@@ -228,15 +229,9 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @param {Object} divorceData - Divorce data
    * @returns {Object} Property section
    */
-  generatePropertySection(divorceData) {
-    // The boilerplate below ALLEGES a marital estate — plead it only on an
-    // affirmative hasProperty === true. Silence, a no-property answer, or an
-    // agreed division go through the base gate (Draft note / nil finding /
-    // agreed-division pleadings).
-    if (!this.shouldPleadPropertyBoilerplate(divorceData)) {
-      return super.generatePropertySection(divorceData);
-    }
-
+  // Called by the base ONLY when the record affirmatively says the parties
+  // own property (BaseDivorcePetitionTemplate.shouldPleadPropertyBoilerplate).
+  propertyBoilerplateSection(divorceData) {
     const items = [];
     let paragraphNum = divorceData._paragraphNum || 14;
 
@@ -327,7 +322,7 @@ class MichiganDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * @returns {string} Verification text
    */
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     return `I, ${name}, declare that the statements in this Complaint for Divorce are true to the best of my information, knowledge, and belief.
 
 

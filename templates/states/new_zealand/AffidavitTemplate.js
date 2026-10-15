@@ -5,6 +5,7 @@
 'use strict';
 
 const BaseAffidavitTemplate = require('../../core/BaseAffidavitTemplate');
+const { placeholder } = require('../../core/placeholders');
 const { caseNumberOrBlank } = require('../../core/blanks');
 
 /**
@@ -41,7 +42,7 @@ class NewZealandAffidavitTemplate extends BaseAffidavitTemplate {
       districtStyle: 'plain',
       jurisdictionTerm: 'Jurisdiction',
       districtTerm: 'Court district',
-      districtPlaceholder: '[COURT DISTRICT]',
+      districtPlaceholder: placeholder('COURT DISTRICT'),
       filerLabel: 'Applicant',
       responderLabel: 'Respondent',
       selfRepresentedLabel: 'Self-Represented',
@@ -70,7 +71,7 @@ class NewZealandAffidavitTemplate extends BaseAffidavitTemplate {
    * New Zealand venue — city or district of filing.
    */
   generateVenue(county) {
-    const location = (county || '[CITY/DISTRICT]').toUpperCase();
+    const location = (county || placeholder('CITY/DISTRICT')).toUpperCase();
     return `AT ${location}`;
   }
 
@@ -80,10 +81,10 @@ class NewZealandAffidavitTemplate extends BaseAffidavitTemplate {
    */
   generateCaseCaption(affidavitData) {
     const court = affidavitData.court || affidavitData.courtName || 'FAMILY COURT OF NEW ZEALAND';
-    const location = (affidavitData.county || affidavitData.city || '[LOCATION]').toUpperCase();
+    const location = (affidavitData.county || affidavitData.city || placeholder('LOCATION')).toUpperCase();
     const fileNo = caseNumberOrBlank(affidavitData.caseNumber);
-    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || '[APPLICANT NAME]';
-    const respondent = affidavitData.defendant || affidavitData.respondentName || '[RESPONDENT NAME]';
+    const applicant = affidavitData.plaintiff || affidavitData.petitionerName || placeholder('APPLICANT NAME');
+    const respondent = affidavitData.defendant || affidavitData.respondentName || placeholder('RESPONDENT NAME');
 
     const formatted =
       `${court.toUpperCase()}\n` +
@@ -130,7 +131,7 @@ class NewZealandAffidavitTemplate extends BaseAffidavitTemplate {
       `this _____ day of _________________, _______.\n\n` +
       `Before me:\n\n` +
       `________________________________\n` +
-      `[Name]\n` +
+      `${placeholder('Name')}\n` +
       `Solicitor / Justice of the Peace / Registrar`
     );
   }

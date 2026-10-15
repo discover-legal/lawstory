@@ -1,6 +1,7 @@
 /** @jest-environment node */
 // __tests__/templates/states/illinois/AffidavitTemplate.test.js
 const IllinoisAffidavitTemplate = require('../../../../templates/states/illinois/AffidavitTemplate');
+const { placeholder } = require('../../../../templates/core/placeholders');
 const BaseAffidavitTemplate = require('../../../../templates/core/BaseAffidavitTemplate');
 
 describe('IllinoisAffidavitTemplate', () => {
@@ -62,7 +63,7 @@ describe('IllinoisAffidavitTemplate', () => {
 
     it('should use placeholder when county not provided', () => {
       const venue = template.generateVenue('');
-      expect(venue).toContain('[COUNTY NAME]');
+      expect(venue).toContain(placeholder('COUNTY NAME'));
     });
   });
 
@@ -104,9 +105,9 @@ describe('IllinoisAffidavitTemplate', () => {
       const data = {};
       const caption = template.generateCaseCaption(data);
 
-      expect(caption.formatted).toContain('[COURT NAME]');
+      expect(caption.formatted).toContain(placeholder('COURT NAME'));
       expect(caption.formatted).toContain('____________________'); // unassigned case number → fill-in blank, never a [CASE NUMBER] token
-      expect(caption.formatted).not.toContain('[CASE NUMBER]');
+      expect(caption.formatted).not.toContain(placeholder('CASE NUMBER'));
     });
   });
 

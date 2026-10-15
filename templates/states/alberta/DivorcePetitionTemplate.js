@@ -5,7 +5,8 @@
 'use strict';
 
 const BaseDivorcePetitionTemplate = require('../../core/BaseDivorcePetitionTemplate');
-const { caseNumberOrBlank } = require('../../core/blanks');
+const { placeholder } = require('../../core/placeholders');
+const { caseNumberOrBlank, draftBlank } = require('../../core/blanks');
 const { resolveCustodyArrangement, resolvePrimaryResidenceName } = require('../../core/parenting');
 const {
   oneYearSeparationPleading,
@@ -68,7 +69,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
       districtLabel: null,
       districtTerm: 'Judicial Centre',
       districtStyle: 'plain',
-      districtPlaceholder: '[JUDICIAL CENTRE]',
+      districtPlaceholder: placeholder('JUDICIAL CENTRE'),
       filerLabel: 'Plaintiff',
       responderLabel: 'Defendant',
       selfRepresentedLabel: 'Self-Represented',
@@ -121,7 +122,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
     // Court of King's Bench, divorce actions are filed at a Judicial Centre
     // (Rules of Court, Alta Reg 124/2010, r.3.3; Alta. Court of King's
     // Bench Practice Notes).
-    const district = (county || '[JUDICIAL CENTRE]').toUpperCase();
+    const district = (county || placeholder('JUDICIAL CENTRE')).toUpperCase();
     return `COURT OF KING'S BENCH OF ALBERTA — JUDICIAL CENTRE OF ${district}`;
   }
 
@@ -131,12 +132,12 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Alta Reg 124/2010. The initiating document is a Statement of Claim for Divorce.
    */
   generateCaseCaption(divorceData) {
-    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || '[COURT NAME]').toUpperCase();
+    const courtName = (divorceData.court || this.getDefaultCourt(divorceData.county) || placeholder('COURT NAME')).toUpperCase();
     const caseLabel = this.getCaseNumberLabel();
     const caseNumber = caseNumberOrBlank(divorceData.caseNumber);
 
-    const plaintiff = (divorceData.petitionerName || '[PLAINTIFF NAME]').toUpperCase();
-    const defendant = (divorceData.respondentName || '[DEFENDANT NAME]').toUpperCase();
+    const plaintiff = (divorceData.petitionerName || placeholder('PLAINTIFF NAME')).toUpperCase();
+    const defendant = (divorceData.respondentName || placeholder('DEFENDANT NAME')).toUpperCase();
 
     const caption = [
       `IN THE ${courtName}`,
@@ -182,7 +183,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * Bench office (Alta. Rules of Court, r.3.3).
    */
   getVenueReason(divorceData) {
-    const district = divorceData.county || '[JUDICIAL CENTRE]';
+    const district = divorceData.county || placeholder('JUDICIAL CENTRE');
     return `the Plaintiff or Defendant resides in the Judicial Centre of ${district}`;
   }
 
@@ -265,7 +266,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
             dobDisplay = 'born __________________';
             draftNote = '\n(Draft — insert exact date of birth before filing)';
           }
-          childInfo = `${child.name || '[CHILD NAME]'}, ${dobDisplay}${draftNote}`;
+          childInfo = `${child.name || placeholder('CHILD NAME')}, ${dobDisplay}${draftNote}`;
         }
         items.push({
           number: paragraphNum++,
@@ -274,13 +275,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
         });
       });
 
-      items.push({
-        number: paragraphNum++,
-        content: 'No other children were born to or adopted by the Plaintiff and the Defendant during the marriage.',
-        type: 'children_info'
-      });
-      // Pregnancy is its own averment, sworn only from a recorded answer.
-      items.push(this.pregnancyItem(divorceData, paragraphNum++));
+      paragraphNum = this.appendNoOtherChildren(items, paragraphNum, divorceData, 'No other children were born to or adopted by the Plaintiff and the Defendant during the marriage.');
 
       // Current parenting arrangement — Divorce Act s.16.1 (decision-making
       // responsibility) and s.16 (parenting time), never "custody"/"access".
@@ -544,81 +539,35 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
    * perjury in Canada is an offence under Criminal Code, RSC 1985, c. C-46, s.131.
    * Correct party label is "Plaintiff" (Alberta civil action terminology).
    */
-  /**
-   * Alberta property section — the base template uses US "community or
-   * marital property" idiom. Alberta has no community-property regime;
-   * property is governed by the Family Property Act, RSA 2000, c. F-4.7,
-   * and the correct term is "family property". Sarah AB round-2 flagged
-   * the "community" word.
-   */
-  generatePropertySection(divorceData) {
-    const items = [];
-    let paragraphNum = divorceData._paragraphNum || 12;
+  // ── Property & debts: Family Property Act vocabulary ("community" never
+  // appears in Alberta). Only the text hooks are overridden; the posture
+  // logic and its safety gate (Sarah AB rounds 2–4) live in the base.
 
-    // Attorney round-4 (Sarah AB, 2026-08-30): the round-3 gate accepted
-    // ANY non-empty propertyAgreement string as a confirmation, so a
-    // profile carrying propertyAgreement="pending" (a status token, NOT
-    // an agreement description) still fabricated the "no family property"
-    // allegation Sarah never made. Require an explicit noPropertyConfirmed
-    // flag OR an affirmative described agreement (via the same predicate
-    // the relief block uses). Silent/undecided property status renders the
-    // Draft-note below so the drafter has to confirm before filing.
-    const nilPropertyConfirmed =
-      divorceData.hasProperty === false &&
-      (divorceData.noPropertyConfirmed === true ||
-        this.hasAgreedPropertyDivision(divorceData));
-    if (nilPropertyConfirmed) {
-      items.push({
-        number: paragraphNum++,
-        content: 'There is no family property to be divided under the Family Property Act, RSA 2000, c. F-4.7.',
-        type: 'property_info'
-      });
-    } else if (
-      divorceData.hasProperty === false ||
-      divorceData.hasProperty === undefined ||
-      divorceData.hasProperty === null
-    ) {
-      items.push({
-        number: paragraphNum++,
-        content: '________________________________________\n(Draft — confirm whether you and your spouse have any family property to divide under the Family Property Act, RSA 2000, c. F-4.7, or a written agreement dividing it, before filing. Silence on this line may be treated as no property, waiving your claim.)',
-        type: 'property_draft_note'
-      });
-    } else if (this.hasAgreedPropertyDivision(divorceData)) {
-      for (const content of this.getPropertyAgreementPleadings(divorceData)) {
-        items.push({
-          number: paragraphNum++,
-          content,
-          type: 'property_agreement'
-        });
-      }
-    } else {
-      items.push({
-        number: paragraphNum++,
-        content: 'The parties have accumulated family property during the marriage, subject to distribution under the Family Property Act, RSA 2000, c. F-4.7.',
-        type: 'property_info'
-      });
-      items.push({
-        number: paragraphNum++,
-        content: 'The Plaintiff requests that the Court distribute the family property in an equitable manner pursuant to the Family Property Act, RSA 2000, c. F-4.7.',
-        type: 'property_request'
-      });
-    }
+  getNilPropertyStatement() {
+    return 'There is no family property to be divided under the Family Property Act, RSA 2000, c. F-4.7.';
+  }
 
-    // Debts are alleged only on an affirmative signal (hasDebts === true or
-    // an itemized debt list) — silence is not "the parties have debts".
-    if (this.hasAffirmativeDebtSignal(divorceData)) {
-      items.push({
-        number: paragraphNum++,
-        content: 'The parties have accumulated family debt during the marriage. The Plaintiff requests that the Court allocate responsibility for family debt in an equitable manner.',
-        type: 'debt_info'
-      });
-    }
+  getPropertyDraftNote() {
+    return draftBlank('confirm whether you and your spouse have any family property to divide under the Family Property Act, RSA 2000, c. F-4.7, or a written agreement dividing it, before filing. Silence on this line may be treated as no property, waiving your claim.');
+  }
 
-    return {
-      title: 'VI. PROPERTY AND DEBTS',
-      items,
-      nextParagraphNumber: paragraphNum
-    };
+  getPropertyAllegations() {
+    return [
+      'The parties have accumulated family property during the marriage, subject to distribution under the Family Property Act, RSA 2000, c. F-4.7.',
+      'The Plaintiff requests that the Court distribute the family property in an equitable manner pursuant to the Family Property Act, RSA 2000, c. F-4.7.',
+    ];
+  }
+
+  getDebtAllegation() {
+    return 'The parties have accumulated family debt during the marriage. The Plaintiff requests that the Court allocate responsibility for family debt in an equitable manner.';
+  }
+
+  getNilDebtStatement() {
+    return 'The parties have no family debt to be allocated.';
+  }
+
+  getDebtDraftNote() {
+    return draftBlank('confirm whether you and your spouse have any family debt to allocate before filing. Silence on this line may leave you solely responsible for any debt that is not allocated.');
   }
 
   /**
@@ -690,7 +639,7 @@ class AlbertaDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
   }
 
   getVerificationText(divorceData) {
-    const name = divorceData.petitionerName || '[PLAINTIFF NAME]';
+    const name = divorceData.petitionerName || placeholder('PLAINTIFF NAME');
     // Attorney round-5 (Sarah AB, 2026-08-30): the verification body was a
     // bare sworn statement with no jurat, so the Statement of Claim could
     // not be sworn — a Commissioner for Oaths has nothing to sign. Alberta
