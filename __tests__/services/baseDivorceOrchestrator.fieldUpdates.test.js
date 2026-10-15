@@ -696,6 +696,13 @@ describe('BaseDivorceOrchestrator — pregnancy / representation / matrimonial h
     expect(orch._applyFieldUpdates({}, {}).noDebtsConfirmed).toBeUndefined();
   });
 
+  test('the same rule confirms an explicit "no property" answer', () => {
+    const orch = makeOrch('UT');
+    expect(orch._applyFieldUpdates({}, { has_property: false })).toMatchObject({ hasProperty: false, noPropertyConfirmed: true });
+    expect(orch._applyFieldUpdates({ noPropertyConfirmed: true }, { has_property: true })).toMatchObject({ hasProperty: true, noPropertyConfirmed: false });
+    expect(orch._applyFieldUpdates({}, {}).noPropertyConfirmed).toBeUndefined();
+  });
+
   test('questions are asked only where the jurisdiction\'s drafts use the answer, and only until answered', () => {
     const on = makeOrch('ON');
     const tx = makeOrch('TX');

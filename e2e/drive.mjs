@@ -1,7 +1,7 @@
 import { chromium } from 'playwright-core';
 
-const BASE = 'http://localhost:3100';
-const SHOTS = '/tmp/e2e-app/e2e/shots';
+const BASE = process.env.BASE || 'http://localhost:3100';
+const SHOTS = process.env.SHOTS || '/tmp/e2e-app/e2e/shots';
 const results = [];
 const ok = (name, pass, detail = '') => {
   results.push({ name, pass, detail });
@@ -154,7 +154,7 @@ try {
   );
   ok(
     'decree preview recites the recorded representation',
-    sworn.decree.includes('appeared pro se') && !/confirm representation before filing/.test(sworn.decree),
+    sworn.decree.includes('appeared pro se') && !/Draft — insert 'appeared/.test(sworn.decree),
   );
 
   // ── 3. Fresh context = "log back in" — profile must remember ────────────

@@ -6,6 +6,10 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 W="${1:-/tmp/e2e-app}"
+# PORT lets several verifiers run side by side (default 3100). The CSRF
+# allow-list in proxy.ts only knows :3000/:3100, so a different port is
+# added to it INSIDE the throwaway worktree only (never committed).
+PORT="${PORT:-3100}"
 
 git worktree remove --force "$W" 2>/dev/null || true
 git worktree add "$W" HEAD
@@ -22,9 +26,10 @@ cp "$REPO_ROOT/e2e/drive-real-matrix.mjs" "$W/e2e/drive-real-matrix.mjs" 2>/dev/
 cp "$REPO_ROOT/e2e/drive-real-messy.mjs" "$W/e2e/drive-real-messy.mjs" 2>/dev/null || true
 cp "$REPO_ROOT/e2e/sweep-jurisdictions.mjs" "$W/e2e/sweep-jurisdictions.mjs" 2>/dev/null || true
 
-python3 - "$W" <<'EOF'
+python3 - "$W" "$PORT" <<'EOF'
 import sys
 W = sys.argv[1]
+PORT = sys.argv[2]
 
 def patch(path, old, new, count=1):
     p = f'{W}/{path}'
@@ -58,6 +63,15 @@ patch('lib/api/services.ts',
     logger.info('llm_service_wired_fake_e2e');
   }""")
 
+# Worktree-only: let the CSRF guard accept the chosen dev port.
+if PORT not in ('3000', '3100'):
+    patch('proxy.ts',
+"""        'http://127.0.0.1:3100',""",
+f"""        'http://127.0.0.1:3100',
+        // E2E-ONLY (e2e/setup-worktree.sh PORT={PORT}).
+        'http://localhost:{PORT}',
+        'http://127.0.0.1:{PORT}',""")
+
 EOF
 
 # REAL_LLM=1 (with OPENAI_API_KEY set) switches the worktree to the real
@@ -84,7 +98,7 @@ fi
 cat > "$W/.env.local" <<ENV
 DATABASE_URL=postgresql://affidavit:affidavit@127.0.0.1:5433/affidavit_e2e
 AUTH0_SECRET=e2e0000000000000000000000000000000000000000000000000000000000000
-AUTH0_BASE_URL=http://localhost:3100
+AUTH0_BASE_URL=http://localhost:${PORT}
 AUTH0_ISSUER_BASE_URL=https://e2e.invalid
 AUTH0_CLIENT_ID=e2e
 AUTH0_CLIENT_SECRET=e2e
@@ -99,4 +113,4 @@ DOCUMENTS_PATH=/tmp/e2e-docs
 $KEY_LINES
 ENV
 
-echo "Worktree ready at $W"
+echo "Worktree ready at $W (serve: npm run dev -- -p ${PORT}; drive: BASE=http://localhost:${PORT} node e2e/drive.mjs)"

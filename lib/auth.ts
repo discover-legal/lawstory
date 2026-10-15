@@ -106,13 +106,34 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     // First-time provision (race with the Auth0 webhook is possible). ON CONFLICT
     // is safe because users.auth0_id is UNIQUE NOT NULL — see
     // migrations/000_initial_schema.sql line 13.
-    const inserted = await query<UserRow>(
-      `INSERT INTO users (auth0_id, email, name, email_verified, created_at, updated_at, last_login)
-       VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())
-       ON CONFLICT (auth0_id) DO UPDATE SET last_login = NOW()
-       RETURNING id, auth0_id, email, name, tos_accepted, tos_version_accepted`,
-      [auth0Id, email, name, Boolean(session.user.email_verified)],
-    );
+    // SAVEPOINT so a lost race can be recovered inside this transaction
+    // (a failed statement otherwise aborts the whole transaction).
+    await query('SAVEPOINT user_provision');
+    let inserted;
+    try {
+      inserted = await query<UserRow>(
+        `INSERT INTO users (auth0_id, email, name, email_verified, created_at, updated_at, last_login)
+         VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())
+         ON CONFLICT (auth0_id) DO UPDATE SET last_login = NOW()
+         RETURNING id, auth0_id, email, name, tos_accepted, tos_version_accepted`,
+        [auth0Id, email, name, Boolean(session.user.email_verified)],
+      );
+    } catch (err) {
+      // Two concurrent first requests for the same new user both reach the
+      // INSERT. ON CONFLICT (auth0_id) only arbitrates the auth0_id index, so
+      // the loser can surface as a unique violation on users_email_key
+      // instead (seen on a fresh E2E database). The winner's row is then
+      // committed — re-read it. Anything else (or no row) is a real error.
+      if ((err as { code?: string })?.code !== '23505') throw err;
+      await query('ROLLBACK TO SAVEPOINT user_provision');
+      const raced = await query<UserRow>(
+        `SELECT id, auth0_id, email, name, tos_accepted, tos_version_accepted
+           FROM users WHERE auth0_id = $1`,
+        [auth0Id],
+      );
+      if (!raced.rows[0]) throw err;
+      return toAppUser(raced.rows[0]);
+    }
 
     const row = inserted.rows[0];
     return toAppUser(row);

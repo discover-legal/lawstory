@@ -224,7 +224,7 @@ function buildPhaseTool(stateCode, { nameMissing = false } = {}) {
             enum: ['agreed', 'contested', 'pending'],
             description: 'MACHINE-READ code for the property-division posture: "we have a separation agreement" / "we\'ve worked it all out" → agreed; "we disagree" / "fighting over the house" → contested; "still working on it" → pending. Put the user\'s exact wording in a fact, not here.'
           },
-          has_property: { type: 'boolean', description: 'true if the parties accumulated community/marital property during the marriage, false if none' },
+          has_property: { type: 'boolean', description: 'true if the parties accumulated community/marital property during the marriage; false ONLY when the user explicitly says there is none (an explicit "no property" answer is recorded as a confirmed statement the draft will swear to — never emit false from silence).' },
           has_debts:    { type: 'boolean', description: 'true if the parties accumulated community/marital debts during the marriage, false ONLY when the user explicitly says there are no debts (an explicit "no debts" answer is recorded as a confirmed statement the draft will swear to — never emit false from silence).' },
           matrimonial_home_possession_requested: {
             type: 'boolean',
@@ -1247,7 +1247,7 @@ class BaseDivorceOrchestrator {
       updated[`${userRole}Representation`] = fields.user_represented_by_lawyer ? 'lawyer' : 'self';
     }
 
-    // An explicit interview "no debts" answer is the user's own statement
+    // An explicit interview "no debts" / "no property" answer is the user's own statement
     // (provenance: this turn's message, recorded as a fact by _buildFacts),
     // so it confirms the nil statement the drafts may then render — the
     // same promotion lib/api/profile.ts applies to a "no property/no debts"
@@ -1255,6 +1255,10 @@ class BaseDivorceOrchestrator {
     // "yes, we have debts" withdraws the confirmation.
     if (fields.has_debts === false) updated.noDebtsConfirmed = true;
     if (fields.has_debts === true) updated.noDebtsConfirmed = false;
+    // Same owner rule for property: a direct "we own no property" answer is
+    // the user's confirmation; a later "yes" withdraws it.
+    if (fields.has_property === false) updated.noPropertyConfirmed = true;
+    if (fields.has_property === true) updated.noPropertyConfirmed = false;
 
     // Itemized money is the source of truth for the totals once present —
     // but only the USER's own person-tagged entries feed monthlyIncome

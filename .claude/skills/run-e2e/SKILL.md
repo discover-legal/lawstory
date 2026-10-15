@@ -43,6 +43,9 @@ dev-only `'unsafe-eval'` in CSP), and writes `.env.local`.
 
 ```bash
 cd /tmp/e2e-app && npm run dev -- -p 3100   # background it; wait for /api/health = 200
+# Another port (side-by-side verifiers): PORT=3157 bash e2e/setup-worktree.sh /tmp/e2e-x
+# patches the worktree's CSRF allow-list for it; then npm run dev -- -p 3157 and
+# drive with BASE=http://localhost:3157 SHOTS=/tmp/e2e-x/e2e/shots node drive.mjs.
 ```
 
 **Gotcha:** `global.__chatOrchestratorsPromise` and the services singleton
