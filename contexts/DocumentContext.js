@@ -107,7 +107,8 @@ const ActionTypes = {
   SAVE_COMPLETE: 'SAVE_COMPLETE',
   SAVE_CONFLICT: 'SAVE_CONFLICT',
   CLEAR_SAVE_CONFLICT: 'CLEAR_SAVE_CONFLICT',
-  SWITCH_SUB_DOCUMENT: 'SWITCH_SUB_DOCUMENT'
+  SWITCH_SUB_DOCUMENT: 'SWITCH_SUB_DOCUMENT',
+  APPLY_RENAME: 'APPLY_RENAME'
 };
 
 // Every packet document that can be selected by DocumentSelectionAgent and
@@ -136,7 +137,7 @@ const DIVORCE_SUB_DOCUMENT_TYPES = new Set([
 ]);
 
 // Reducer
-const documentReducer = (state, action) => {
+export const documentReducer = (state, action) => {
   switch (action.type) {
     case ActionTypes.SET_DOCUMENT_DATA:
       return {
@@ -172,6 +173,22 @@ const documentReducer = (state, action) => {
         hasUnsavedChanges: true
       };
     
+    case ActionTypes.APPLY_RENAME:
+      // A rename saved by /api/documents/:id/rename. The server already holds
+      // the new name, so this is not an unsaved change; it only keeps an open
+      // copy of the same document in step (and stops its next autosave from
+      // writing the old name back).
+      if (
+        state.currentDocument.documentId == null ||
+        String(state.currentDocument.documentId) !== String(action.payload.documentId)
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        currentDocument: { ...state.currentDocument, documentTitle: action.payload.title },
+      };
+
     case ActionTypes.SET_DOCUMENTS:
       return {
         ...state,
@@ -1251,6 +1268,12 @@ export const DocumentProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [generatePreview, scheduleAutoSave, saveDocument, isAuthenticated, state.currentDocument]);
 
+  // Reflect a completed server-side rename in the open document, if it is
+  // the one renamed.
+  const applyRename = useCallback((documentId, title) => {
+    dispatch({ type: ActionTypes.APPLY_RENAME, payload: { documentId, title } });
+  }, []);
+
   // Update document data WITHOUT triggering preview generation
   // Used when storing professional rewrites before they are applied
   const updateDocumentDataWithoutPreview = useCallback((data) => {
@@ -1444,7 +1467,8 @@ export const DocumentProvider = ({ children }) => {
     renderFormattedPreview,
     mergeProfessionalRewrites,
     reorderFacts,
-    switchSubDocument
+    switchSubDocument,
+    applyRename
   }), [
     loadDocument,
     loadDocuments,
@@ -1459,7 +1483,8 @@ export const DocumentProvider = ({ children }) => {
     renderFormattedPreview,
     mergeProfessionalRewrites,
     reorderFacts,
-    switchSubDocument
+    switchSubDocument,
+    applyRename
   ]);
 
   return (

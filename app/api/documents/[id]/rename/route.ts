@@ -44,8 +44,24 @@ export const PUT = withAuth<{ id: string | string[] }>(async (req: NextRequest, 
     const title = (parsed.title ?? parsed.newName) as string;
 
     // Update + return: zero rows touched → 404 (no probe oracle).
+    //
+    // The name lives in two places: the `title` column (dashboard list) and
+    // `content.documentTitle` (the editor's Document Title field, which every
+    // save writes back into `title`). Renaming only the column left the
+    // editor showing the old name and let the next autosave revert it, so
+    // both are updated together. `edit_revision` is deliberately untouched
+    // (migration 019: a rename is metadata, not a content edit).
     const updated = await query<{ id: number }>(
-      'UPDATE documents SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3 RETURNING id',
+      `UPDATE documents
+          SET title = $1,
+              content = CASE
+                WHEN jsonb_typeof(content) = 'object'
+                  THEN jsonb_set(content, '{documentTitle}', to_jsonb($1::text), true)
+                ELSE content
+              END,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2 AND user_id = $3
+        RETURNING id`,
       [title, id, user.id],
     );
     if (updated.rowCount === 0) throw new NotFoundError('Document not found');
