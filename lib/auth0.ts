@@ -31,6 +31,9 @@ export function buildAuth0SessionConfig(
 
 export const auth0SessionConfig = buildAuth0SessionConfig();
 
+/** Profile route answers 204 (not 401) to anonymous visitors. */
+export const AUTH0_PROFILE_NO_CONTENT_WHEN_ANONYMOUS = true;
+
 /**
  * Shared Auth0 v4 client. Custom route paths preserve the production v3 URLs,
  * so the existing Auth0 dashboard callback/logout configuration and all
@@ -53,5 +56,10 @@ export const auth0 = new Auth0Client({
   // The app is a token-mediating backend. Browser code only needs the profile
   // endpoint; API access tokens remain server-side.
   enableAccessTokenEndpoint: false,
+  // Logged-out visitors are the normal case on marketing pages, where the
+  // nav's useUser() probes the profile route. Answer 204 instead of 401 so
+  // the browser doesn't log a failed request on every page view; the SDK's
+  // useUser() maps 204 to `user: null` (not an error).
+  noContentProfileResponseWhenUnauthenticated: AUTH0_PROFILE_NO_CONTENT_WHEN_ANONYMOUS,
   session: auth0SessionConfig,
 });
