@@ -11,13 +11,15 @@ import {
   toErrorResponse,
 } from '@/lib/api/errors';
 import { logger } from '@/lib/logger';
+import {
+  EVIDENCE_FILENAME_ALLOWED,
+  resolveEvidenceKey,
+} from '@/lib/api/evidenceKey';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type Params = { documentId: string; fileKey: string };
-
-const FILENAME_ALLOWED = /^[A-Za-z0-9._\- ()]+$/;
 
 const CONTENT_TYPE_BY_EXT: Record<string, string> = {
   '.pdf': 'application/pdf',
@@ -27,34 +29,6 @@ const CONTENT_TYPE_BY_EXT: Record<string, string> = {
   '.gif': 'image/gif',
   '.webp': 'image/webp',
 };
-
-/**
- * Validate a single path segment supplied via URL params. Rejects anything
- * containing path separators, traversal hops, control chars, or characters
- * outside our allow-list. The legacy handler used `isValidFilename` from
- * utils/pathSecurity for the same purpose.
- */
-function validateSegment(value: string, label: string): string {
-  if (!value || value === '.' || value === '..') {
-    throw new ValidationError(`Invalid ${label}`);
-  }
-  if (
-    value.includes('..') ||
-    value.includes('/') ||
-    value.includes('\\') ||
-    value.includes('\0')
-  ) {
-    throw new ValidationError(`Invalid ${label}: path traversal attempt`);
-  }
-  // path.basename collapses any sneaky leading `./` or trailing slashes.
-  if (path.basename(value) !== value) {
-    throw new ValidationError(`Invalid ${label}`);
-  }
-  if (!FILENAME_ALLOWED.test(value)) {
-    throw new ValidationError(`Invalid ${label} format`);
-  }
-  return value;
-}
 
 function validateDocumentId(raw: string): number {
   const num = parseInt(raw, 10);
@@ -94,7 +68,14 @@ export const GET = withAuth<Params>(async (_req: NextRequest, { user, params }) 
     }
 
     const documentId = validateDocumentId(params.documentId);
-    const fileKey = validateSegment(params.fileKey, 'file key');
+    // Accepts the canonical key upload/list return (`<user>/<doc>/<file>`,
+    // URL-encoded) or the bare file name; both resolve inside this user's
+    // document directory only.
+    const { fileName: fileKey, storageKey: relativeKey } = resolveEvidenceKey(
+      params.fileKey,
+      user.id,
+      documentId,
+    );
 
     await ensureOwnership(documentId, user.id);
 
@@ -106,15 +87,6 @@ export const GET = withAuth<Params>(async (_req: NextRequest, { user, params }) 
       ) => Promise<{ filepath: string; exists: boolean }>;
       basePath?: string;
     };
-
-    // The service expects the relative fileKey to land inside the user/doc
-    // directory. Reconstruct the same shape the legacy clients used:
-    // `<userId>/<documentId>/<fileKey>`.
-    const relativeKey = path.posix.join(
-      String(user.id),
-      String(documentId),
-      fileKey,
-    );
 
     let evidence: { filepath: string; exists: boolean };
     try {
@@ -168,7 +140,11 @@ export const DELETE = withAuth<Params>(async (req: NextRequest, { user, params }
     }
 
     const documentId = validateDocumentId(params.documentId);
-    const fileKey = validateSegment(params.fileKey, 'file key');
+    const { fileName: fileKey, storageKey: relativeKey } = resolveEvidenceKey(
+      params.fileKey,
+      user.id,
+      documentId,
+    );
 
     let thumbnailKey: string | undefined;
     try {
@@ -182,7 +158,7 @@ export const DELETE = withAuth<Params>(async (req: NextRequest, { user, params }
           tBase &&
           !tBase.includes('..') &&
           !body.thumbnailKey.includes('..') &&
-          FILENAME_ALLOWED.test(tBase)
+          EVIDENCE_FILENAME_ALLOWED.test(tBase)
         ) {
           thumbnailKey = path.posix.join(
             String(user.id),
@@ -206,12 +182,6 @@ export const DELETE = withAuth<Params>(async (req: NextRequest, { user, params }
       ) => Promise<{ success: boolean }>;
     };
 
-    const relativeKey = path.posix.join(
-      String(user.id),
-      String(documentId),
-      fileKey,
-    );
-
     await evidenceStorage.deleteEvidence(user.id, documentId, relativeKey, thumbnailKey);
 
     logger.info('evidence_deleted', {
@@ -220,7 +190,7 @@ export const DELETE = withAuth<Params>(async (req: NextRequest, { user, params }
       fileKey,
     });
 
-    return NextResponse.json({ success: true, deleted: fileKey });
+    return NextResponse.json({ success: true, deleted: relativeKey });
   } catch (err) {
     return toErrorResponse(err);
   }
