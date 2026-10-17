@@ -1,6 +1,7 @@
 # Production service (applies at cutover, when site-v6 merges into main). The service keeps its
 # existing name so a Blueprint sync updates it in place instead of creating a second service.
-# Previews of site-v6 run on a separate free service created by hand (README, "Deploy").
+# Previews of site-v6 run on a separate free service created by hand (README, "Deploy"); never
+# apply this file to a preview. /api/health is healthy on the old and the new site (PLAN C).
 services:
   - type: web
     name: affidavit-maker
@@ -9,10 +10,12 @@ services:
     region: oregon
     branch: main
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /
+    healthCheckPath: /api/health
     autoDeploy: true
     numInstances: 1
     envVars:
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://discover.legal
       - key: NEXT_PUBLIC_BOOKING_URL
         sync: false
       - key: NEXT_PUBLIC_BIGLAW_DEMO_URL

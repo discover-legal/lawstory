@@ -23,8 +23,26 @@ describe('dependencies', () => {
     expect(loose).toEqual([]);
   });
 
-  it('the lockfile agrees with package.json', () => {
+  it('the lockfile agrees with package.json, in its root copy and in what it resolves', () => {
     expect(lock.packages[''].dependencies).toEqual(pkg.dependencies);
     expect(lock.packages[''].devDependencies).toEqual(pkg.devDependencies);
+    const all = { ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>;
+    const resolved = Object.fromEntries(Object.keys(all).map((n) => [n, lock.packages[`node_modules/${n}`]?.version]));
+    expect(resolved).toEqual(all);
+  });
+
+  it('what npm installed is what package.json pins', () => {
+    const all = { ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>;
+    const installed = Object.fromEntries(Object.keys(all).map((n) =>
+      [n, JSON.parse(readFileSync(join(root, 'node_modules', n, 'package.json'), 'utf8')).version]));
+    expect(installed).toEqual(all);
+  });
+
+  it('every locked package comes from registry.npmjs.org with an integrity hash', () => {
+    const entries = Object.entries(lock.packages as Record<string, { resolved?: string; integrity?: string; link?: boolean }>)
+      .filter(([path, p]) => path !== '' && !p.link);
+    expect(entries.length).toBeGreaterThan(100);
+    const bad = entries.filter(([, p]) => !p.resolved?.startsWith('https://registry.npmjs.org/') || !p.integrity?.startsWith('sha512-'));
+    expect(bad.map(([path]) => path)).toEqual([]);
   });
 });

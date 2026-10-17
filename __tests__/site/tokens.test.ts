@@ -1,7 +1,10 @@
+import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import LITERALS from '@/styles/colour-literals.json';
 
-const styles = join(__dirname, '..', '..', 'styles');
+const repo = join(__dirname, '..', '..');
+const styles = join(repo, 'styles');
 const read = (f: string) => readFileSync(join(styles, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 type Block = { scheme: 'light' | 'dark'; selector: string; decls: Map<string, string> };
@@ -37,21 +40,29 @@ const DARK = [...COLOURS, '--shadow-raised'].sort();
 const DIRECTIONS = ['case-file.css', 'chambers.css', 'protocol.css'];
 const base = parse(read('tokens.css'));
 
+/** WCAG relative luminance. Colour tokens must be lowercase #rrggbb, so nothing can parse to NaN. */
 function luminance(hex: string): number {
-  const v = hex.replace('#', '');
-  const full = v.length === 3 ? [...v].map((c) => c + c).join('') : v;
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255)
+  if (!/^#[0-9a-f]{6}$/.test(hex)) throw new Error(`colour token is not #rrggbb: ${hex}`);
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
     .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 const contrast = (a: string, b: string) => {
   const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
-  return (x + 0.05) / (y + 0.05);
+  const ratio = (x + 0.05) / (y + 0.05);
+  if (!Number.isFinite(ratio)) throw new Error(`non-finite contrast for ${a} / ${b}`);
+  return ratio;
 };
 // Text pairs that must meet WCAG AA (4.5:1) in every file and both schemes.
 const PAIRS: [string, string][] = [['--ink', '--bg'], ['--ink', '--surface'], ['--muted', '--bg'], ['--muted', '--surface'],
   ['--accent', '--bg'], ['--accent', '--surface'], ['--accent-ink', '--accent'],
-  ['--ok', '--surface'], ['--wait', '--surface'], ['--stop', '--surface']];
+  ['--ok', '--surface'], ['--wait', '--surface'], ['--stop', '--surface'], ['--ok', '--bg'], ['--wait', '--bg'], ['--stop', '--bg']];
+// Non-text (WCAG 1.4.11, 3:1): the focus ring is --accent (globals.css) on either background. --line is
+// decorative only (card and section separators, never the sole boundary of a control: the site has none).
+const RING: [string, string][] = [['--accent', '--bg'], ['--accent', '--surface']];
+const FILES = ['tokens.css', ...DIRECTIONS.map((d) => `directions/${d}`)];
+const merged = (file: string) => parse(read(file)).map((block) =>
+  ({ scheme: block.scheme, all: new Map([...parse(read(file))[0].decls, ...block.decls]) }));
 
 describe('design tokens', () => {
   it('tokens.css declares exactly the semantic token set, light and dark', () => {
@@ -68,19 +79,54 @@ describe('design tokens', () => {
     expect(sets(blocks)).toEqual(sets(base));
   });
 
-  it.each(['tokens.css', ...DIRECTIONS.map((d) => `directions/${d}`)])('%s text colours meet WCAG AA', (file) => {
-    for (const block of parse(read(file))) {
-      const all = new Map([...parse(read(file))[0].decls, ...block.decls]);
-      const failing = PAIRS.map(([fg, bg]) => [block.scheme, fg, bg, contrast(all.get(fg)!, all.get(bg)!)] as const)
-        .filter(([, , , ratio]) => ratio < 4.5);
-      expect(failing).toEqual([]);
+  it.each(FILES)('%s colour tokens are all lowercase #rrggbb (no alpha, no other syntax)', (file) => {
+    for (const { scheme, all } of merged(file)) {
+      const bad = COLOURS.filter((c) => !/^#[0-9a-f]{6}$/.test(all.get(c) ?? '')).map((c) => [scheme, c, all.get(c)]);
+      expect(bad).toEqual([]);
     }
   });
 
-  it('globals.css uses tokens only: no colour literals, and every var() it reads is a token', () => {
+  it.each(FILES)('%s text colours meet WCAG AA (4.5:1) and the focus ring 3:1', (file) => {
+    for (const { scheme, all } of merged(file)) {
+      const ratio = ([fg, bg]: [string, string]) => [scheme, fg, bg, contrast(all.get(fg)!, all.get(bg)!)] as const;
+      expect(PAIRS.map(ratio).filter(([, , , r]) => r < 4.5)).toEqual([]);
+      expect(RING.map(ratio).filter(([, , , r]) => r < 3)).toEqual([]);
+    }
+  });
+
+  it('the contrast check rejects what it cannot measure', () => {
+    for (const bad of ['rgb(250, 250, 250)', 'white', '#1a1f2b00', '#fff', 'oklch(0.9 0 0)', 'var(--bg)']) {
+      expect(() => contrast(bad, '#ffffff')).toThrow(/not #rrggbb/);
+    }
+    expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 5);
+  });
+
+  it('globals.css uses tokens only: no colour literal, type/radius/shadow via tokens, every var() a token', () => {
     const css = read('globals.css');
-    expect(css.match(/#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab)\(|\b(?:white|black)\b/gi)).toBeNull();
+    const values = [...css.matchAll(/([\w-]+)\s*:\s*([^;{}]+)/g)].map((m) => [m[1], m[2].replace(/var\([^)]*\)/g, '')]);
+    const colour = new RegExp(`${LITERALS.hex}|${LITERALS.functions}|\\b(?:${LITERALS.named.join('|')})\\b`, 'i');
+    expect(values.filter(([, v]) => colour.test(v))).toEqual([]);
+    const raw = [...css.matchAll(/([\w-]+)\s*:\s*([^;{}]+)/g)].map((m) => [m[1], m[2].trim()]);
+    const needs: Record<string, RegExp> = { 'font-family': /^var\(--font-/, font: /var\(--font-|^inherit$/,
+      'border-radius': /^var\(--radius-/, 'box-shadow': /^var\(--shadow-|^none$/ };
+    expect(raw.filter(([p, v]) => needs[p] && !needs[p].test(v))).toEqual([]);
+    expect(css).toMatch(/:focus-visible\s*\{[^}]*outline:[^;]*var\(--accent\)/); // the RING pair above
     const used = [...new Set([...css.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1]))];
     expect(used.filter((v) => !TOKENS.includes(v))).toEqual([]);
+  });
+
+  it('CSS lives only in styles/ (tokens, globals, directions): no CSS file or module anywhere else', () => {
+    const css = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '*.css', '*.scss', '*.sass', '*.less'],
+      { cwd: repo, encoding: 'utf8' }).split('\n').filter(Boolean).sort();
+    expect(css).toEqual(['styles/globals.css', 'styles/tokens.css', ...DIRECTIONS.map((d) => `styles/directions/${d}`)].sort());
+  });
+
+  it('app/icon.svg uses only light-scheme token colours (a favicon cannot read CSS variables)', () => {
+    const svg = readFileSync(join(repo, 'app', 'icon.svg'), 'utf8');
+    const light = new Set([...base[0].decls].filter(([k]) => COLOURS.includes(k)).map(([, v]) => v));
+    const paints = [...svg.matchAll(/(?:fill|stroke|stop-color|color)\s*[=:]\s*"?([^";\s>]+)/g)].map((m) => m[1].toLowerCase());
+    expect(paints.length).toBeGreaterThan(0);
+    expect(paints.filter((p) => !light.has(p))).toEqual([]);
+    expect(svg).not.toMatch(/style\s*=|<style/);
   });
 });

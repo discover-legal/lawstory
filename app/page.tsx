@@ -31,8 +31,8 @@ export default function Home() {
         <p className="kicker">Legal technology consultancy</p>
         <h1 id="hero-title">Technology your firm can trust, owned by your firm.</h1>
         <p className="lede">
-          We help law firms buy, build, run and govern legal technology, and we show our work: two free
-          products you can inspect before you talk to us.
+          We help law firms buy, build, run and govern legal technology, and we show our work: one free
+          product you can inspect today, and a second in preparation.
         </p>
       </section>
 
@@ -50,7 +50,7 @@ export default function Home() {
       </section>
 
       <section className="section" aria-labelledby="demos-title">
-        <h2 id="demos-title">Two free products, shown as demos</h2>
+        <h2 id="demos-title">Free products</h2>
         <ul className="grid">
           <li className="card">
             <h3>discover.legal Documents (Ontario)</h3>

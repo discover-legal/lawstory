@@ -1,48 +1,76 @@
 #!/usr/bin/env node
-// Line budgets (CI gate). Counts newlines in every git-visible text file (tracked, plus untracked
-// files that are not ignored), skipping package-lock.json and binary files (NUL in the first 8 KB),
-// the same rule as the design's tools/loc.py. Fails (exit 1) when the total, a top-level entry, or a
-// single file is over budget, or when a top-level entry has no budget. Ceilings come from the
-// design's tools/port_manifest.py. Usage: node scripts/loc-budget.mjs [root] [--budgets file.json]
+// Line budgets (CI gate). Every git-visible file (tracked, plus untracked files that are not ignored)
+// except package-lock.json is checked. Usage: node scripts/loc-budget.mjs [root] [--budgets file.json]
+//  - Binary is decided by extension (BINARY); such a file is not counted but has a byte cap. Any other
+//    file must be UTF-8 text with no NUL byte, or the gate fails (no "looks binary" dodge).
+//  - Lines = newlines, plus 1 for a last line without one (the same rule as the design's tools/loc.py,
+//    which never counts more). Fails when the total, a top-level entry or a file is over budget, or an
+//    entry has no budget.
+//  - Per file: lines <= cap and bytes <= cap * BYTES_PER_LINE, where cap = the file's override or
+//    maxFile, and never above HARD_MAX_LINES, which no budget file can raise. Code lines <= MAX_LINE_BYTES.
+//  - Symlinks, submodules and anything else that is not a regular file fail; only ENOENT (deleted but
+//    still in the index) is skipped.
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { lstatSync, readFileSync } from 'node:fs';
+import { extname, join, resolve } from 'node:path';
 
-const DEFAULT = {
-  total: 14447,
-  maxFile: 600, // the largest ported file, core/interview/engine.ts, is 587 lines
-  files: {},
-  entries: {
-    core: 5541, __tests__: 4563, app: 967, components: 785, demo: 580, docs: 476, content: 420,
-    styles: 300, 'README.md': 200, e2e: 120, 'CLAUDE.md': 80, 'next.config.mjs': 70, '.github': 60,
-    scripts: 60, 'package.json': 45, Dockerfile: 35, 'tsconfig.json': 30, 'render.yaml': 30,
-    'jest.config.js': 25, 'eslint.config.mjs': 20, '.gitignore': 20, '.env.example': 20, '.dockerignore': 15,
-  },
-};
+const HARD_MAX_LINES = 2000;
+const BYTES_PER_LINE = 100;
+const MAX_LINE_BYTES = 200;
+const BINARY = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.woff', '.woff2', '.pdf']);
+const BINARY_MAX_BYTES = 1_000_000;
+const CODE = /\.(?:[cm]?[jt]sx?|css)$/;
 
 const args = process.argv.slice(2);
 const bi = args.indexOf('--budgets');
-const budgets = bi >= 0 ? JSON.parse(readFileSync(args.splice(bi, 2)[1], 'utf8')) : DEFAULT;
+const budgetsFile = bi >= 0 ? args.splice(bi, 2)[1] : new URL('./loc-budgets.json', import.meta.url);
+const budgets = JSON.parse(readFileSync(budgetsFile, 'utf8'));
 const root = resolve(args[0] ?? '.');
+const errors = [];
 
-const listed = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root });
-const paths = [...new Set(listed.toString('utf8').split('\0').filter(Boolean))].filter((p) => p !== 'package-lock.json');
+if (budgets.maxFile > HARD_MAX_LINES) errors.push(`maxFile ${budgets.maxFile} > hard cap ${HARD_MAX_LINES}`);
+for (const [p, n] of Object.entries(budgets.files ?? {})) {
+  if (n > HARD_MAX_LINES) errors.push(`override ${p}: ${n} > hard cap ${HARD_MAX_LINES} (no override can raise it)`);
+}
+const entrySum = Object.values(budgets.entries).reduce((a, b) => a + b, 0);
+if (entrySum > budgets.total) errors.push(`entry budgets sum to ${entrySum} > total ${budgets.total}`);
 
-const byEntry = new Map(); const errors = []; let total = 0;
+const git = (...a) => execFileSync('git', a, { cwd: root, maxBuffer: 64 << 20 }).toString('utf8').split('\0').filter(Boolean);
+const mode = new Map(git('ls-files', '-s', '-z').map((l) => [l.slice(l.indexOf('\t') + 1), l.split(' ')[0]]));
+const paths = [...new Set([...mode.keys(), ...git('ls-files', '-z', '--others', '--exclude-standard')])]
+  .filter((p) => p !== 'package-lock.json');
+
+const utf8 = new TextDecoder('utf-8', { fatal: true });
+const byEntry = new Map(); let total = 0;
 for (const p of paths) {
-  let buf;
-  try { buf = readFileSync(join(root, p)); } catch { continue; } // deleted but still in the index
-  if (buf.subarray(0, 8192).includes(0)) continue;
-  let n = 0; for (const b of buf) if (b === 10) n++;
+  if (mode.get(p) === '160000') { errors.push(`file ${p}: git submodule (not allowed)`); continue; }
+  let st;
+  try { st = lstatSync(join(root, p)); } catch (e) { if (e.code === 'ENOENT') continue; errors.push(`file ${p}: ${e.code}`); continue; }
+  if (!st.isFile()) { errors.push(`file ${p}: ${st.isSymbolicLink() ? 'symlink' : 'not a regular file'} (not allowed)`); continue; }
+  const buf = readFileSync(join(root, p));
+  if (BINARY.has(extname(p).toLowerCase())) {
+    if (buf.length > BINARY_MAX_BYTES) errors.push(`file ${p}: ${buf.length} bytes > binary cap ${BINARY_MAX_BYTES}`);
+    continue;
+  }
+  let text;
+  try { text = utf8.decode(buf); } catch { text = null; }
+  if (text === null || text.includes('\0')) {
+    errors.push(`file ${p}: not UTF-8 text (binary types by extension only: ${[...BINARY].join(' ')})`); continue;
+  }
+  const lines = text.split('\n');
+  const n = lines.length - 1 + (lines.at(-1) === '' ? 0 : 1);
   total += n;
   const entry = p.split('/')[0];
   byEntry.set(entry, (byEntry.get(entry) ?? 0) + n);
-  const cap = budgets.files?.[p] ?? budgets.maxFile;
+  const cap = (budgets.files?.[p] ?? budgets.maxFile);
   if (n > cap) errors.push(`file ${p}: ${n} lines > budget ${cap}`);
+  if (buf.length > cap * BYTES_PER_LINE) errors.push(`file ${p}: ${buf.length} bytes > byte cap ${cap * BYTES_PER_LINE}`);
+  const longest = CODE.test(p) ? Math.max(...lines.map((l) => Buffer.byteLength(l))) : 0;
+  if (longest > MAX_LINE_BYTES) errors.push(`file ${p}: a ${longest}-byte line > ${MAX_LINE_BYTES} (code)`);
 }
 for (const [entry, n] of [...byEntry].sort((a, b) => b[1] - a[1])) {
   const cap = budgets.entries[entry];
-  if (cap === undefined) errors.push(`entry ${entry}: ${n} lines, no budget (add it to scripts/loc-budget.mjs)`);
+  if (cap === undefined) errors.push(`entry ${entry}: ${n} lines, no budget (add it to scripts/loc-budgets.json)`);
   else if (n > cap) errors.push(`entry ${entry}: ${n} lines > budget ${cap}`);
   console.log(`${String(n).padStart(7)} / ${String(cap ?? '-').padStart(5)}  ${entry}`);
 }
