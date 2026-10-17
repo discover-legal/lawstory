@@ -22,6 +22,8 @@ check(h('x-content-type-options') === 'nosniff' && h('x-frame-options') === 'DEN
 check(h('cache-control') === 'public, max-age=0, must-revalidate', `/ cache-control ${h('cache-control')}`);
 check(!home.r.headers.has('x-powered-by'), '/ x-powered-by present');
 check((flag === '--indexable') === !home.r.headers.has('x-robots-tag'), `/ x-robots-tag ${h('x-robots-tag') || 'absent'}`);
+const demo = (await get('/demo/x/n/a.html')).r.headers; // a replay preview: frameable by this origin only
+check(demo.get('x-frame-options') === 'SAMEORIGIN' && /frame-ancestors 'self';/.test(demo.get('content-security-policy')), '/demo frame headers');
 const css = home.body.match(/\/_next\/static\/[^"]+\.css/)?.[0];
 check(css && (await get(css)).r.status === 200, `stylesheet ${css} not served`);
 check((await get('/api/health')).r.status === 200, '/api/health not 200');

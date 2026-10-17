@@ -30,13 +30,14 @@ set, and then Google sets its own cookies (see Limitations).
 ## What is on disk
 
 ```
-app/                         Next.js App Router. Every route is prerendered (`npm run build` fails otherwise).
+app/                         Next.js App Router. Every route is prerendered (`npm run build` fails otherwise;
+                             a `[param]` route passes only with `dynamicParams = false`).
   layout.tsx                 [S1] root layout: tokens, header, footer, metadata (Nav/Footer components: S7; GA: S6)
   page.tsx                   [S1] / minimal home: positioning, 4 services, the products (prices, CTA, demo links: S7)
   not-found.tsx, icon.svg    [S1] 404 ("Page not found"), favicon
   services/page.tsx          [planned: S7] /services   packages ("Price on request"), pricing rules, FAQ
   documents/page.tsx         [planned: S6] /documents  framing, iframe, "for law firms" CTA
-  documents/embed/page.tsx   [planned: S6] /documents/embed  the replay player (noindex; the only frameable page)
+  documents/embed/page.tsx   [planned: S6] /documents/embed  the replay player (noindex; frameable by self, as /demo/** is)
   biglaw/page.tsx            [planned: S7] /biglaw     BigLaw demo iframe or poster; run-it-yourself / managed CTAs
   research/page.tsx          [planned: S7] /research   open experiments with their real status and repositories
   contact/page.tsx           [planned: S7] /contact    booking link first, obfuscated email second; works without JS
@@ -50,7 +51,7 @@ styles/globals.css           [S1] element styles written only against tokens
 core/                        [planned: S2/S3] the v2 engine, trimmed to the Ontario divorce interview, plus
                              intelligence/tape.ts (record/replay) and render/watermark.ts
 demo/                        [planned: S4/S5/S10] persona, fixtures, record.ts, build.ts, redact.ts
-public/demo/                 [planned: S5] GENERATED, gitignored: tree.json, n/<node>.<kind>.html, DEMO-*.pdf
+public/demo/                 [planned: S5] GENERATED, gitignored: tree.json, n/<node>.<kind>.html, preview.css, DEMO-*.pdf
 __tests__/site/              [S1] loc-budget, tokens, lint-colour, deps, config, deploy, repo (Jest, node, no network)
 e2e/smoke.spec.mjs           [planned: S9] Playwright smoke against the standalone server
 scripts/                     [S1] loc-budget.mjs + loc-budgets.json (line gate), colour-literals.json (lint list),
@@ -92,6 +93,8 @@ Until S7 these paths answer 404 on the `site-v6` preview.
   `https://discover.legal`; `/api/health` (a copy of the home page) is always `noindex`.
 - HTML is `public, max-age=0, must-revalidate` (Next's default is `s-maxage=31536000`); hashed
   `/_next/static` assets keep `immutable`.
+- `/demo/**` (S5's previews, framed by the S6 player) gets `frame-ancestors 'self'` and `SAMEORIGIN`; a
+  preview links its CSS as a same-origin file, so `style-src` stays `'self'` everywhere.
 - [planned: S6] `frame-src 'self' <BigLaw demo origin>`; `/documents/embed` gets `frame-ancestors 'self'`
   and `SAMEORIGIN`. Only when `NEXT_PUBLIC_GA_ID` matches `^G-[A-Z0-9]{4,16}$`: Google's GA4 origins
   (`*.googletagmanager.com` in `script-src`; it plus `*.google-analytics.com`, `*.analytics.google.com`
@@ -108,11 +111,13 @@ tokens; picking one is the commented import in `app/layout.tsx`. Sources: `ui-di
 on both backgrounds, every file and scheme; 3:1 for the focus ring. `--line` is decorative only and not
 contrast-tested. `globals.css` has no colour literal (`var()` fallbacks included) and takes type, radius
 and shadow from tokens; CSS exists only in `styles/`; `app/icon.svg` uses light token values.
-`lint-colour.test`: in `app/`, `components/` and `content/` ESLint bans inline styles (`style` and
-`dangerouslySetInnerHTML` props/keys, `.style`, `innerHTML`, `<style>`, SVG `<animate>`/`<set>`); colour
-slots (`fill`, `stroke`, any `*color`/`*Color` prop, key or attribute name) take only `none`,
-`currentColor`, `inherit`, `transparent` or `var(--token)`; and no string is a hex or colour-function
-value or a CSS colour declaration. A colour assembled at runtime is not detected.
+`lint-colour.test`: in `app/`, `components/` and `content/` ESLint bans every style sink (`style`,
+`dangerouslySetInnerHTML`, `innerHTML`, `document.write`, `srcDoc`, `insertRule`, `replaceSync`,
+`cssText`, `animate`, `attributeStyleMap`, `adoptedStyleSheets`, `<style>`, SVG `<animate>`/`<set>`, any
+`text/css` string); colour slots (`fill`, `stroke`, any `*color`/`*Color` name, `<body text/link>`) take
+only `none`, `currentColor`, `inherit`, `transparent`, `var(--token)` or `url(#id)`; no string is a hex or
+colour-function value. CSS text that reaches no sink is inert and not scanned. A colour assembled at
+runtime is not detected.
 
 ---
 
@@ -167,7 +172,7 @@ four public ones as `ARG`s; S1 reads only `NEXT_PUBLIC_SITE_URL`.
 ### Line budgets [S1]
 `npm run loc` counts every git-visible file except `package-lock.json` against
 `scripts/loc-budgets.json` (total 14,447; PLAN.md "Line budget allocation" says which PR fills each
-entry). A line ends at LF, CRLF or a lone CR, and counts once per started 200 bytes, in every text type,
+entry). A line ends at LF, CRLF, a lone CR, U+2028, U+2029 or NEL, and counts once per started 200 bytes, in every text type,
 so one-line and minified files are charged for their size. The gate fails when: the budgets file is not
 exactly `{total, maxFile, files, entries}` of positive integers; entries sum above the total; the total
 or an entry is over budget, or an entry has none; a file is over 600 lines, or over its `files`
@@ -228,15 +233,14 @@ counted whatever its extension); or a path is a symlink, a submodule or not a re
   `FROM` lines and `.nvmrc` together (deploy.test); Dependabot covers only npm and actions.
 - **`npm ls --omit=dev` prints two `extraneous` packages** (`@img/sharp-wasm32`, `@emnapi/runtime`), a
   lockfile artefact of `sharp`; they are not shipped (`outputFileTracingExcludes`, checked in CI).
-- **CI is unproven on GitHub.** This workflow has never run there (no PR open yet; it triggers only for
-  PRs into and pushes to `main`/`site-v6`), so the 3-minute job budgets are measured locally only. A PR
-  run tests the merge result with its base. Dependabot starts only once its file is on `main`.
+- **CI measured once on GitHub:** run 39008660437 (PR #351), `gates` 50 s, `image` 43 s, against 3-minute
+  budgets. A PR run tests the merge result with its base. Dependabot starts only once its file is on `main`.
 - **No private vulnerability channel yet.** `SECURITY.md` points at GitHub private vulnerability
   reporting, which was off on 2026-10-17; the owner enables it before C (PLAN P0/C).
 - **Next.js error pages kept as is.** `/_global-error` and the static 500 page are Next's own: unbranded,
   and their inline styles are blocked by `style-src 'self'`, so a visitor who hits a server error sees
   it unstyled (CSP console errors). Any POST with a `Next-Action` header logs one error line (log noise).
-- **Colour lint has known false positives:** a whole-string `#add`-like anchor (valid hex), the string
-  `style`, or a `Background: red …` phrase inside a string is flagged; rename or move such copy.
+- **Colour lint has known false positives:** a whole-string `#add`-like anchor (valid hex), a string or
+  key that is exactly a sink name (`style`, `write`, `animate`, …), or copy containing `text/css`; rename it.
 - **Unverified Render behaviour.** Blueprint sync, whether a sync drops a disk or domain render.yaml no
   longer lists, and any CDN in front are unverified (PLAN P0 answers them before S2 merges).

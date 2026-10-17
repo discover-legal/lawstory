@@ -86,9 +86,14 @@ describe('CI workflow', () => {
   });
   it('has every gate, the clean-tree check, the audit and the image job', () => {
     for (const step of ['npm ci', 'npm audit --omit=dev', 'npm run type-check', 'npm run lint', 'npm test', 'npm run loc',
-      'npm run build', 'git status --porcelain', 'node scripts/smoke.mjs', 'docker build', 'timeout-minutes: 3']) {
+      'npm run build', 'docker build']) {
       expect(ci).toContain(step);
     }
+    const clean = ci.indexOf('run: test -z "$(git status --porcelain)" || { git status --porcelain; exit 1; }');
+    expect(clean).toBeGreaterThan(ci.indexOf('npm run build')); // after the build, in the gates job
+    expect(clean).toBeLessThan(ci.indexOf('image:'));
+    expect(ci.match(/timeout-minutes: \d+/g)).toEqual(['timeout-minutes: 3', 'timeout-minutes: 3']);
+    expect(ci.match(/^ {10}node scripts\/smoke\.mjs http:\/\/localhost:3000$/gm)).toHaveLength(2); // standalone and image
   });
 });
 
@@ -115,20 +120,23 @@ describe('build helpers', () => {
     expect(none.stderr).toMatch(/not reachable \(ECONNREFUSED\)/);
   }, 20_000);
 
-  it('the build fails when any app route is not prerendered', () => {
+  it('the build fails when any app route is not prerendered; a [param] route passes only with fallback false', () => {
     const dist = mkdtempSync(join(tmpdir(), 'dist-'));
     mkdirSync(join(dist, 'standalone'));
     mkdirSync(join(dist, 'static'));
     writeFileSync(join(dist, 'standalone', 'server.js'), '');
-    const build = (routes: string[]) => {
-      writeFileSync(join(dist, 'app-path-routes-manifest.json'), JSON.stringify({ '/page': '/', '/research/page': '/research' }));
-      writeFileSync(join(dist, 'prerender-manifest.json'), JSON.stringify({ routes: Object.fromEntries(routes.map((r) => [r, {}])) }));
+    const build = (routes: string[], fallback?: unknown) => {
+      writeFileSync(join(dist, 'app-path-routes-manifest.json'), JSON.stringify({ '/page': '/', '/research/page': '/research', '/n/[s]/page': '/n/[s]' }));
+      writeFileSync(join(dist, 'prerender-manifest.json'), JSON.stringify({ routes: Object.fromEntries(routes.map((r) => [r, {}])),
+        dynamicRoutes: { '/n/[s]': { fallback } } }));
       return spawnSync(process.execPath, [join(repo, 'scripts', 'standalone-assets.mjs'), dist], { cwd: dist, encoding: 'utf8' });
     };
     const bad = build(['/']);
     expect(bad.status).toBe(1);
     expect(bad.stderr).toContain('not prerendered (every route must be static): /research');
-    expect(build(['/', '/research']).status).toBe(0);
+    expect(build(['/', '/research']).stderr).toContain('not prerendered (every route must be static): /n/[s]'); // fallback unset
+    expect(build(['/', '/research'], null).status).toBe(1); // blocking fallback: renders unknown params on demand
+    expect(build(['/', '/research', '/n/a'], false).status).toBe(0); // every [s] prerendered (dynamicParams = false)
     rmSync(dist, { recursive: true, force: true });
   });
 });

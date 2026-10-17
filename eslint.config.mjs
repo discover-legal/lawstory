@@ -5,22 +5,20 @@ import nextTs from 'eslint-config-next/typescript';
 
 // Colour, type, radius and shadow come only from styles/ (classes written against tokens). In app/,
 // components/ and content/ (proven by __tests__/site/lint-colour.test.ts):
-//  1. No inline style: `style`, `dangerouslySetInnerHTML`, innerHTML/outerHTML/insertAdjacentHTML and
-//     adoptedStyleSheets are banned as JSX props, object keys, member names and whole string literals
-//     (so createElement('style'), el['style'], setAttribute('style')), and so are <style> and SVG <animate>/<set>.
+//  1. No style sink: the names in SINK are banned as JSX props, object keys, member names and whole
+//     string literals (so createElement('style'), el['style'], setAttribute('style')), and so are <style>,
+//     SVG <animate>/<set> and any `text/css` string (a data: stylesheet, a CSS Blob). A CSS string that
+//     reaches no sink renders nothing, so strings are not scanned for declarations.
 //  2. A colour slot (fill, stroke, any *color/*Color name as a JSX prop, object key, assignment or
-//     setAttribute name) takes only a literal none / currentColor / inherit / transparent / var(--token).
-//  3. No string or template text is a hex or colour-function value, a CSS colour declaration (or any
-//     colour inside `{…}`), or a *-color / *Color name (meta theme-color, msapplication-TileColor).
+//     setAttribute name; <body text/link/vlink/alink>) takes only a literal none / currentColor /
+//     inherit / transparent / var(--token) / url(#id).
+//  3. No string is a whole hex or colour-function value, or a *-color / *Color name (meta theme-color).
 const C = JSON.parse(readFileSync(new URL('./scripts/colour-literals.json', import.meta.url), 'utf8'));
-const SINK = '/^(?:style|dangerouslySetInnerHTML|innerHTML|outerHTML|insertAdjacentHTML|adoptedStyleSheets)$/';
-const SLOT = '(?:[\\w-]*[cC]olor|fill|stroke)'; // color, themeColor, stop-color, bgcolor, document.fgColor, …
-const SLOT_KEY = `/^${SLOT}$/`;
-const SLOT_ATTR = `/^(?:${SLOT}|text|link|vlink|alink)$/`; // the last four: <body> colour attributes
-const TOKEN = '/^(?:none|currentColor|inherit|transparent|var\\(--[a-z0-9-]+\\))$/';
-const COLOUR = `(?:${C.hex}|${C.functions}|\\b(?:${C.named.join('|')})\\b)`;
-const DECL = `(?:^|[\\s;{"'])(?:color|fill|stroke|background|border|outline|box-shadow|text-shadow|[a-z-]+-color)(?:-[a-z]+)*\\s*:[^;{}]*?${COLOUR}|\\{[^{}]*?:[^{}]*?${COLOUR}`;
-const VALUE = `/^\\s*(?:${C.hex}|${C.functions}.*\\))\\s*$|${DECL}/i`;
+const SINK = '/^(?:style|dangerouslySetInnerHTML|innerHTML|outerHTML|insertAdjacentHTML|setHTMLUnsafe|createContextualFragment|write|'
+  + 'writeln|srcdoc|srcDoc|adoptedStyleSheets|insertRule|replaceSync|cssText|animate|attributeStyleMap)$/';
+const SLOT_KEY = '/^(?:[\\w-]*[cC]olor|fill|stroke)$/'; // color, themeColor, stop-color, bgcolor, document.fgColor, …
+const TOKEN = '/^(?:none|currentColor|inherit|transparent|var\\(--[a-z0-9-]+\\)|url\\(#[\\w-]+\\))$/';
+const VALUE = `/^\\s*(?:${C.hex}|${C.functions}.*\\))\\s*$/i`;
 const notToken = (path) => `:not([${path}.type="Literal"][${path}.value=${TOKEN}])`;
 const ban = (selector, message) => ({ selector, message });
 const STYLE = 'Inline style: put it in styles/globals.css as a class, written against tokens.';
@@ -34,9 +32,11 @@ export default defineConfig([
     ban(`JSXAttribute[name.name=${SINK}]`, STYLE),
     ban(`Property[key.name=${SINK}]`, STYLE), ban(`MemberExpression[property.name=${SINK}]`, STYLE),
     ban(`Literal[value=${SINK}]`, STYLE), ban(`TemplateElement[value.raw=${SINK}]`, STYLE),
+    ban(':matches(Literal[value=/text\\/css/i], TemplateElement[value.raw=/text\\/css/i])', STYLE),
     ban(`Literal[value=${VALUE}]`, COL), ban(`Literal[value=/^(?!currentColor$)[\\w-]+(?:-c|C)olor$/]`, COL), // <meta name="theme-color">
     ban(`TemplateElement[value.raw=${VALUE}]`, COL),
-    ban(`JSXAttribute[name.name=${SLOT_ATTR}]${notToken('value')}`, COL),
+    ban(`JSXAttribute[name.name=${SLOT_KEY}]${notToken('value')}`, COL),
+    ban(`JSXOpeningElement[name.name="body"] > JSXAttribute[name.name=/^(?:text|v?link|alink)$/]${notToken('value')}`, COL),
     ban(`Property[key.name=${SLOT_KEY}]${notToken('value')}`, COL), ban(`Property[key.value=${SLOT_KEY}]${notToken('value')}`, COL),
     ban(`Property[key.quasis.0.value.raw=${SLOT_KEY}]${notToken('value')}`, COL),
     ban(`AssignmentExpression[left.property.name=${SLOT_KEY}]${notToken('right')}`, COL),

@@ -6,7 +6,7 @@
 //    file above HARD_MAX_LINES.
 //  - UTF-8 text without NUL is counted whatever its extension (a tape renamed .pdf is still text). Other
 //    content fails unless the extension is in BINARY: then it is not counted, but capped at BINARY_MAX_BYTES.
-//  - A line ends at LF, CRLF or a lone CR; an unterminated last line counts. Each line counts once per
+//  - A line ends at LF, CRLF, a lone CR, U+2028, U+2029 or NEL; an unterminated last line counts. Each line counts once per
 //    started LINE_BYTES bytes, so a long-line or one-line file is charged for its size, in every type.
 //  - Symlinks, submodules and anything else that is not a regular file fail; only ENOENT (deleted but
 //    still in the index) is skipped.
@@ -66,7 +66,7 @@ for (const p of paths) {
     else if (buf.length > BINARY_MAX_BYTES) errors.push(`file ${p}: ${buf.length} bytes > binary cap ${BINARY_MAX_BYTES}`);
     continue;
   }
-  const lines = text.split(/\r\n|\r|\n/);
+  const lines = text.split(/\r\n|[\r\n\u2028\u2029\u0085]/);
   if (lines.at(-1) === '') lines.pop();
   const n = lines.reduce((s, l) => s + Math.max(1, Math.ceil(Buffer.byteLength(l) / LINE_BYTES)), 0);
   total += n;

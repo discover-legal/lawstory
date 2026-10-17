@@ -22,7 +22,7 @@ function lintAll(cases: [string, string][]): string[][] {
 
 const COLOUR = /^Colour literal outside styles\//;
 const STYLE = /^Inline style/;
-// Every form found by the S1 committee (rounds 1 and 2), each a literal (not assembled at runtime).
+// Every form found by the S1 committee (rounds 1 to 3), each a literal (not assembled at runtime).
 const BAD: [string, string, RegExp][] = [
   ['hex in a string', "export const a = '#ABCDEF';", COLOUR],
   ['short hex', "export const a = '#f00';", COLOUR],
@@ -44,8 +44,16 @@ const BAD: [string, string, RegExp][] = [
   ['shorthand colour property', "const fill = 'red';\nexport const a = { fill };", COLOUR],
   ['document colour assignment', "document.bgColor = 'black';", COLOUR],
   ['setAttribute of a colour', "document.body.setAttribute('fill', 'red');", COLOUR],
-  ['CSS declaration in a template', 'export const a = `body { color: red; border-radius: 3px }`;', COLOUR],
-  ['CSS shorthand with a named colour', "export const a = 'p{border:1px solid rebeccapurple}';", COLOUR],
+  ['CSS text into a constructed sheet', "new CSSStyleSheet().replaceSync('p{border:1px solid rebeccapurple}');", STYLE],
+  ['cssText', 'document.styleSheets[0].cssRules[0].cssText = `body { color: red }`;', STYLE],
+  ['Web Animations', "document.body.animate([{ background: 'black' }, { background: 'white' }]);", STYLE],
+  ['Typed OM', "document.body.attributeStyleMap.set('color', 'red');", STYLE],
+  ['adoptedStyleSheets', 'document.adoptedStyleSheets = [];', STYLE],
+  ['data: stylesheet', 'export const a = <link rel="stylesheet" href="data:text/css,body%7Bcolor:red%7D" />;', STYLE],
+  ['document.write of an inline style', "document.write('<p style=\"color:red\">x</p>');", STYLE],
+  ['iframe srcDoc', 'export const a = <iframe srcDoc="<p>x</p>" />;', STYLE],
+  ['<body> text colour', 'export const a = <body text="red" />;', COLOUR],
+  ['a var() with a fallback colour', 'export const a = <svg><path fill="var(--accent, #ff0000)" /></svg>;', COLOUR],
   ['style prop', "export const a = <p style={{ borderRadius: 3, fontFamily: 'Arial' }}>x</p>;", STYLE],
   ['createElement style object', "import { createElement } from 'react';\nexport const a = createElement('p', { style: { fontFamily: 'Arial' } });", STYLE],
   ['computed style key', "import { createElement } from 'react';\nexport const a = createElement('p', { ['style']: {} });", STYLE],
@@ -61,7 +69,7 @@ const BAD: [string, string, RegExp][] = [
   ['theme-color meta tag', 'export const a = <meta name="theme-color" content="black" />;', COLOUR],
   ['msapplication-TileColor', "export const metadata = { other: { 'msapplication-TileColor': 'black' } };", COLOUR],
   ['SVG animate to a colour', 'export const a = <svg><animate attributeName="fill" to="red" /></svg>;', STYLE],
-  ['insertRule CSS text', "document.styleSheets[0].insertRule('p{filter:drop-shadow(0 0 2px red)}');", COLOUR],
+  ['insertRule CSS text', "document.styleSheets[0].insertRule('p{filter:drop-shadow(0 0 2px red)}');", STYLE],
   ['feFlood floodColor', 'export const a = <svg><feFlood floodColor="red" /></svg>;', COLOUR],
 ];
 // Copy, anchors and token-valued slots that must stay legal (round-2 false positives included).
@@ -69,10 +77,11 @@ const GOOD = [
   '<p className="muted">red flags and black-letter law</p>', '<a href="/services#add-ons">Add-ons</a>',
   '<p>Fixed in PR #350 and issue #128.</p>', '<p>Pick any color(s) you like.</p>', "{ tone: 'red', link: '/services' }",
   "'Pick any color(s) you like.'", "'Status: green light'", '<svg><rect fill="currentColor" stroke="none" /></svg>',
-  '<svg><path fill="var(--accent)" /></svg>', "{ themeColor: 'var(--bg)', color: 'inherit' }", '<a className="skip" href="#main">Skip</a>',
+  '<svg><path fill="var(--accent)" /></svg>', '<svg><rect fill="url(#g)" /></svg>', '<Cta text="Book a call" link="/contact" />',
+  "'Background: red light ahead'", "{ themeColor: 'var(--bg)', color: 'inherit' }", '<a className="skip" href="#main">Skip</a>',
 ];
 
-const FILES = ['app/x.tsx', 'app/x.ts', 'components/x.jsx', 'components/x.js', 'components/x.mjs', 'content/site.ts'];
+const FILES = ['app/x.tsx', 'app/x.ts', 'app/x.mts', 'app/x.cts', 'components/x.jsx', 'components/x.js', 'components/x.mjs', 'components/x.cjs', 'content/site.ts'];
 let results: string[][];
 beforeAll(() => {
   results = lintAll([...BAD.map(([, code]) => ['components/Probe.tsx', code] as [string, string]),

@@ -53,6 +53,14 @@ describe('next.config.mjs', () => {
     expect(header(prod, '/', 'Content-Security-Policy')[0]).not.toMatch(/google|https?:/);
   });
 
+  it('lets this origin frame a replay preview under /demo (later rule wins in Next); nothing else is frameable', () => {
+    const page = '/demo/on-marcus/v1/n/a.html';
+    expect(header(prod, page, 'X-Frame-Options')).toEqual(['DENY', 'SAMEORIGIN']);
+    const [base, demo] = header(prod, page, 'Content-Security-Policy').map((c) => Object.fromEntries(directives(c)));
+    expect(demo).toEqual({ ...base, 'frame-ancestors': "'self'" }); // style-src stays 'self': preview CSS is a linked file
+    for (const path of ['/', '/demo-x', '/documents/demo/a.html']) expect(header(prod, path, 'X-Frame-Options')).toEqual(['DENY']);
+  });
+
   it('upgrades insecure requests only in an https build (plain-http hosts would lose every asset)', () => {
     expect(header(prod, '/', 'Content-Security-Policy')[0]).toMatch(/; upgrade-insecure-requests$/);
     expect(header(load({ NEXT_PUBLIC_SITE_URL: 'https://site-v6.onrender.com' }), '/', 'Content-Security-Policy')[0]).toMatch(/upgrade-insecure/);

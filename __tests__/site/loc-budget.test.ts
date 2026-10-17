@@ -59,6 +59,10 @@ describe('scripts/loc-budget.mjs', () => {
     expect(run().stdout).toMatch(/^ *14 \/ +15 {2}src/m);
     tree({ ...ok, 'src/notes.md': 'x\r'.repeat(11) }); // a CR-only file is 11 lines, not 1
     failsWith('file src/notes.md: 11 lines > budget 10');
+    for (const sep of ['\u2028', '\u2029', '\u0085']) { // JS line terminators (and NEL) end a line too
+      tree({ ...ok, 'src/sep.js': 'x=1;'.concat(sep).repeat(11) });
+      failsWith('file src/sep.js: 11 lines > budget 10');
+    }
   });
 
   it.each(['b.ts', 'b.json', 'b.py', 'b.md', 'b.svg', 'b.yml', 'b.css'])(
@@ -98,6 +102,7 @@ describe('scripts/loc-budget.mjs', () => {
     ['a NUL byte in a .ts file', 'src/nul.ts', Buffer.from('//\0\nexport const x = 1;\n')],
     ['UTF-16 text', 'src/utf16.md', Buffer.from('﻿line\n'.repeat(3), 'utf16le')],
     ['an unknown binary', 'src/blob.bin', Buffer.from([0xff, 0xfe, 0, 1])],
+    ['Latin-1 text without a NUL', 'src/latin1.md', Buffer.from('caf\xe9\n', 'latin1')],
   ])('fails %s instead of skipping it as binary', (_, path, body) => {
     tree({ ...ok, [path]: body });
     failsWith(`file ${path}: not UTF-8 text`);
@@ -108,6 +113,8 @@ describe('scripts/loc-budget.mjs', () => {
     failsWith('file src/tape.pdf: 11 lines > budget 10');
     tree({ ...ok, 'src/huge.png': Buffer.concat([Buffer.from([0x89, 0, 0xff]), Buffer.alloc(1_000_000)]) });
     failsWith('file src/huge.png: 1000003 bytes > binary cap 1000000');
+    tree({ ...ok, 'src/LOGO.PNG': Buffer.from([0x89, 0, 0xff]) }); // extensions match in any case
+    expect(run().status).toBe(0);
   });
 
   it('fails a submodule, a symlink and a nested repository; skips only a file deleted from the worktree', () => {
@@ -144,7 +151,8 @@ describe('scripts/loc-budget.mjs', () => {
     ['string override', { ...BUDGETS, files: { 'src/a.ts': 'lots' } }, 'budgets.files["src/a.ts"]: "lots" is not a positive integer'],
     ['string entry', { ...BUDGETS, entries: { ...BUDGETS.entries, src: '15' } }, 'budgets.entries["src"]: "15" is not a positive integer'],
     ['missing total', { maxFile: 10, files: {}, entries: { src: 15 } }, 'budgets.total: undefined is not a positive integer'],
-    ['zero / fractional', { ...BUDGETS, maxFile: 0, total: 35.5 }, 'budgets.maxFile: 0 is not a positive integer'],
+    ['zero', { ...BUDGETS, maxFile: 0 }, 'budgets.maxFile: 0 is not a positive integer'],
+    ['fractional', { ...BUDGETS, total: 35.5 }, 'budgets.total: 35.5 is not a positive integer'],
     ['missing files map', { total: 35, maxFile: 10, entries: { src: 15 } }, 'budgets.files: not an object'],
     ['an array', [1, 2], 'budgets file: not a JSON object'],
   ];

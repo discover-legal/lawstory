@@ -15,14 +15,15 @@ const CSP = {
   'font-src': ["'self'"],
   'connect-src': ["'self'"],
   'frame-src': ["'none'"], // S6 widens: 'self' (the replay) and the BigLaw demo origin
-  'frame-ancestors': ["'none'"], // S6: 'self' on /documents/embed only
+  'frame-ancestors': ["'none'"], // 'self' on /demo/** (below); S6: also /documents/embed
   'form-action': ["'none'"], // the site has no forms
   'base-uri': ["'none'"],
   'object-src': ["'none'"],
   // Only for an https build: on plain http (a LAN phone, a Docker host IP) it would break every asset.
   ...(!dev && process.env.NEXT_PUBLIC_SITE_URL?.startsWith('https://') ? { 'upgrade-insecure-requests': [] } : {}),
 };
-export const csp = Object.entries(CSP).map(([k, v]) => [k, ...v].join(' ')).join('; ');
+const cspWith = (o = {}) => Object.entries({ ...CSP, ...o }).map(([k, v]) => [k, ...v].join(' ')).join('; ');
+export const csp = cspWith();
 
 export const HTML_CACHE = 'public, max-age=0, must-revalidate';
 
@@ -55,6 +56,10 @@ const nextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
+      // S5's replay previews (public/demo/**) are framed by the S6 player on this origin. Their CSS is a
+      // linked same-origin stylesheet, so style-src stays 'self'. Later rules win for the same key.
+      { source: '/demo/:path*', headers: [{ key: 'Content-Security-Policy', value: cspWith({ 'frame-ancestors': ["'self'"] }) },
+        { key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
       // Next marks prerendered HTML `s-maxage=31536000`: a shared cache could then serve a page whose
       // hashed chunks a later deploy removed. HTML always revalidates; hashed /_next/static stays immutable.
       { source: '/((?!_next/static/).*)', headers: [{ key: 'Cache-Control', value: HTML_CACHE }] },

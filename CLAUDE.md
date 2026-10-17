@@ -32,7 +32,7 @@ node scripts/smoke.mjs http://localhost:3000   # headers / health / 404 smoke of
   else; every text pair meets WCAG AA and the focus ring 3:1, light and dark (tokens.test).
 - **Line budgets are a gate.** `scripts/loc-budgets.json` holds the entry ceilings (total 14,447,
   lockfile excluded; entries must sum ≤ total; a new top-level entry needs one). A line ends at LF,
-  CRLF or CR and counts once per started 200 bytes (every type). Files: ≤ 600 lines, an override may
+  CRLF, CR, U+2028/U+2029 or NEL and counts once per started 200 bytes (every type). Files: ≤ 600 lines, an override may
   raise one file to **2,000 at most (hard cap, not configurable)**, UTF-8 text only (binary by
   extension), no symlinks/submodules. Never "fix" the gate by raising a budget without the owner.
 - **Security headers** live in `next.config.mjs` and are pinned by config.test; never weaken one

@@ -10,8 +10,10 @@ const out = `${dist}/standalone`;
 if (!existsSync(`${out}/server.js`)) throw new Error(`${out}/server.js missing: run next build first`);
 const json = (f) => JSON.parse(readFileSync(`${dist}/${f}`, 'utf8'));
 const routes = Object.values(json('app-path-routes-manifest.json'));
-const prerendered = new Set(Object.keys(json('prerender-manifest.json').routes));
-const dynamic = routes.filter((r) => !prerendered.has(r));
+const pm = json('prerender-manifest.json');
+// A [param] route counts when fallback is false: every param is prerendered (generateStaticParams +
+// dynamicParams = false), and anything else 404s.
+const dynamic = routes.filter((r) => !Object.hasOwn(pm.routes, r) && pm.dynamicRoutes?.[r]?.fallback !== false);
 if (routes.length === 0 || dynamic.length > 0) {
   console.error(`not prerendered (every route must be static): ${dynamic.join(' ') || 'no routes found'}`);
   process.exit(1);
