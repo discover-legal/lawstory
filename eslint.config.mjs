@@ -1,33 +1,17 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
 import nextVitals from 'eslint-config-next/core-web-vitals';
+import nextTs from 'eslint-config-next/typescript';
+
+// Colour lives in styles/ only: pages and components may not carry colour literals.
+const C = '/#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\\b|\\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\\(/';
+const message = 'Colour literal outside styles/: use a token from styles/tokens.css (var(--…)).';
+const ban = (selector) => ({ selector, message });
 
 export default defineConfig([
   ...nextVitals,
-  {
-    linterOptions: {
-      reportUnusedDisableDirectives: 'off',
-    },
-    rules: {
-      'react/no-unescaped-entities': 'off',
-      '@typescript-eslint/no-require-imports': 'off',
-      'react-hooks/exhaustive-deps': 'warn',
-      '@next/next/no-img-element': 'warn',
-      // Next 16's preset enables React Compiler-oriented rules. This app does
-      // not enable the compiler yet, and its legacy stateful components use
-      // valid effect/ref patterns that those advisory rules intentionally
-      // reject. Keep the correctness rules used before the migration while
-      // the remaining JS components are converted deliberately.
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/refs': 'off',
-      'react-hooks/purity': 'off',
-      'react-hooks/immutability': 'off',
-    },
-  },
-  globalIgnores([
-    'client/**',
-    'node_modules/**',
-    '.next/**',
-    'documents/**',
-    'coverage/**',
-  ]),
+  ...nextTs,
+  { files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'], rules: { 'no-restricted-syntax': ['error',
+    ban(`Literal[value=${C}]`), ban(`TemplateElement[value.raw=${C}]`), ban(`JSXText[value=${C}]`)] } },
+  { files: ['**/*.js'], rules: { '@typescript-eslint/no-require-imports': 'off' } },
+  globalIgnores(['.next/**', 'out/**', 'coverage/**', 'next-env.d.ts']),
 ]);

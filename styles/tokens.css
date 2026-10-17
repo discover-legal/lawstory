@@ -1,0 +1,43 @@
+/*
+ * Design tokens: the ONLY place colour, type, radius and shadow values live.
+ * Components and globals.css use var(--…) only (lint rule + __tests__/site/tokens.test.ts).
+ *
+ * This file is also the neutral fallback look. A visual direction is picked by importing exactly
+ * one file from styles/directions/ after this one in app/layout.tsx; a direction file redeclares
+ * every token below (light block and dark block) and nothing else. No direction is picked yet.
+ *
+ * --ok / --wait / --stop are status colours only (verified, waiting on a person, stopped).
+ */
+:root {
+  --bg: #f2f3f5;
+  --surface: #ffffff;
+  --ink: #1a1f2b;
+  --muted: #535967;
+  --line: #d6d9e0;
+  --accent: #24477a;
+  --accent-ink: #ffffff;
+  --ok: #2e6b4f;
+  --wait: #8a5a00;
+  --stop: #b42318;
+  --shadow-raised: 0 1px 2px rgba(26, 31, 43, 0.08), 0 8px 24px -12px rgba(26, 31, 43, 0.25);
+  --font-display: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-card: 8px;
+  --radius-control: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161d;
+    --surface: #1a1f29;
+    --ink: #e7e9ee;
+    --muted: #a0a6b2;
+    --line: #2d3442;
+    --accent: #9db7e0;
+    --accent-ink: #10192a;
+    --ok: #7cc6a0;
+    --wait: #e5b45a;
+    --stop: #f2796b;
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  }
+}

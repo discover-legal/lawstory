@@ -1,0 +1,35 @@
+/* Direction B, "Protocol": systematic, verification-first; colour only ever means status.
+   Source: ui-directions/b.html. Token overrides only. Webfont (Schibsted Grotesk) not bundled until picked. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --ink: #0e1a2b;
+  --muted: #56637a;
+  --line: #cdd5df;
+  --accent: #0e1a2b;
+  --accent-ink: #ffffff;
+  --ok: #0b7a75;
+  --wait: #a85f00;
+  --stop: #b42318;
+  --shadow-raised: none;
+  --font-display: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: 10px;
+  --radius-control: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c131c;
+    --surface: #121b26;
+    --ink: #e6ecf2;
+    --muted: #93a1b5;
+    --line: #253244;
+    --accent: #e6ecf2;
+    --accent-ink: #0c131c;
+    --ok: #3cc9be;
+    --wait: #f0a43a;
+    --stop: #f2796b;
+    --shadow-raised: none;
+  }
+}
