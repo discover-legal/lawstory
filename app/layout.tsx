@@ -1,62 +1,36 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
-import Providers from './providers';
-import { getCurrentSession } from '@/lib/auth';
-import './globals.css';
+import Link from 'next/link';
+import '@/styles/tokens.css';
+// Visual direction: none picked yet. Picking one is this single line, e.g.
+// import '@/styles/directions/protocol.css';
+import '@/styles/globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://discover.legal'),
-  title: {
-    default: 'discover.legal — Legal Technology Consultancy',
-    template: '%s | discover.legal',
-  },
+  title: { default: 'discover.legal: legal technology consultancy', template: '%s | discover.legal' },
   description:
-    'Legal technology consultancy for law firms and legal teams: selection, custom builds, managed services and advisory. Free solutions: discover.legal Documents and the open-source BigLaw platform.',
+    'Legal technology consultancy for law firms: independent selection, client-owned software, managed operation and fractional technical leadership.',
   applicationName: 'discover.legal',
-  authors: [{ name: 'discover.legal' }],
-  icons: {
-    icon: [
-      { url: '/favicon.ico' },
-      { url: '/logo512.png', type: 'image/png', sizes: '512x512' },
-      { url: '/logo512.png', type: 'image/png', sizes: '192x192' },
-    ],
-    apple: '/logo512.png',
-  },
-  manifest: '/manifest.json',
-  other: {
-    'facebook-domain-verification': '6a8hixmvx9gtrerhvtbxzcgn06h9mg',
-  },
 };
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  themeColor: '#2563eb',
-};
+export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Pre-populate the client-side UserProvider with the server-side session so
-  // useUser() returns the user on the very first render instead of starting
-  // with isLoading:true. Without this, the editor's initialization effect fires
-  // before auth resolves, marking the document as initialized while
-  // isAuthenticated is still false — the document is then never created.
-  const session = await getCurrentSession();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-LZE32YYQ9P"
-          strategy="afterInteractive"
-        />
-        <Script src="/gtm.js" strategy="afterInteractive" />
-      </head>
       <body>
-        <Providers user={session?.user}>{children}</Providers>
+        <a className="skip" href="#main">Skip to content</a>
+        <header className="site-head">
+          <div className="wrap">
+            <Link className="mark" href="/">discover.legal</Link>
+          </div>
+        </header>
+        <main id="main" className="wrap">{children}</main>
+        <footer className="site-foot">
+          <div className="wrap">
+            <p>discover.legal is a legal technology consultancy, not a law firm, and does not give legal advice.</p>
+          </div>
+        </footer>
       </body>
     </html>
   );

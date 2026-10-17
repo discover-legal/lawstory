@@ -1,0 +1,13 @@
+{
+  "_comment": "Line budgets for scripts/loc-budget.mjs (exact shape and positive integers, or the gate fails). Entries must sum to <= total. maxFile is the per-file cap; files{} may raise one file, never above the script's hard cap of 2,000. PLAN.md \"Line budget allocation\": which PR fills each entry.",
+  "total": 14447,
+  "maxFile": 600,
+  "files": {},
+  "entries": {
+    "__tests__": 4893, "core": 4890, "app": 785, "demo": 740, "components": 710, "docs": 550, "content": 345,
+    "README.md": 300, "styles": 250, "scripts": 180, "e2e": 100, ".github": 100, "next.config.mjs": 100, "evidence": 85,
+    "CLAUDE.md": 70, "purge-log.md": 60, "eslint.config.mjs": 50, "package.json": 45, "Dockerfile": 35, "render.yaml": 30,
+    "tsconfig.json": 25, "tools": 20, ".gitignore": 16, ".dockerignore": 16, "jest.config.js": 15, ".env.example": 15,
+    ".gitattributes": 10, "SECURITY.md": 6, "public": 5, ".nvmrc": 1
+  }
+}

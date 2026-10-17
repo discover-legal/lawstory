@@ -1,0 +1,35 @@
+/* Direction A, "Case File": paper, index tabs, stacked sheets. Source: ui-directions/a.html.
+   Token overrides only. Webfonts (Archivo, Spectral) are not bundled until this direction is picked. */
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --ink: #1d2433;
+  --muted: #4a5262;
+  --line: #d9dcd3;
+  --accent: #2f5d50;
+  --accent-ink: #ffffff;
+  --ok: #2f5d50;
+  --wait: #7a5c0e;
+  --stop: #b3261e;
+  --shadow-raised: 0 1px 0 #d9dcd3, 3px 3px 0 -1px #ffffff, 3px 3px 0 0 #d9dcd3, 6px 6px 0 -1px #ffffff, 6px 6px 0 0 #d9dcd3;
+  --font-display: "Archivo Narrow", Archivo, "Arial Narrow", system-ui, sans-serif;
+  --font-body: Spectral, Georgia, "Times New Roman", serif;
+  --radius-card: 2px;
+  --radius-control: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171b22;
+    --surface: #1f242d;
+    --ink: #e7e9e3;
+    --muted: #a9afa6;
+    --line: #343a45;
+    --accent: #7fb8a6;
+    --accent-ink: #10241e;
+    --ok: #7fb8a6;
+    --wait: #e2c779;
+    --stop: #f0776e;
+    --shadow-raised: 0 1px 0 #343a45, 3px 3px 0 -1px #1f242d, 3px 3px 0 0 #343a45, 6px 6px 0 -1px #1f242d, 6px 6px 0 0 #343a45;
+  }
+}
