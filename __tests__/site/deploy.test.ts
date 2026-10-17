@@ -1,4 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 // Static checks of the deploy contract: render.yaml, the Dockerfile, .nvmrc and the CI workflow.
@@ -22,10 +25,12 @@ describe('render.yaml (production after cutover)', () => {
   const { yaml, scalars, env } = renderService();
   it('is one Docker web service that updates the existing production service in place', () => {
     expect(scalars).toEqual({ name: 'affidavit-maker', runtime: 'docker', plan: 'starter', region: 'oregon',
-      branch: 'main', dockerfilePath: './Dockerfile', healthCheckPath: '/api/health', autoDeploy: 'true', numInstances: '1' });
+      branch: 'main', dockerfilePath: './Dockerfile', healthCheckPath: '/api/health', autoDeploy: 'true', numInstances: '1',
+      maxShutdownDelaySeconds: '60' });
   });
-  it('has no pre-deploy command, disk, database or cron', () => {
-    expect(yaml).not.toMatch(/preDeployCommand|disk|databases|type: cron|startCommand/);
+  it('has no pre-deploy command, database or cron; a disk only as the old stanza PLAN C may restore until P2', () => {
+    const OLD_DISK = '    disk:\n      name: affidavit-documents\n      mountPath: /app/documents\n      sizeGB: 10\n';
+    expect(yaml.replace(OLD_DISK, '')).not.toMatch(/preDeployCommand|disk|databases|type: cron|startCommand/);
   });
   it('builds production as indexable and leaves the other public settings to the dashboard', () => {
     expect(env).toEqual([['NEXT_PUBLIC_SITE_URL', 'value', 'https://discover.legal'], ['NEXT_PUBLIC_BOOKING_URL', 'sync', 'false'],
@@ -56,11 +61,21 @@ describe('Dockerfile', () => {
 });
 
 describe('CI workflow', () => {
-  it('runs on a pinned runner with Node from .nvmrc, once per change', () => {
+  it('runs on a pinned runner with Node from .nvmrc in both jobs, once per change', () => {
     expect([...ci.matchAll(/runs-on: (\S+)/g)].map((m) => m[1])).toEqual(['ubuntu-24.04', 'ubuntu-24.04']);
-    expect(ci).toMatch(/node-version-file: \.nvmrc/);
+    expect(ci.match(/node-version-file: \.nvmrc/g)).toHaveLength(2);
     expect(ci).not.toMatch(/node-version:/);
     expect(ci).toMatch(/group: ci-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/);
+  });
+  it('runs on pushes to main (production after cutover) and site-v6 and PRs into either; only PR runs cancel', () => {
+    expect(ci).toMatch(/^on:\n {2}push:\n {4}branches: \[main, site-v6\]\n {2}pull_request:\n {4}branches: \[main, site-v6\]\n/m);
+    expect(ci).toContain("cancel-in-progress: ${{ github.event_name == 'pull_request' }}");
+  });
+  it('lets smoke wait for the server instead of a fixed sleep', () => {
+    expect(ci).not.toMatch(/sleep/);
+  });
+  it('Dependabot has no docker ecosystem (it cannot bump .nvmrc with the FROM lines)', () => {
+    expect(read('.github/dependabot.yml')).not.toMatch(/package-ecosystem: docker/);
   });
   it('pins every action by commit SHA and drops checkout credentials', () => {
     const uses = [...ci.matchAll(/uses: (\S+)/g)].map((m) => m[1]);
@@ -74,5 +89,46 @@ describe('CI workflow', () => {
       'npm run build', 'git status --porcelain', 'node scripts/smoke.mjs', 'docker build', 'timeout-minutes: 3']) {
       expect(ci).toContain(step);
     }
+  });
+});
+
+describe('build helpers', () => {
+  const node = (args: string[], env = {}) => new Promise<{ status: number | null; stderr: string }>((done) => {
+    const c = spawn(process.execPath, args, { cwd: repo, env: { ...process.env, ...env } });
+    let stderr = '';
+    c.stderr.on('data', (d) => { stderr += d; });
+    c.on('close', (status) => done({ status, stderr }));
+  });
+
+  it('smoke waits for a server that is still starting, and names an unreachable one', async () => {
+    const srv = createServer((_, res) => res.end('x'));
+    const port = 18220 + Math.floor(Math.random() * 10);
+    const run = node([join(repo, 'scripts', 'smoke.mjs'), `http://127.0.0.1:${port}`], { SMOKE_WAIT_S: '5' });
+    const listening = new Promise((up) => setTimeout(() => srv.listen(port, '127.0.0.1', () => up(null)), 1500));
+    const late = await run;
+    await listening;
+    await new Promise((down) => srv.close(down));
+    expect(late.stderr).not.toMatch(/not reachable/);
+    expect(late.stderr).toMatch(/SMOKE FAIL: \/ CSP/); // it reached the server, which is not the site
+    const none = await node([join(repo, 'scripts', 'smoke.mjs'), `http://127.0.0.1:${port}`], { SMOKE_WAIT_S: '1' });
+    expect(none.status).toBe(1);
+    expect(none.stderr).toMatch(/not reachable \(ECONNREFUSED\)/);
+  }, 20_000);
+
+  it('the build fails when any app route is not prerendered', () => {
+    const dist = mkdtempSync(join(tmpdir(), 'dist-'));
+    mkdirSync(join(dist, 'standalone'));
+    mkdirSync(join(dist, 'static'));
+    writeFileSync(join(dist, 'standalone', 'server.js'), '');
+    const build = (routes: string[]) => {
+      writeFileSync(join(dist, 'app-path-routes-manifest.json'), JSON.stringify({ '/page': '/', '/research/page': '/research' }));
+      writeFileSync(join(dist, 'prerender-manifest.json'), JSON.stringify({ routes: Object.fromEntries(routes.map((r) => [r, {}])) }));
+      return spawnSync(process.execPath, [join(repo, 'scripts', 'standalone-assets.mjs'), dist], { cwd: dist, encoding: 'utf8' });
+    };
+    const bad = build(['/']);
+    expect(bad.status).toBe(1);
+    expect(bad.stderr).toContain('not prerendered (every route must be static): /research');
+    expect(build(['/', '/research']).status).toBe(0);
+    rmSync(dist, { recursive: true, force: true });
   });
 });

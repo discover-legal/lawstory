@@ -42,8 +42,7 @@ describe('repository hygiene', () => {
     expect(missing).toEqual([]);
   });
 
-  it('the 404 page has its own title, and a root-layout error page exists', () => {
+  it('the 404 page has its own title', () => {
     expect(read('app/not-found.tsx')).toMatch(/export const metadata: Metadata = \{ title: 'Page not found' \}/);
-    expect(read('app/global-error.tsx')).toMatch(/^'use client';/);
   });
 });

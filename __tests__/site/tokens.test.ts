@@ -1,11 +1,18 @@
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import LITERALS from '@/styles/colour-literals.json';
+import LITERALS from '@/scripts/colour-literals.json';
 
 const repo = join(__dirname, '..', '..');
 const styles = join(repo, 'styles');
 const read = (f: string) => readFileSync(join(styles, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+/** [property, value] pairs of `css` with a colour literal in the value; only a bare `var(--token)` is stripped. */
+function colourLiterals(css: string): string[][] {
+  const colour = new RegExp(`${LITERALS.hex}|${LITERALS.functions}|\\b(?:${LITERALS.named.join('|')})\\b`, 'i');
+  return [...css.matchAll(/([\w-]+)\s*:\s*([^;{}]+)/g)].map((m) => [m[1], m[2].trim()])
+    .filter(([, v]) => colour.test(v.replace(/var\(--[\w-]+\)/g, '')));
+}
 
 type Block = { scheme: 'light' | 'dark'; selector: string; decls: Map<string, string> };
 
@@ -101,11 +108,14 @@ describe('design tokens', () => {
     expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 5);
   });
 
+  it('the globals scan sees literals in var() fallbacks, and only bare var(--token) is exempt', () => {
+    expect(colourLiterals('body { color: var(--ink, #ff0000); background: var(--bg, red); border-color: var(--line) }'))
+      .toEqual([['color', 'var(--ink, #ff0000)'], ['background', 'var(--bg, red)']]);
+  });
+
   it('globals.css uses tokens only: no colour literal, type/radius/shadow via tokens, every var() a token', () => {
     const css = read('globals.css');
-    const values = [...css.matchAll(/([\w-]+)\s*:\s*([^;{}]+)/g)].map((m) => [m[1], m[2].replace(/var\([^)]*\)/g, '')]);
-    const colour = new RegExp(`${LITERALS.hex}|${LITERALS.functions}|\\b(?:${LITERALS.named.join('|')})\\b`, 'i');
-    expect(values.filter(([, v]) => colour.test(v))).toEqual([]);
+    expect(colourLiterals(css)).toEqual([]);
     const raw = [...css.matchAll(/([\w-]+)\s*:\s*([^;{}]+)/g)].map((m) => [m[1], m[2].trim()]);
     const needs: Record<string, RegExp> = { 'font-family': /^var\(--font-/, font: /var\(--font-|^inherit$/,
       'border-radius': /^var\(--radius-/, 'box-shadow': /^var\(--shadow-|^none$/ };

@@ -1,6 +1,14 @@
 // HTTP smoke of a running build (CI runs it against the standalone server and the Docker image).
-// Usage: node scripts/smoke.mjs <baseUrl> [--indexable]. Exits 1 and lists every failed check.
+// Usage: node scripts/smoke.mjs <baseUrl> [--indexable]. Waits up to SMOKE_WAIT_S (default 30) seconds
+// for the server to accept connections, then exits 1 and lists every failed check.
 const [base, flag] = process.argv.slice(2);
+const deadline = Date.now() + (Number(process.env.SMOKE_WAIT_S) || 30) * 1000;
+for (;;) {
+  try { await fetch(`${base}/api/health`); break; } catch (e) {
+    if (Date.now() > deadline) { console.error(`SMOKE FAIL: ${base} not reachable (${e.cause?.code ?? e.message})`); process.exit(1); }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+}
 const fails = [];
 const check = (ok, what) => { if (!ok) fails.push(what); };
 const get = async (p) => { const r = await fetch(base + p, { redirect: 'manual' }); return { r, body: await r.text() }; };

@@ -52,18 +52,46 @@ describe('scripts/loc-budget.mjs', () => {
       failsWith(`file src/${name}: 11 lines > budget 10`);
     });
 
-  it('counts a last line without a newline, and caps bytes so a one-line file cannot dodge', () => {
+  it('counts a last line without a newline; LF, CRLF and a lone CR each end a line', () => {
     tree({ ...ok, 'src/b.ts': 'x\n'.repeat(5) + 'y' });
     expect(run().stdout).toMatch(/^ *14 \/ +15 {2}src/m);
-    tree({ ...ok, 'src/min.json': 'x'.repeat(1001) }); // cap 10 lines -> 1,000 bytes
-    failsWith('file src/min.json: 1001 bytes > byte cap 1000');
+    tree({ ...ok, 'src/b.ts': 'x\r\n'.repeat(6) });
+    expect(run().stdout).toMatch(/^ *14 \/ +15 {2}src/m);
+    tree({ ...ok, 'src/notes.md': 'x\r'.repeat(11) }); // a CR-only file is 11 lines, not 1
+    failsWith('file src/notes.md: 11 lines > budget 10');
   });
 
-  it('fails a code line over 200 bytes (minified code), but allows one in data', () => {
-    tree({ ...ok, 'src/b.ts': `${'y'.repeat(201)}\n` });
-    failsWith('file src/b.ts: a 201-byte line > 200 (code)');
-    tree({ ...ok, 'src/b.json': `${'y'.repeat(201)}\n` });
-    expect(run().status).toBe(0);
+  it.each(['b.ts', 'b.json', 'b.py', 'b.md', 'b.svg', 'b.yml', 'b.css'])(
+    'charges a long line in src/%s once per started 200 bytes', (name) => {
+      tree({ ...ok, 'src/b.ts': lines(1), [`src/${name}`]: `${'y'.repeat(200)}\n${'y'.repeat(201)}\n${'y'.repeat(1801)}` });
+      failsWith(`file src/${name}: 13 lines > budget 10`); // 1 + 2 + 10
+    });
+
+  it('with the real budgets, one-line data and code are charged for their size (2.4 MB of JSON cannot be 40 lines)', () => {
+    const real = join(repo, 'scripts', 'loc-budgets.json');
+    tree({ 'tools/loc.py': `import sys;${Array.from({ length: 5000 }, (_, i) => `x${i}=${i}`).join(';')}\n` });
+    const py = run(dir, ['--budgets', real]);
+    expect(py.status).toBe(1);
+    expect(py.stderr).toMatch(/entry tools: \d{3} lines > budget 20/);
+    const blobs = Object.fromEntries(Array.from({ length: 40 }, (_, k) => [`content/blob${k}.json`, `{"k":"${'y'.repeat(59000)}"}\n`]));
+    tree(blobs);
+    const json = run(dir, ['--budgets', real]);
+    expect(json.stdout).toMatch(/^ *11840 \/ +\d+ {2}content/m); // 40 x ceil(59,010 / 200)
+    expect(json.stderr).toMatch(/entry content: 11840 lines > budget/);
+  });
+
+  it('a one-line file over 400,000 bytes breaks the 2,000-line hard cap whatever its override', () => {
+    tree({ 'src/tape.jsonl': 'y'.repeat(400_001) }, { total: 9000, maxFile: 600, files: { 'src/tape.jsonl': 2000 }, entries: { src: 8000, '.gitignore': 2 } });
+    failsWith('file src/tape.jsonl: 2001 lines > budget 2000');
+  });
+
+  it('a path named like an Object.prototype key gets the default cap, not a function', () => {
+    tree({ ...ok, 'src/a.ts': lines(1), 'src/b.ts': lines(1), constructor: lines(11), toString: lines(1) });
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('file constructor: 11 lines > budget 10');
+    expect(r.stderr).toContain('entry constructor: 11 lines, no budget');
+    expect(r.stderr).toContain('entry toString: 1 lines, no budget');
   });
 
   it.each([
@@ -73,6 +101,13 @@ describe('scripts/loc-budget.mjs', () => {
   ])('fails %s instead of skipping it as binary', (_, path, body) => {
     tree({ ...ok, [path]: body });
     failsWith(`file ${path}: not UTF-8 text`);
+  });
+
+  it('counts a text file that wears a binary extension, and caps a real binary at 1 MB', () => {
+    tree({ ...ok, 'src/tape.pdf': lines(11) });
+    failsWith('file src/tape.pdf: 11 lines > budget 10');
+    tree({ ...ok, 'src/huge.png': Buffer.concat([Buffer.from([0x89, 0, 0xff]), Buffer.alloc(1_000_000)]) });
+    failsWith('file src/huge.png: 1000003 bytes > binary cap 1000000');
   });
 
   it('fails a submodule, a symlink and a nested repository; skips only a file deleted from the worktree', () => {
@@ -95,13 +130,37 @@ describe('scripts/loc-budget.mjs', () => {
 
   it('no override can raise a file above 2,000 lines', () => {
     const big = { total: 9000, maxFile: 600, files: { 'src/tape.jsonl': 2500, 'src/ok.json': 2000 }, entries: { src: 8000, '.gitignore': 2 } };
-    tree({ 'src/tape.jsonl': lines(10), 'src/ok.json': lines(2001) }, big);
-    const r = run();
-    expect(r.status).toBe(1);
-    expect(r.stderr).toContain('override src/tape.jsonl: 2500 > hard cap 2000');
-    expect(r.stderr).toContain('file src/ok.json: 2001 lines > budget 2000');
+    tree({ 'src/tape.jsonl': lines(10) }, big);
+    failsWith('override src/tape.jsonl: 2500 > hard cap 2000');
+    tree({ 'src/ok.json': lines(2001) }, { ...big, files: { 'src/ok.json': 2000 } });
+    failsWith('file src/ok.json: 2001 lines > budget 2000');
     tree({ 'src/a.ts': lines(1) }, { ...big, maxFile: 2001, files: {} });
     failsWith('maxFile 2001 > hard cap 2000');
+  });
+
+  const BAD_BUDGETS: [string, unknown, string][] = [
+    ['missing maxFile', { total: 35, files: {}, entries: { src: 15 } }, 'budgets.maxFile: undefined is not a positive integer'],
+    ['typo key', { total: 35, maxfile: 10, files: {}, entries: { src: 15 } }, 'budgets: unknown key "maxfile"'],
+    ['string override', { ...BUDGETS, files: { 'src/a.ts': 'lots' } }, 'budgets.files["src/a.ts"]: "lots" is not a positive integer'],
+    ['string entry', { ...BUDGETS, entries: { ...BUDGETS.entries, src: '15' } }, 'budgets.entries["src"]: "15" is not a positive integer'],
+    ['missing total', { maxFile: 10, files: {}, entries: { src: 15 } }, 'budgets.total: undefined is not a positive integer'],
+    ['zero / fractional', { ...BUDGETS, maxFile: 0, total: 35.5 }, 'budgets.maxFile: 0 is not a positive integer'],
+    ['missing files map', { total: 35, maxFile: 10, entries: { src: 15 } }, 'budgets.files: not an object'],
+    ['an array', [1, 2], 'budgets file: not a JSON object'],
+  ];
+  it.each(BAD_BUDGETS)('fails before counting when the budgets file is invalid: %s', (_, budgets, msg) => {
+    tree({ ...ok, 'src/a.ts': lines(5000) }, budgets as Budgets);
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(msg);
+    expect(r.stdout).toBe(''); // nothing was counted against a broken budget
+  });
+
+  it('fails on a budgets file that is not JSON or does not exist', () => {
+    tree(ok);
+    writeFileSync(join(dir, 'budgets.json'), '{"total": 35,');
+    failsWith(/budgets file: .*JSON/);
+    expect(run(dir, ['--budgets', join(dir, 'nope.json')]).stderr).toMatch(/budgets file: ENOENT/);
   });
 
   it('exits 1 and names the entry when a top-level entry is over budget', () => {

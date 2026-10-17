@@ -1,17 +1,18 @@
-# site-v6 CI: one run per change. Pushes to site-v6, and every PR into site-v6 (PR branches,
-# Dependabot, forks); a PR's runs share one concurrency group. Two jobs in parallel, each under
-# 3 minutes (README "Test"). Actions pinned by commit SHA; Node from .nvmrc.
+# CI: one run per change. Pushes to main (production after the cutover) and site-v6, and every PR
+# into either (PR branches, Dependabot, forks; PR branches have no push trigger, so no double runs).
+# A PR's runs share one group and a newer push cancels the older; pushes to main/site-v6 never cancel.
+# Two jobs in parallel, each under 3 minutes (README "Test"). Actions pinned by SHA; Node from .nvmrc.
 name: ci
 on:
   push:
-    branches: [site-v6]
+    branches: [main, site-v6]
   pull_request:
-    branches: [site-v6]
+    branches: [main, site-v6]
 permissions:
   contents: read
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   NEXT_TELEMETRY_DISABLED: '1'
 jobs:
@@ -43,7 +44,7 @@ jobs:
       - name: standalone bundle has no sharp, and its server passes the smoke
         run: |
           test ! -e .next/standalone/node_modules/sharp && test ! -e .next/standalone/node_modules/@img
-          PORT=3000 node .next/standalone/server.js & sleep 2
+          PORT=3000 node .next/standalone/server.js &
           node scripts/smoke.mjs http://localhost:3000
   image:
     runs-on: ubuntu-24.04
@@ -52,11 +53,14 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
       - run: docker build -t site:ci .
-      - name: the image runs as node, cannot rewrite its code, has no entrypoint, and passes the smoke
+      - name: the image passes the smoke, runs as node, cannot rewrite its code and has no entrypoint
         run: |
-          docker run -d --name site -p 3000:3000 site:ci && sleep 3
+          docker run -d --name site -p 3000:3000 site:ci
+          node scripts/smoke.mjs http://localhost:3000
           test "$(docker exec site id -un)" = node
           if docker exec site touch /app/server.js; then echo 'app files are writable'; exit 1; fi
           test "$(docker inspect -f '{{json .Config.Entrypoint}}' site:ci)" = null
-          node scripts/smoke.mjs http://localhost:3000

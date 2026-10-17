@@ -16,8 +16,6 @@ h3 { font-size: 1.2rem; }
 p { margin: 0; }
 a { color: var(--accent); text-underline-offset: 3px; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-control); }
-button.link { font: inherit; color: var(--accent); background: none; border: 0; padding: 0;
-  text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 16px; top: 16px; background: var(--surface); padding: 8px 12px; z-index: 1; }
 

@@ -19,7 +19,8 @@ const CSP = {
   'form-action': ["'none'"], // the site has no forms
   'base-uri': ["'none'"],
   'object-src': ["'none'"],
-  ...(dev ? {} : { 'upgrade-insecure-requests': [] }),
+  // Only for an https build: on plain http (a LAN phone, a Docker host IP) it would break every asset.
+  ...(!dev && process.env.NEXT_PUBLIC_SITE_URL?.startsWith('https://') ? { 'upgrade-insecure-requests': [] } : {}),
 };
 export const csp = Object.entries(CSP).map(([k, v]) => [k, ...v].join(' ')).join('; ');
 

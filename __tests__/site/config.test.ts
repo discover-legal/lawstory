@@ -53,6 +53,14 @@ describe('next.config.mjs', () => {
     expect(header(prod, '/', 'Content-Security-Policy')[0]).not.toMatch(/google|https?:/);
   });
 
+  it('upgrades insecure requests only in an https build (plain-http hosts would lose every asset)', () => {
+    expect(header(prod, '/', 'Content-Security-Policy')[0]).toMatch(/; upgrade-insecure-requests$/);
+    expect(header(load({ NEXT_PUBLIC_SITE_URL: 'https://site-v6.onrender.com' }), '/', 'Content-Security-Policy')[0]).toMatch(/upgrade-insecure/);
+    for (const c of [preview, dev, load({ NEXT_PUBLIC_SITE_URL: 'http://192.0.2.2:3000' })]) {
+      expect(header(c, '/', 'Content-Security-Policy')[0]).not.toMatch(/upgrade-insecure/);
+    }
+  });
+
   it('adds eval (and inline style) to the CSP only under next dev', () => {
     const d = directives(header(dev, '/', 'Content-Security-Policy')[0]);
     expect(d.get('script-src')).toBe("'self' 'unsafe-inline' 'unsafe-eval'");

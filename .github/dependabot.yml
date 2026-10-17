@@ -1,5 +1,6 @@
 # Takes effect once this file is on the default branch (main, at cutover). Updates target site-v6.
-# cooldown: only versions at least 14 days old (the repo's pinning rule).
+# cooldown: only versions at least 14 days old (the repo's pinning rule). No docker ecosystem: it
+# would bump the FROM lines but not .nvmrc (deploy.test requires both); bump the three together by hand.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -9,11 +10,6 @@ updates:
     cooldown: { default-days: 14 }
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
-    directory: /
-    target-branch: site-v6
-    schedule: { interval: weekly }
-    cooldown: { default-days: 14 }
-  - package-ecosystem: docker
     directory: /
     target-branch: site-v6
     schedule: { interval: weekly }

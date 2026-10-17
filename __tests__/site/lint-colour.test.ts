@@ -21,52 +21,81 @@ function lintAll(cases: [string, string][]): string[][] {
 }
 
 const COLOUR = /^Colour literal outside styles\//;
-const BAD: [string, string][] = [
-  ['hex in a string', "export const a = '#ABCDEF';"],
-  ['short hex', "export const a = '#f00';"],
-  ['rgb()', "export const a = 'rgb(1, 2, 3)';"],
-  ['hwb()', "export const a = 'hwb(0 0% 0%)';"],
-  ['color()', "export const a = 'color(srgb 1 0 0)';"],
-  ['color-mix()', "export const a = 'color-mix(in srgb, red 50%, blue)';"],
-  ['oklch() in a template', 'export const a = `oklch(0.9 0 0)`;'],
-  ['hex in JSX text', 'export const a = <p>#123456</p>;'],
-  ['named colour in an SVG fill', 'export const a = <svg><rect fill="crimson" /></svg>;'],
-  ['named colour in a colour property', "export const a = { backgroundColor: 'White' };"],
+const STYLE = /^Inline style/;
+// Every form found by the S1 committee (rounds 1 and 2), each a literal (not assembled at runtime).
+const BAD: [string, string, RegExp][] = [
+  ['hex in a string', "export const a = '#ABCDEF';", COLOUR],
+  ['short hex', "export const a = '#f00';", COLOUR],
+  ['rgb()', "export const a = 'rgb(1, 2, 3)';", COLOUR],
+  ['hwb()', "export const a = 'hwb(0 0% 0%)';", COLOUR],
+  ['color()', "export const a = 'color(srgb 1 0 0)';", COLOUR],
+  ['color-mix()', "export const a = 'color-mix(in srgb, red 50%, blue)';", COLOUR],
+  ['oklch() in a template', 'export const a = `oklch(0.9 0 0)`;', COLOUR],
+  ['named colour in an SVG fill', 'export const a = <svg><rect fill="crimson" /></svg>;', COLOUR],
+  ['template literal in a fill', 'export const a = <svg><rect fill={`crimson`} /></svg>;', COLOUR],
+  ['variable in a fill', "const c = 'crimson';\nexport const a = <svg><rect fill={c} /></svg>;", COLOUR],
+  ['hyphenated SVG attribute', 'export const a = <svg><stop stop-color="red" /></svg>;', COLOUR],
+  ['bgcolor', 'export const a = <table bgcolor="red" />;', COLOUR],
+  ['viewport themeColor', "export const viewport = { themeColor: 'black' };", COLOUR],
+  ['themeColor media list', "export const viewport = { themeColor: [{ media: '(prefers-color-scheme: dark)', color: 'black' }] };", COLOUR],
+  ['string-keyed colour property', "export const a = { 'color': 'red' };", COLOUR],
+  ['computed template key', "export const a = { [`fill`]: 'red' };", COLOUR],
+  ['quoted keys spread onto an SVG', "const paint = { 'fill': 'crimson', 'stroke': 'black' };\nexport const a = <rect {...paint} />;", COLOUR],
+  ['shorthand colour property', "const fill = 'red';\nexport const a = { fill };", COLOUR],
+  ['document colour assignment', "document.bgColor = 'black';", COLOUR],
+  ['setAttribute of a colour', "document.body.setAttribute('fill', 'red');", COLOUR],
+  ['CSS declaration in a template', 'export const a = `body { color: red; border-radius: 3px }`;', COLOUR],
+  ['CSS shorthand with a named colour', "export const a = 'p{border:1px solid rebeccapurple}';", COLOUR],
+  ['style prop', "export const a = <p style={{ borderRadius: 3, fontFamily: 'Arial' }}>x</p>;", STYLE],
+  ['createElement style object', "import { createElement } from 'react';\nexport const a = createElement('p', { style: { fontFamily: 'Arial' } });", STYLE],
+  ['computed style key', "import { createElement } from 'react';\nexport const a = createElement('p', { ['style']: {} });", STYLE],
+  ['<style> element', "export const a = <style>{'p { margin: 0 }'}</style>;", STYLE],
+  ['createElement("style")', "import { createElement } from 'react';\nexport const a = createElement('style', null, 'p{margin:0}');", STYLE],
+  ['createElement(`style`)', "import { createElement } from 'react';\nexport const a = createElement(`style`);", STYLE],
+  ['dangerouslySetInnerHTML', "export const a = <div dangerouslySetInnerHTML={{ __html: '<b>x</b>' }} />;", STYLE],
+  ['DOM style assignment', "document.body.style.background = 'black';", STYLE],
+  ['setProperty on a token', "document.documentElement.style.setProperty('--bg', 'black');", STYLE],
+  ['bracket style access', "document.body['style'].margin = '0';", STYLE],
+  ['innerHTML', "document.body.innerHTML = '<p>x</p>';", STYLE],
+  ['setAttribute("style")', "document.body.setAttribute('style', 'margin:0');", STYLE],
+  ['theme-color meta tag', 'export const a = <meta name="theme-color" content="black" />;', COLOUR],
+  ['msapplication-TileColor', "export const metadata = { other: { 'msapplication-TileColor': 'black' } };", COLOUR],
+  ['SVG animate to a colour', 'export const a = <svg><animate attributeName="fill" to="red" /></svg>;', STYLE],
+  ['insertRule CSS text', "document.styleSheets[0].insertRule('p{filter:drop-shadow(0 0 2px red)}');", COLOUR],
+  ['feFlood floodColor', 'export const a = <svg><feFlood floodColor="red" /></svg>;', COLOUR],
+];
+// Copy, anchors and token-valued slots that must stay legal (round-2 false positives included).
+const GOOD = [
+  '<p className="muted">red flags and black-letter law</p>', '<a href="/services#add-ons">Add-ons</a>',
+  '<p>Fixed in PR #350 and issue #128.</p>', '<p>Pick any color(s) you like.</p>', "{ tone: 'red', link: '/services' }",
+  "'Pick any color(s) you like.'", "'Status: green light'", '<svg><rect fill="currentColor" stroke="none" /></svg>',
+  '<svg><path fill="var(--accent)" /></svg>', "{ themeColor: 'var(--bg)', color: 'inherit' }", '<a className="skip" href="#main">Skip</a>',
 ];
 
-const FILES = ['app/x.tsx', 'app/x.ts', 'components/x.jsx', 'components/x.js', 'components/x.mjs'];
-const STYLES = ["export const a = <p style={{ borderRadius: 3, fontFamily: 'Arial' }}>x</p>;",
-  "import { createElement } from 'react';\nexport const a = createElement('p', { style: { fontFamily: 'Arial' } });",
-  "export const a = <style>{'p { color: red }'}</style>;"];
-const OK = "export const a = <p className=\"muted\">red flags and black-letter law</p>;\nexport const t = { tone: 'red' };";
+const FILES = ['app/x.tsx', 'app/x.ts', 'components/x.jsx', 'components/x.js', 'components/x.mjs', 'content/site.ts'];
 let results: string[][];
 beforeAll(() => {
   results = lintAll([...BAD.map(([, code]) => ['components/Probe.tsx', code] as [string, string]),
     ...FILES.map((f) => [f, "export const a = '#00ff00';"] as [string, string]),
-    ['app/x.tsx', OK], ['scripts/x.mjs', "export const a = '#00ff00';"],
-    ...STYLES.map((code) => ['app/x.tsx', code] as [string, string])]);
+    ...GOOD.map((g) => ['app/x.tsx', `export const a = ${g};`] as [string, string]),
+    ['scripts/x.mjs', "export const a = '#00ff00';"]]);
 }, 60_000);
 const lint = (i: number) => results[i];
 
-describe('ESLint: no colour literal (or inline style) in app/ and components/', () => {
-  it.each(BAD.map(([name], i) => [name, i] as const))('flags %s', (_, i) => {
-    expect(lint(i)).toEqual([expect.stringMatching(COLOUR)]);
+describe('ESLint: colour only from tokens, no inline style, in app/, components/ and content/', () => {
+  it.each(BAD.map(([name, , kind], i) => [name, i, kind] as const))('flags %s', (_, i, kind) => {
+    expect(lint(i)).toEqual(expect.arrayContaining([expect.stringMatching(kind)]));
   });
 
   it.each(FILES.map((f, i) => [f, BAD.length + i] as const))('applies to %s', (_, i) => {
     expect(lint(i)).toEqual([expect.stringMatching(COLOUR)]);
   });
 
-  it.each(STYLES.map((code, i) => [code.split('\n').at(-1)!, BAD.length + FILES.length + 2 + i] as const))(
-    'flags inline style (type, radius and shadow included): %s', (_, i) => {
-      expect(lint(i)).toEqual(expect.arrayContaining([expect.stringMatching(/^Inline style/)]));
-    });
-
-  it('leaves copy and non-colour props alone', () => {
-    expect(lint(BAD.length + FILES.length)).toEqual([]);
+  it.each(GOOD.map((g, i) => [g, BAD.length + FILES.length + i] as const))('leaves alone: %s', (_, i) => {
+    expect(lint(i)).toEqual([]);
   });
 
-  it('does not apply outside app/ and components/ (styles live in CSS, scripts are tooling)', () => {
-    expect(lint(BAD.length + FILES.length + 1)).toEqual([]);
+  it('does not apply outside app/, components/ and content/ (styles live in CSS, scripts are tooling)', () => {
+    expect(lint(BAD.length + FILES.length + GOOD.length)).toEqual([]);
   });
 });
