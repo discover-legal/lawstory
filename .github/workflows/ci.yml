@@ -1,137 +1,66 @@
-name: CI
-
+# CI: one run per change. Pushes to main (production after the cutover) and site-v6, and every PR
+# into either (PR branches, Dependabot, forks; PR branches have no push trigger, so no double runs).
+# A PR's runs share one group and a newer push cancels the older; pushes to main/site-v6 never cancel.
+# Two jobs in parallel, each under 3 minutes (README "Test"). Actions pinned by SHA; Node from .nvmrc.
+name: ci
 on:
-  pull_request:
   push:
-    branches: [main]
-
+    branches: [main, site-v6]
+  pull_request:
+    branches: [main, site-v6]
 permissions:
   contents: read
-
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
 jobs:
-  unit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+  gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          node-version: 22
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type-check
-        run: npm run type-check
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests
-        run: npm test -- --ci --runInBand
-
-      - name: Audit complete dependency tree
-        run: npm audit --audit-level=high
-
-  e2e:
-    needs: unit
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: affidavit
-          POSTGRES_PASSWORD: affidavit
-          POSTGRES_DB: affidavit_e2e
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U affidavit -d affidavit_e2e"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
-    env:
-      DATABASE_URL: postgresql://affidavit:affidavit@127.0.0.1:5432/affidavit_e2e
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+      - run: npm ci --no-audit --no-fund
+      - run: npm audit --omit=dev
+      - run: npm run type-check
+      - run: npm run lint
+      - run: npm test -- --ci
+      - run: npm run loc
+      - run: npm run build
+      - name: build leaves the tree clean (no config rewritten by next build)
+        run: test -z "$(git status --porcelain)" || { git status --porcelain; exit 1; }
+      - name: standalone bundle has no sharp, and its server passes the smoke
+        run: |
+          test ! -e .next/standalone/node_modules/sharp && test ! -e .next/standalone/node_modules/@img
+          PORT=3000 node .next/standalone/server.js &
+          node scripts/smoke.mjs http://localhost:3000
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
     steps:
-      # setup-worktree.sh runs `git worktree add`, so we need real history.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build patched E2E worktree
-        run: bash e2e/setup-worktree.sh /tmp/e2e-app
-
-      - name: Point worktree at the CI Postgres service
-        # setup-worktree.sh writes a .env.local aimed at the local recipe's
-        # Postgres on :5433; rewrite it for the service container on :5432.
+          node-version-file: .nvmrc
+      - run: docker build -t site:ci .
+      - name: the image passes the smoke, runs as node, cannot rewrite its code and has no entrypoint
         run: |
-          sed -i "s#^DATABASE_URL=.*#DATABASE_URL=${DATABASE_URL}#" /tmp/e2e-app/.env.local
-          grep '^DATABASE_URL=' /tmp/e2e-app/.env.local
-
-      - name: Run migrations
-        working-directory: /tmp/e2e-app
-        run: node scripts/migrate.js
-
-      - name: Install Playwright driver + Chromium
-        working-directory: /tmp/e2e-app/e2e
-        run: |
-          npm init -y > /dev/null
-          npm i playwright
-          # Local `playwright` bin installs the Chromium build matching its
-          # own version (plus OS deps).
-          npx playwright install --with-deps chromium
-          # `playwright` exact-pins `playwright-core`, which npm hoists to
-          # node_modules/playwright-core here — so drive.mjs's
-          # `import { chromium } from 'playwright-core'` and this
-          # executablePath() resolution both use the exact playwright-core
-          # version whose Chromium build we just installed.
-          echo "CHROMIUM_PATH=$(node -e "console.log(require('playwright-core').chromium.executablePath())")" >> "$GITHUB_ENV"
-
-      - name: Start dev server on :3100
-        working-directory: /tmp/e2e-app
-        run: |
-          nohup npm run dev -- -p 3100 > /tmp/next-dev.log 2>&1 &
-          echo "waiting for /api/health..."
-          for i in $(seq 1 120); do
-            if curl -sf http://localhost:3100/api/health > /dev/null; then
-              echo "server ready after ${i}s"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "server did not become ready within 120s"
-          tail -n 100 /tmp/next-dev.log
-          exit 1
-
-      - name: Run E2E driver
-        working-directory: /tmp/e2e-app/e2e
-        run: |
-          mkdir -p shots
-          node drive.mjs
-
-      - name: Dump dev server log on failure
-        if: failure()
-        run: tail -n 300 /tmp/next-dev.log || true
-
-      - name: Upload screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-shots
-          path: /tmp/e2e-app/e2e/shots
-          if-no-files-found: ignore
+          docker run -d --name site -p 3000:3000 site:ci
+          node scripts/smoke.mjs http://localhost:3000
+          test "$(docker exec site id -un)" = node
+          if docker exec site touch /app/server.js; then echo 'app files are writable'; exit 1; fi
+          test "$(docker inspect -f '{{json .Config.Entrypoint}}' site:ci)" = null

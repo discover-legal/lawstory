@@ -1,212 +1,26 @@
+# Production service (applies at cutover, when site-v6 merges into main). The service keeps its
+# existing name so a Blueprint sync updates it in place instead of creating a second service.
+# Previews of site-v6 run on a separate free service created by hand (README, "Deploy"); never
+# apply this file to a preview. /api/health is healthy on the old and the new site (PLAN C).
+# maxShutdownDelaySeconds: 60 as on the old service (in-flight requests finish on a deploy).
 services:
   - type: web
     name: affidavit-maker
     runtime: docker
     plan: starter
-    dockerfilePath: ./Dockerfile
     region: oregon
     branch: main
-
-    preDeployCommand: node scripts/migrate.js
-    healthCheckPath: /api/ready
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
     autoDeploy: true
     numInstances: 1
     maxShutdownDelaySeconds: 60
-
-    disk:
-      name: affidavit-documents
-      mountPath: /app/documents
-      sizeGB: 10
-
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_TELEMETRY_DISABLED
-        value: '1'
-      - key: REQUIRE_PERSISTENT_STORAGE
-        value: 'true'
-
-      # Database. Set manually to the EXTERNAL connection URL
-      # (dpg-<id>.<region>-postgres.render.com): Render's external endpoint
-      # presents a publicly-trusted Let's Encrypt certificate, so
-      # DATABASE_CA_CERT can be the ISRG root and TLS verifies fully with
-      # hostname checking. (The blueprint-injected internal connectionString
-      # serves a self-signed cert with no obtainable CA, which would force
-      # fragile leaf-fingerprint pinning instead.)
-      - key: DATABASE_URL
-        sync: false
-      - key: DATABASE_POOL_MAX
-        value: '20'
-      # Statement-level cap so a runaway query can't hold a worker.
-      - key: DATABASE_STATEMENT_TIMEOUT_MS
-        value: '30000'
-      # Production fails closed unless a database trust anchor is set.
-      # Prefer the Render-supplied CA PEM bundle. For a private/self-signed
-      # server whose CA is unavailable, configure the out-of-band SHA-256
-      # leaf fingerprint instead.
-      - key: DATABASE_CA_CERT
-        sync: false
-      - key: DATABASE_CERT_SHA256
-        sync: false
-
-      # Edge-trust configuration. Render's edge appends one entry to XFF, so
-      # the rightmost value is the trusted client IP. If you add Cloudflare
-      # in front, change the provider and restrict direct origin access.
-      - key: TRUSTED_PROXY_PROVIDER
-        value: render
-      - key: TRUSTED_PROXY_HOPS
-        value: '1'
-      # Hard ceiling on any /api/* request body. Larger than the 10 MB
-      # evidence upload limit to give multipart framing headroom.
-      - key: API_MAX_BODY_BYTES
-        value: '26214400'
-      # Bound per-process in-memory limiter state under high-cardinality IPs.
-      - key: RATE_LIMIT_MAX_BUCKETS
-        value: '128'
-      - key: RATE_LIMIT_MAX_KEYS_PER_BUCKET
-        value: '10000'
-      # OPERATIONS REQUIREMENT: configure Render/WAF ingress to reject request
-      # bodies above 25 MB and Transfer-Encoding: chunked on buffered /api/*
-      # routes. The application fails closed on missing/invalid lengths, but a
-      # platform ingress cap is what prevents undeclared bytes reaching Node.
-
-      # Auth0 — server side
-      - key: AUTH0_SECRET
-        sync: false           # 32-byte random hex; openssl rand -hex 32
-      - key: AUTH0_BASE_URL
+      - key: NEXT_PUBLIC_SITE_URL
         value: https://discover.legal
-      - key: AUTH0_ISSUER_BASE_URL
-        sync: false           # https://your-tenant.auth0.com
-      - key: AUTH0_CLIENT_ID
-        sync: false
-      - key: AUTH0_CLIENT_SECRET
-        sync: false
-      - key: AUTH0_AUDIENCE
-        sync: false
-      - key: AUTH0_WEBHOOK_SECRET
-        sync: false
-      # Tighten the session cookie. Defaults of the v3 SDK already set
-      # HttpOnly + Secure (because AUTH0_BASE_URL is https). We force
-      # SameSite=Lax explicitly so an SDK default change can't loosen it,
-      # and bound the session lifetime.
-      #
-      # IMPORTANT — the v3 SDK reads cookie attributes from AUTH0_COOKIE_*
-      # (NOT AUTH0_SESSION_COOKIE_*); the latter are silently ignored.
-      # Source: node_modules/@auth0/nextjs-auth0/dist/config.js.
-      - key: AUTH0_COOKIE_SAME_SITE
-        value: lax
-      - key: AUTH0_COOKIE_SECURE
-        value: 'true'
-      - key: AUTH0_COOKIE_HTTP_ONLY
-        value: 'true'
-      - key: AUTH0_SESSION_ABSOLUTE_DURATION
-        value: '86400' # 24h hard ceiling on session length
-      - key: AUTH0_SESSION_INACTIVITY_DURATION
-        value: '3600'  # 1h rolling idle timeout
-
-      # Auth0 — exposed to the client bundle
-      - key: NEXT_PUBLIC_AUTH0_DOMAIN
-        sync: false
-      - key: NEXT_PUBLIC_AUTH0_CLIENT_ID
-        sync: false
-
-      # OpenAI / LLM
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: LLM_PROVIDER
-        value: openai
-      - key: LLM_MODEL
-        value: gpt-5.5
-      - key: OPENAI_MAX_TOKENS
-        value: '2000'
-      - key: OPENAI_TEMPERATURE
-        value: '0.3'
-
-      # Stripe
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-        sync: false
-      - key: PAYMENTS_MODE
-        value: live
-
-      # Donations — the app is free; this is the "buy us a coffee" link.
-      # Coffee links render only when set (build-time, baked into bundle).
-      - key: NEXT_PUBLIC_DONATION_URL
-        sync: false
-
-      # Consultancy scheduler (optional). CTAs are an obfuscated mailto when
-      # unset (build-time, baked into bundle).
       - key: NEXT_PUBLIC_BOOKING_URL
         sync: false
-
-      # File storage (PDFs, evidence)
-      # NOTE — local-disk storage is data-loss risk on multi-instance
-      # deploys. Plan migration to Render Object Storage / S3 before
-      # scaling beyond 1 replica.
-      - key: DOCUMENTS_PATH
-        value: /app/documents
-      - key: MAX_FILE_SIZE
-        value: '10485760'
-      - key: EVIDENCE_DOCUMENT_MAX_BYTES
-        value: '104857600'
-      - key: EVIDENCE_USER_MAX_BYTES
-        value: '262144000'
-      - key: EVIDENCE_DOCUMENT_MAX_FILES
-        value: '100'
-      - key: EVIDENCE_USER_MAX_FILES
-        value: '1000'
-
-      # Logging
-      - key: LOG_LEVEL
-        value: info
-      # Feature flags
-      - key: ENABLE_INTERNATIONAL
-        value: 'false'
-      - key: ENABLE_WEBHOOKS
-        value: 'true'
-      - key: ENABLE_ANALYTICS
-        value: 'true'
-      - key: MAINTENANCE_MODE
-        value: 'false'
-
-  - type: cron
-    name: affidavit-database-cleanup
-    runtime: node
-    plan: starter
-    region: oregon
-    branch: main
-    schedule: "17 3 * * *"
-    buildCommand: npm ci --omit=dev
-    startCommand: node scripts/cleanDatabase.js
-    envVars:
-      - key: NODE_ENV
-        value: production
-      # Same external URL + CA as the web service (see comment there).
-      - key: DATABASE_URL
+      - key: NEXT_PUBLIC_BIGLAW_DEMO_URL
         sync: false
-      - key: DATABASE_CA_CERT
+      - key: NEXT_PUBLIC_GA_ID
         sync: false
-      # Optional dead-man-switch URL (for example Healthchecks.io). The job
-      # calls it on success and appends /fail on failure.
-      - key: CLEANUP_HEARTBEAT_URL
-        sync: false
-
-databases:
-  # Paid flexible plan (Basic-256mb). Includes automated backups and no
-  # expiry, unlike the former `free` plan. Storage can be scaled up
-  # without downtime; bump `plan` to a larger flexible tier (e.g.
-  # basic-1gb, pro-4gb) as load grows. NOTE: flexible-plan slugs are
-  # hyphenated (basic-256mb), not underscored.
-  - name: affidavit-db
-    plan: basic-256mb
-    databaseName: affidavit_maker
-    user: affidavit_user
-    region: oregon
-    storageAutoscalingEnabled: true
-    ipAllowList: []
-
-# Disk-backed services cannot scale horizontally. Migrate evidence to object
-# storage before adding replicas.

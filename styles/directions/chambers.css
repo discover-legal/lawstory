@@ -1,0 +1,36 @@
+/* Direction C, "Chambers": ink-navy, claret actions, brass figures; partner-room.
+   Source: ui-directions/c.html. Token overrides only. Webfonts (Gloock, Manrope) not bundled until picked.
+   Dark --accent is lighter than the mockup claret (#b5445a, 3.3:1 on --bg) so links meet WCAG AA. */
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --ink: #1a1f2b;
+  --muted: #5b6170;
+  --line: #d6d9e0;
+  --accent: #7a2331;
+  --accent-ink: #ffffff;
+  --ok: #2e6b4f;
+  --wait: #8a5a00;
+  --stop: #a1261d;
+  --shadow-raised: 0 2px 0 rgba(26, 31, 43, 0.04), 0 30px 60px -36px rgba(26, 31, 43, 0.4);
+  --font-display: Gloock, Georgia, "Times New Roman", serif;
+  --font-body: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: 4px;
+  --radius-control: 999px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141924;
+    --surface: #1b2130;
+    --ink: #ece8e0;
+    --muted: #a3a8b4;
+    --line: #2f374a;
+    --accent: #d9768a;
+    --accent-ink: #1a0a0f;
+    --ok: #7cc6a0;
+    --wait: #e5b45a;
+    --stop: #f2796b;
+    --shadow-raised: 0 30px 60px -30px rgba(0, 0, 0, 0.7);
+  }
+}
