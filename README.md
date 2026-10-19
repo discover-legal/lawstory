@@ -2,7 +2,7 @@
 
 > **Status: under construction on `site-v6`.** This README is the contract for the clean-slate rewrite
 > (design: Option C). Each PR into `site-v6` makes part of it true and updates this file in the same PR.
-> Items marked **[S1]** exist now; items marked **[planned: S<N>]** do not exist yet. Production
+> Items marked **[S1]** or **[S2-sample]** exist now; items marked **[planned: S<N>]** do not exist yet. Production
 > (`main`) still serves the previous product until the cutover. The previous product (accounts,
 > payments, 110 jurisdictions, v1 engine) is preserved on the branch `archive/pre-pareback`.
 
@@ -10,7 +10,12 @@ discover.legal is the website of a **legal-technology consultancy**. It sells fo
 (independent selection), **Build** (client-owned software), **Run** (managed operation on the firm's
 own infrastructure) and **Advise** (fractional technical leadership). Each has packages and a clear
 next step; every price is "Price on request" until the owner sets numbers. It also shows two free
-products as **demos**:
+products as **demos**. **[S2-sample]** (a cut-down PR covering parts of S6/S7 so the site can go live
+early) ships both as **scripted sample walkthroughs** (typed data in `content/samples/`, fictional people,
+labelled "Sample walkthrough … not legal advice … nothing is saved"): `/demo/discover-legal` (interview
+turns → structured facts with quotes → a Form 8 style excerpt with Draft notes) and `/demo/biglaw`
+(matter → task → findings with exact/tolerant/excluded badges → memo with an Evidence Note), plus `/work`
+(honest status + consultancy, "Price on request"). The recorded replay and embed below are still planned:
 
 1. **discover.legal Documents (Ontario)** [planned: S2–S6, S10]. A step-through replay of one real
    recorded AI interview with a fictional Ontario applicant ("Marcus"). The visitor clicks *Next*, or
@@ -32,8 +37,11 @@ set, and then Google sets its own cookies (see Limitations).
 ```
 app/                         Next.js App Router. Every route is prerendered (`npm run build` fails otherwise;
                              a `[param]` route passes only with `dynamicParams = false`).
-  layout.tsx                 [S1] root layout: tokens, header, footer, metadata (Nav/Footer components: S7; GA: S6)
-  page.tsx                   [S1] / minimal home: positioning, 4 services, the products (prices, CTA, demo links: S7)
+  layout.tsx                 [S2-sample] root layout: tokens + Protocol, header nav, footer (#contact, spelled-out email); GA: S6
+  page.tsx                   [S2-sample] / home: positioning, CTA, the two products, how we work
+  work/page.tsx              [S2-sample] /work products with honest status, consultancy ("Price on request"), CTA
+  demo/{discover-legal,biglaw}/page.tsx  [S2-sample] sample walkthroughs (Stepper: one step with JS, all without)
+  sitemap.ts, robots.ts      [S2-sample] every route + allow only in the production build; else empty / Disallow: /
   not-found.tsx, icon.svg    [S1] 404 ("Page not found"), favicon
   services/page.tsx          [planned: S7] /services   packages ("Price on request"), pricing rules, FAQ
   documents/page.tsx         [planned: S6] /documents  framing, iframe, "for law firms" CTA
@@ -41,10 +49,11 @@ app/                         Next.js App Router. Every route is prerendered (`np
   biglaw/page.tsx            [planned: S7] /biglaw     BigLaw demo iframe or poster; run-it-yourself / managed CTAs
   research/page.tsx          [planned: S7] /research   open experiments with their real status and repositories
   contact/page.tsx           [planned: S7] /contact    booking link first, obfuscated email second; works without JS
-  privacy/page.tsx, terms/page.tsx, sitemap.ts, robots.ts   [planned: S7]
-components/                  [planned: S6/S7] Nav, Footer, Cta, PackageCard, Price, Analytics (GA4),
-                             DemoFrame, DemoBanner, player/{Player,Transcript,Chips,Preview}
-content/site.ts, pricing.ts  [planned: S7] copy and packages as typed data; price === null renders "Price on request"
+  privacy/page.tsx, terms/page.tsx   [planned: S7]
+components/                  [S2-sample] Cta, Stepper, SampleView, useHydrated; [planned: S6/S7] PackageCard,
+                             Analytics (GA4), DemoFrame, player/{Player,Transcript,Chips,Preview}
+content/site.ts, samples/    [S2-sample] routes, nav, work, services (price null → "Price on request"), contact,
+                             the two samples; [planned: S7] pricing.ts packages
 styles/tokens.css            [S1] the 15 semantic tokens (colour, type, radius, shadow, status), light + dark
 styles/directions/*.css      [S1] case-file, protocol, chambers: token overrides only (see "Visual direction")
 styles/globals.css           [S1] element styles written only against tokens
@@ -55,7 +64,8 @@ public/demo/                 [planned: S5] GENERATED, gitignored: tree.json, n/<
 __tests__/site/              [S1] loc-budget, tokens, lint-colour, deps, config, deploy, repo (Jest, node, no network)
 e2e/smoke.spec.mjs           [planned: S9] Playwright smoke against the standalone server
 scripts/                     [S1] loc-budget.mjs + loc-budgets.json (line gate), colour-literals.json (lint list),
-                             smoke.mjs (HTTP smoke), standalone-assets.mjs (prerender check + static copy after build)
+                             smoke.mjs (HTTP smoke), standalone-assets.mjs (prerender check + static copy after build),
+                             migrate.js (no-op for Render's old preDeployCommand; remove once the dashboard setting is cleared)
 Dockerfile, .dockerignore    [S1] standalone image, non-root, app files read-only, ENTRYPOINT [] (none)
 render.yaml                  [S1] the production service as it will be after cutover (see "Deploy")
 .github/                     [S1] workflows/ci.yml (the gates below); dependabot.yml (weekly npm + actions)
@@ -93,19 +103,20 @@ Until S7 these paths answer 404 on the `site-v6` preview.
   `https://discover.legal`; `/api/health` (a copy of the home page) is always `noindex`.
 - HTML is `public, max-age=0, must-revalidate` (Next's default is `s-maxage=31536000`); hashed
   `/_next/static` assets keep `immutable`.
-- `/demo/**` (S5's previews, framed by the S6 player) gets `frame-ancestors 'self'` and `SAMEORIGIN`; a
+- `/demo/**` (S5's previews, framed by the S6 player; also the S2 sample pages) gets `frame-ancestors 'self'` and `SAMEORIGIN`; a
   preview links its CSS as a same-origin file, so `style-src` stays `'self'` everywhere.
 - [planned: S6] `frame-src 'self' <BigLaw demo origin>`; `/documents/embed` gets `frame-ancestors 'self'`
   and `SAMEORIGIN`. Only when `NEXT_PUBLIC_GA_ID` matches `^G-[A-Z0-9]{4,16}$`: Google's GA4 origins
   (`*.googletagmanager.com` in `script-src`; it plus `*.google-analytics.com`, `*.analytics.google.com`
   in `connect-src` and `img-src`). Unset, no Google origin appears anywhere.
 
-### Visual direction [S1]
+### Visual direction [S1; Protocol picked in S2-sample]
 `styles/tokens.css` defines `--bg --surface --ink --muted --line --accent --accent-ink --ok --wait
 --stop --shadow-raised` (light and dark) and `--font-display --font-body --radius-card
 --radius-control`. Each direction file redeclares exactly that set on `:root` (light and
-`prefers-color-scheme: dark`) and nothing else. **No direction is picked**: the site renders the neutral
-tokens; picking one is the commented import in `app/layout.tsx`. Sources: `ui-directions/{a,b,c}.html`
+`prefers-color-scheme: dark`) and nothing else. **Protocol is picked** (the import in `app/layout.tsx`): verification-first, colour
+only means status, which is what the samples show (verified/excluded badges, Draft notes); the other two
+files stay until the owner confirms. Sources: `ui-directions/{a,b,c}.html`
 (Case File, Protocol, Chambers); Protocol's light `--wait` is `#9c5800` (the source's is 4.31:1).
 `tokens.test`: colour tokens are lowercase `#rrggbb`; WCAG AA (4.5:1) for every text pair, status colours
 on both backgrounds, every file and scheme; 3:1 for the focus ring. `--line` is decorative only and not
@@ -160,14 +171,14 @@ docker run --rm -p 3000:3000 discover-legal      # PORT=3000 and HOSTNAME=0.0.0.
 | Variable | Where | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | build | [S1] Canonical origin. Exactly `https://discover.legal` (render.yaml): indexable. Otherwise every response says `noindex`. S7: sitemap, robots, `metadataBase`. |
-| `NEXT_PUBLIC_BOOKING_URL` | build | [planned: S7] Scheduler link, the primary CTA. Unset: CTAs use the obfuscated email. |
+| `NEXT_PUBLIC_BOOKING_URL` | build | [S2-sample] Scheduler link (https only), the primary CTA "Book a call". Unset/invalid: "Email us" is primary, assembled in the browser (no-JS: `#contact`). |
 | `NEXT_PUBLIC_GA_ID` | build | [planned: S6] GA4 ID (`G-…`). Unset: no analytics, no Google origin in the CSP. Never production's ID on a preview. |
 | `NEXT_PUBLIC_BIGLAW_DEMO_URL` | build | [planned: S7] BigLaw demo origin to embed. Unset: /biglaw shows a poster; `frame-src` stays `'none'`. |
 | `DEMO_LLM_API_KEY`, `DEMO_LLM_BASE_URL`, `DEMO_LLM_MODEL` | owner's machine | [planned: S4] `demo:record` only. Never set on Render. |
 
 `NEXT_PUBLIC_*` values are inlined into public output at build time: never put a secret in one. Every
 `.env*` file except `.env.example` is git- and docker-ignored (`repo.test`). The Dockerfile declares the
-four public ones as `ARG`s; S1 reads only `NEXT_PUBLIC_SITE_URL`.
+four public ones as `ARG`s; the site reads `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_BOOKING_URL`.
 
 ### Line budgets [S1]
 `npm run loc` counts every git-visible file except `package-lock.json` against
@@ -181,8 +192,10 @@ NUL and its extension is not binary (png jpg gif webp ico woff woff2 pdf: not co
 counted whatever its extension); or a path is a symlink, a submodule or not a regular file.
 
 ### Test [S1]
-- `npm test`: 7 suites in `__tests__/site/` (their `it` names state what each pins): `loc-budget`,
-  `tokens`, `lint-colour`, `deps`, `config`, `deploy`, `repo`.
+- `npm test`: 8 suites in `__tests__/site/` (their `it` names state what each pins): `loc-budget`,
+  `tokens`, `lint-colour`, `deps`, `config`, `deploy`, `repo`, `pages` (routes, sample disclosure, no form
+  controls or literal email, CTA with/without booking URL, sitemap/robots). `scripts/smoke.mjs` also
+  checks every route is 200 and prerendered and that every internal link on them resolves.
 - CI (`.github/workflows/ci.yml`) runs on pushes to `main` and `site-v6` and on PRs into either (PR
   branches have no push trigger, so nothing runs twice; only PR runs cancel each other), on
   `ubuntu-24.04`, Node from `.nvmrc`, actions pinned by SHA, no persisted credentials. Job `gates`
@@ -212,6 +225,9 @@ counted whatever its extension); or a path is a symlink, a submodule or not a re
 
 ## Limitations
 
+- **The S2 samples are scripted, not recorded.** They are written in the style of the real engines'
+  output and say so; they prove nothing about model quality. The email is spelled out in the footer
+  ("h at discover dot legal") so it works without JavaScript; that is light obfuscation only.
 - **Quality of the Documents demo is unproven** until one v2 recording passes the R0 lawyer checklist.
 - **No live chat with the model.** The replay shows only what was recorded.
 - **Analytics and consent.** With `NEXT_PUBLIC_GA_ID` set, GA4 sets cookies and sends page views to

@@ -1,12 +1,14 @@
 # CLAUDE.md: discover.legal (site-v6 rewrite)
 
-Read `README.md` first: it is the contract, and every item is marked **[S1]** (exists) or
+Read `README.md` first: it is the contract, and every item is marked **[S1]**/**[S2-sample]** (exists) or
 **[planned: S<N>]** (does not exist yet). Keep it true in the same change as the code.
 
 ## What this repo is now
 A Next.js 16 App Router site, every route prerendered (`npm run build` fails otherwise). S1 is the scaffold: home, 404, design tokens and
 three swappable visual directions, baseline security headers, Jest tests, the line-budget gate, CI,
-Dockerfile and render.yaml. There is no server code, no database, no auth, no payments, no forms and
+Dockerfile and render.yaml. S2-sample adds `/work` and two scripted sample walkthroughs (`/demo/discover-legal`,
+`/demo/biglaw`; data in `content/samples/`, always labelled fictional/not legal advice) and picks the Protocol
+direction. There is no server code, no database, no auth, no payments, no forms and
 no API route (`/api/health` is a rewrite to the static home, for Render). Do not add any of those: the
 design forbids them (contact is a booking link plus an obfuscated email).
 
@@ -48,5 +50,5 @@ node scripts/smoke.mjs http://localhost:3000   # headers / health / 404 smoke of
 ## Layout
 `app/` pages · `styles/` tokens, directions, globals · `scripts/` loc-budget(s), smoke,
 standalone-assets · `__tests__/site/` · `Dockerfile` · `render.yaml` · `.github/` CI (main + site-v6) + Dependabot.
-Planned: `components/`, `content/`, `core/` (v2 engine, Ontario only), `demo/` (record/replay),
+`components/` (Cta, Stepper, SampleView) · `content/` (site.ts, samples/). Planned: `core/` (v2 engine, Ontario only), `demo/` (record/replay),
 `e2e/` (see README).

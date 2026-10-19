@@ -30,6 +30,17 @@ check((await get('/api/health')).r.status === 200, '/api/health not 200');
 const nf = await get('/no-such-page');
 check(nf.r.status === 404 && nf.body.includes('<title>Page not found'), '/no-such-page: 404 page');
 check((await get('/_next/image?url=%2Ficon.svg&w=64&q=75')).r.status === 404, '/_next/image optimizer reachable');
+// Every page (content/site.ts ROUTES; pages.test keeps the lists equal): 200, prerendered, no form
+// controls, no literal email; then every internal link found on them resolves (no dead links).
+const ROUTES = ['/', '/work', '/demo/discover-legal', '/demo/biglaw'];
+const links = new Set(['/sitemap.xml', '/robots.txt']);
+for (const p of ROUTES) {
+  const { r, body } = await get(p);
+  check(r.status === 200 && /^1(, 1)*$/.test(r.headers.get('x-nextjs-prerender') ?? ''), `${p} status ${r.status}, not prerendered`);
+  check(!/<(form|input|textarea|select)\b/i.test(body) && !body.includes('@discover.legal'), `${p} has a form control or an email`);
+  for (const m of body.matchAll(/href="(\/(?!\/|_next\/)[^"#?]*)/g)) links.add(m[1]);
+}
+for (const l of links) { const { r } = await get(l); check(r.status === 200, `link ${l} status ${r.status}`); }
 for (const f of fails) console.error(`SMOKE FAIL: ${f}`);
 console.log(`smoke ${base}: ${fails.length ? `${fails.length} failed` : 'ok'}`);
 process.exit(fails.length ? 1 : 0);
