@@ -33,10 +33,10 @@ describe('repository hygiene', () => {
     expect(lines('.gitattributes')).toEqual(expect.arrayContaining(['* text=auto eol=lf', '*.pdf binary', '*.png binary']));
   });
 
-  it('every internal link in app/ points at a page that exists', () => {
-    const tsx = execFileSync('git', ['ls-files', '-co', '--exclude-standard', 'app/*.tsx', 'app/**/*.tsx'],
-      { cwd: repo, encoding: 'utf8' }).split('\n').filter(Boolean);
-    const hrefs = tsx.flatMap((f) => [...read(f).matchAll(/href=["{]["']?(\/[^"'#?}]*)/g)].map((m) => m[1]));
+  it('every internal link in app/, components/ and content/ points at a page that exists', () => {
+    const tsx = execFileSync('git', ['ls-files', '-co', '--exclude-standard', 'app', 'components', 'content'],
+      { cwd: repo, encoding: 'utf8' }).split('\n').filter((f) => /\.tsx?$/.test(f));
+    const hrefs = tsx.flatMap((f) => [...read(f).matchAll(/href(?:=["{]|: )["']?(\/[^"'#?}]*)/g)].map((m) => m[1]));
     expect(hrefs.length).toBeGreaterThan(0);
     const missing = hrefs.filter((h) => !existsSync(join(repo, 'app', h, 'page.tsx')));
     expect(missing).toEqual([]);

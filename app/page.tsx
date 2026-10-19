@@ -1,76 +1,51 @@
-// Minimal real home (S1). The copy moves to content/site.ts and gains prices, the CTA and the demo
-// links in S7, once those pages exist; this page links nowhere that does not exist yet.
-
-const SERVICES = [
-  {
-    name: 'Buy',
-    headline: 'Choose the right tools, on your terms.',
-    body: 'Independent selection: what you need, which vendors deliver it, and what the contract should say about your data. No vendor referral fees.',
-  },
-  {
-    name: 'Build',
-    headline: 'Build what the market does not sell.',
-    body: 'Client intake, document automation and AI-assisted workflows with human review gates. Code owns the rules, the model supplies language, and you own the code.',
-  },
-  {
-    name: 'Run',
-    headline: 'Managed operation on your infrastructure.',
-    body: 'Hosting, monitoring, updates, backups and support for what we build or what you choose. Your data stays in your environment; you keep the keys.',
-  },
-  {
-    name: 'Advise',
-    headline: 'Technical leadership without the headcount.',
-    body: 'Roadmap, AI use policy, build-versus-buy decisions and vendor negotiation support, on retainer or for a defined project.',
-  },
-] as const;
+import Link from 'next/link';
+import { Cta } from '@/components/Cta';
+import { BIGLAW_REPO } from '@/content/site';
 
 export default function Home() {
   return (
     <>
       <section className="hero" aria-labelledby="hero-title">
-        <p className="kicker">Legal technology consultancy</p>
-        <h1 id="hero-title">Technology your firm can trust, owned by your firm.</h1>
+        <p className="kicker">Legal technology for small firms</p>
+        <h1 id="hero-title">AI that shows its evidence, built for lawyers who sign their work.</h1>
         <p className="lede">
-          We help law firms buy, build, run and govern legal technology, and we show our work: one free
-          product you can inspect today, and a second in preparation.
+          We build and run legal AI for solos, boutiques and small firms: client intake that turns a story into
+          draft documents, and research that checks every quote against the source before a lawyer sees it.
         </p>
+        <Cta />
       </section>
 
-      <section className="section" aria-labelledby="services-title">
-        <h2 id="services-title">Services</h2>
-        <ul className="grid grid-4">
-          {SERVICES.map((s) => (
-            <li key={s.name} className="card">
-              <p className="kicker">{s.name}</p>
-              <h3>{s.headline}</h3>
-              <p className="muted">{s.body}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="section" aria-labelledby="demos-title">
-        <h2 id="demos-title">Free products</h2>
+      <section className="section" aria-labelledby="products-title">
+        <h2 id="products-title">What we build</h2>
         <ul className="grid">
           <li className="card">
-            <h3>discover.legal Documents (Ontario)</h3>
-            <p className="muted">
-              A step-through replay of one recorded AI interview with a fictional Ontario applicant, ending in
-              watermarked draft documents. Nothing is typed, sent or saved.
-            </p>
-            <p className="status">Demo in preparation</p>
+            <p className="kicker">discover.legal Documents · Ontario family law</p>
+            <h3>From a client&apos;s story to a draft, with every gap marked.</h3>
+            <p className="muted">A guided interview collects the facts, keeps the client&apos;s own words as evidence, and drafts
+              Ontario family-law documents. Nothing missing is invented: it becomes a Draft note.</p>
+            <p className="status">Sample walkthrough only</p>
+            <p><Link href="/demo/discover-legal">See the Documents sample</Link></p>
           </li>
           <li className="card">
-            <h3>BigLaw</h3>
-            <p className="muted">
-              An open-source multi-agent platform for legal work, with a verification step on every finding.
-              It is experimental and says so.
-            </p>
-            <p>
-              <a href="https://github.com/discover-legal/BigLaw" rel="noopener noreferrer">Source on GitHub</a>
-            </p>
+            <p className="kicker">BigLaw · open source</p>
+            <h3>Research agents whose quotes are checked.</h3>
+            <p className="muted">Specialist agents work a matter; every quoted passage is matched against the documents, and
+              unverified findings are excluded from the memo and disclosed in an Evidence Note.</p>
+            <p className="status">Version 2 in development</p>
+            <p><Link href="/demo/biglaw">See the BigLaw sample</Link> · <a href={BIGLAW_REPO} rel="noopener noreferrer">Source on GitHub</a></p>
           </li>
         </ul>
+      </section>
+
+      <section className="section" aria-labelledby="how-title">
+        <h2 id="how-title">How we work</h2>
+        <ol className="grid grid-4 plain">
+          <li><h3>Code owns the rules</h3><p className="muted">Deadlines, grounds and vocabulary are checked in code, not left to a model.</p></li>
+          <li><h3>Evidence first</h3><p className="muted">Every fact and quote points back to where it came from.</p></li>
+          <li><h3>Gaps stay visible</h3><p className="muted">Silence is never turned into a waiver or an allegation.</p></li>
+          <li><h3>You own it</h3><p className="muted">Open source, on your infrastructure, with your keys.</p></li>
+        </ol>
+        <p><Link href="/work">Our work and services</Link></p>
       </section>
     </>
   );

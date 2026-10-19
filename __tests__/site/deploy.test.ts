@@ -57,6 +57,7 @@ describe('Dockerfile', () => {
     expect(run).toMatch(/^ENTRYPOINT \[\]$/m);
     expect(run).toMatch(/^CMD \["node", "server.js"\]$/m);
     expect(run).toMatch(/^COPY --from=build \/app\/.next\/standalone \.\/$/m);
+    expect(run).toMatch(/^COPY scripts\/migrate\.js \.\/scripts\/migrate\.js$/m); // Render's old preDeployCommand
   });
 });
 

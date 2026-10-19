@@ -24,6 +24,7 @@ WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 # App files stay root-owned (read-only to the server); only Next's cache dir is writable.
 COPY --from=build /app/.next/standalone ./
+COPY scripts/migrate.js ./scripts/migrate.js
 RUN mkdir -p .next/cache && chown node:node .next/cache
 USER node
 EXPOSE 3000
