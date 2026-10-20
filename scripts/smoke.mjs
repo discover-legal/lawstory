@@ -32,7 +32,7 @@ check(nf.r.status === 404 && nf.body.includes('<title>Page not found'), '/no-suc
 check((await get('/_next/image?url=%2Ficon.svg&w=64&q=75')).r.status === 404, '/_next/image optimizer reachable');
 // Every page (content/site.ts ROUTES; pages.test keeps the lists equal): 200, prerendered, no form
 // controls, no literal email; then every internal link found on them resolves (no dead links).
-const ROUTES = ['/', '/work', '/demo/discover-legal', '/demo/biglaw'];
+const ROUTES = ['/', '/work', '/demo/discover-legal', '/demo/biglaw', '/research', '/privacy', '/tos'];
 const links = new Set(['/sitemap.xml', '/robots.txt']);
 for (const p of ROUTES) {
   const { r, body } = await get(p);
