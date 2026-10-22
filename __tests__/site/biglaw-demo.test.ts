@@ -10,9 +10,9 @@ const files = walk(dir);
 const NET = /\bfetch\s*\(|XMLHttpRequest|EventSource|WebSocket|sendBeacon/;
 
 describe('the vendored BigLaw demo (public/demo/biglaw)', () => {
-  it('is only index.html, VERSION and hashed js/css assets, under 1 MB', () => {
+  it('is only index.html, VERSION and hashed js/css/image assets, under 1 MB', () => {
     const rel = files.map((f) => f.slice(dir.length + 1)).sort();
-    expect(rel.filter((f) => !/^(index\.html|VERSION|assets\/[\w-]+\.(js|css))$/.test(f))).toEqual([]);
+    expect(rel.filter((f) => !/^(index\.html|VERSION|assets\/[\w-]+\.(js|css|jpg|png|webp))$/.test(f))).toEqual([]);
     expect(rel.filter((f) => f.endsWith('.js'))).toHaveLength(1);
     expect(files.reduce((n, f) => n + statSync(f).size, 0)).toBeLessThan(1_000_000);
   });
