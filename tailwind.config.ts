@@ -11,6 +11,8 @@ const config: Config = {
         grid: 'linear-gradient(to right, #0f172a 1px, transparent 1px), linear-gradient(to bottom, #0f172a 1px, transparent 1px)',
       },
       backgroundSize: { grid: '48px 48px' },
+      // The draft preview's face: the PDF's Times (Liberation Serif / Nimbus Roman are metric-compatible).
+      fontFamily: { times: ['"Times New Roman"', 'Times', '"Liberation Serif"', '"Nimbus Roman"', 'serif'] },
     },
   },
   plugins: [],

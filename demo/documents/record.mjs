@@ -1,7 +1,7 @@
 // Builds the Documents demo's recording (owner-run tooling; never part of `npm run build`).
 //
 //   node demo/documents/record.mjs            # extracts the v1 app at c34b131, installs its lockfile, records
-//   V1_DIR=/path/to/v1 node demo/documents/record.mjs   # reuse an extracted + installed copy
+//   V1_DIR=/path/to/v1 node demo/documents/record.mjs   # reuse node_modules of an installed c34b131 copy
 //
 // There is NO recorded real-model run of an Ontario interview in this repo's history (the persona
 // replays kept their transcripts outside git). So this script makes the recording the way the brief
@@ -18,20 +18,24 @@
 // tool call records it as a fact (has_debts is optional and not sent), and the merge promotes the fact to
 // hasDebts=false + noDebtsConfirmed=true, hydrated into the next turn, so the Divorce Order states it.
 // The preview gets pdfService's own sanitizeForFiling (template [TOKENS] become the PDF's blank line).
+// PRODUCT FIXES: v1-template-fixes.patch is applied to the extracted tree before anything runs (Ontario
+// "family debts", the parenting schedule as order text or a standard Draft note, children as one
+// paragraph with a sub-list), so every word still comes from the product's (fixed) templates.
+// Page breaks: each turn's two drafts are also rendered to PDF with PDFKit's text() traced, and the
+// preview breaks its pages at the same blocks (or inside the same paragraph, at the same word).
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PERSONA, SOURCE_COMMIT } from './persona.mjs';
 
 const repo = new URL('../..', import.meta.url).pathname;
-let v1 = process.env.V1_DIR;
-if (!v1) {
-  v1 = mkdtempSync(join(tmpdir(), 'v1-'));
-  execFileSync('sh', ['-c', `git archive ${SOURCE_COMMIT} | tar -x -C "${v1}"`], { cwd: repo });
-  execFileSync('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: v1, stdio: 'inherit' });
-}
+const v1 = mkdtempSync(join(tmpdir(), 'v1-'));
+execFileSync('sh', ['-c', `git archive ${SOURCE_COMMIT} | tar -x -C "${v1}"`], { cwd: repo });
+execFileSync('git', ['apply', join(repo, 'demo', 'documents', 'v1-template-fixes.patch')], { cwd: v1 });
+if (process.env.V1_DIR) symlinkSync(join(process.env.V1_DIR, 'node_modules'), join(v1, 'node_modules'));
+else execFileSync('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: v1, stdio: 'inherit' });
 const req = createRequire(join(v1, 'package.json'));
 process.chdir(v1); // v1's TemplateLoader resolves templates/ from the working directory
 
@@ -72,6 +76,49 @@ const jiti = req('jiti')(join(v1, 'package.json'), { alias: { '@/lib/db': dbStub
 const { buildDocumentStructure } = jiti('./lib/api/documentStructure.ts');
 const { getUserProfile, hydrateAffidavitData, mergeUserProfile } = jiti('./lib/api/profile.ts');
 const PDFService = req('./services/pdfService');
+const { flatten } = jiti(join(repo, 'components', 'demo', 'documents', 'paginate.ts'));
+// Trace each PDF text() call: the page it starts on and the lines (PDFKit _fragment) it draws per page.
+const PDFDocument = req('pdfkit');
+let trace = null;
+const { addPage, text: pdfText, _fragment: fragment } = PDFDocument.prototype;
+PDFDocument.prototype.addPage = function (...a) { if (trace) trace.page += 1; return addPage.apply(this, a); };
+PDFDocument.prototype._fragment = function (t, ...a) { trace?.lines?.push([trace.page, t]); return fragment.call(this, t, ...a); };
+PDFDocument.prototype.text = function (t, ...a) {
+  if (!trace || typeof t !== 'string') return pdfText.call(this, t, ...a);
+  const outer = trace.lines; const call = { page: trace.page, t, lines: (trace.lines = []) };
+  trace.calls.push(call);
+  try { return pdfText.call(this, t, ...a); } finally { trace.lines = outer; }
+};
+const squash = (t) => t.replace(/\s+/g, ' ').trim();
+const words = (t) => squash(t).split(' ').filter(Boolean).length;
+async function renderPdf(sub, d) {
+  trace = { page: 0, calls: [], lines: null };
+  const r = await new PDFService({ templateManager }).generatePDF(buildDocumentStructure(templateManager, 'ON', { ...d, activeSubDocument: sub }),
+    { documentId: 1, userId: 1 });
+  const calls = trace.calls.map((c) => ({ ...c, t: squash(c.t) }));
+  trace = null;
+  return { ...r, calls };
+}
+/** Where each PDF page 2..n starts in the preview's blocks: [block, words] — a block goes on the page its text
+ * starts on; words > 0 when the PDF carries that block over (its first `words` words stay on the page before). */
+function pageBreaks(blocks, calls, pages, label) {
+  let at = 0; let page = 1; const breaks = [];
+  blocks.forEach((b, i) => {
+    const key = squash(b.content.split('\n').find((l) => l.trim()) ?? '').replace(/^((\d+|[a-z])\.|\([a-z]\))\s/, '').slice(0, 24);
+    const hit = key ? calls.findIndex((c, j) => j >= at && c.t.includes(key)) : -1;
+    if (hit < 0) return;
+    at = hit;
+    const c = calls[hit];
+    for (; page < c.page; page++) breaks.push([i, 0]);
+    const last = Math.max(page, ...c.lines.map(([p]) => p));
+    if (last === page) return;
+    if (!squash(b.content).endsWith(c.t)) throw new Error(`${label}: block ${i} crosses a PDF page but is not one text run`);
+    const kept = words(c.lines.filter(([p]) => p === page).map(([, t]) => t).join(' '));
+    for (; page < last; page++) breaks.push([i, words(b.content) - words(c.t) + kept]);
+  });
+  if (breaks.length + 1 !== pages) throw new Error(`${label}: preview breaks into ${breaks.length + 1} pages, the PDF has ${pages}`);
+  return breaks;
+}
 const filing = new PDFService({ templateManager });
 const { PHASES, PHASE_ORDER } = req('./services/agents/prompts/onDivorce/index');
 const routeSrc = readFileSync(join(v1, 'app/api/documents/generate/route.ts'), 'utf8');
@@ -120,10 +167,14 @@ for (const t of PERSONA.turns) {
   data = out.affidavitData;
   await mergeUserProfile(1, data, out.newFacts ?? [], { replaceChildren: Array.isArray(data.children) });
   history.push({ role: 'user', content: t.say }, { role: 'assistant', content: out.response });
-  const preview = Object.fromEntries(SUBDOCS.map((s) =>
-    [s, Object.fromEntries(Object.entries(prune(filing.sanitizeForFiling(templateManager.generateDocument('ON', s, mapNames({ ...data, activeSubDocument: s })).sections)))
-      .map(([k, sec]) => [k, intern(sec)]))]));
-  turns.push({ say: t.say, topics: t.topics, reply: out.response, doc: docView(data), preview });
+  const preview = {}; const breaks = {};
+  for (const s of SUBDOCS) {
+    const secs = prune(filing.sanitizeForFiling(templateManager.generateDocument('ON', s, mapNames({ ...data, activeSubDocument: s })).sections));
+    preview[s] = Object.fromEntries(Object.entries(secs).map(([k, sec]) => [k, intern(sec)]));
+    const pdf = await renderPdf(s, data);
+    breaks[s] = pageBreaks(flatten(secs, s), pdf.calls, pdf.pages, `turn ${turns.length + 1} ${s}`);
+  }
+  turns.push({ say: t.say, topics: t.topics, reply: out.response, doc: docView(data), preview, breaks });
 }
 
 // Draft PDFs of the final recorded state, through the real generate path (minus auth/payment/DB).
@@ -134,7 +185,7 @@ for (const s of SUBDOCS) {
   const structure = buildDocumentStructure(templateManager, 'ON', { ...data, activeSubDocument: s });
   const missing = DENY.filter((tok) => JSON.stringify(structure).includes(tok));
   if (missing.length) throw new Error(`${s}: the generate route would refuse this draft (${missing.join(', ')})`);
-  const r = await new PDFService({ templateManager }).generatePDF(structure, { documentId: 1, userId: 1 });
+  const r = await renderPdf(s, data);
   const name = `ontario-${s === 'divorce_petition' ? 'application' : 'divorce-order'}-draft.pdf`; // Ontario's names
   copyFileSync(r.filepath, join(outDir, name));
   pdfs[s] = { href: `/drafts/${name}`, pages: r.pages };
@@ -147,4 +198,4 @@ const recording = { source: SOURCE_COMMIT, recordedAt: new RealDate(FROZEN).toIS
   welcome: PERSONA.welcome, pdfs, phases, sections, turns };
 const file = join(repo, 'demo', 'documents', 'recording.json');
 writeFileSync(file, `${JSON.stringify(recording)}\n`);
-console.log(`wrote ${file} (${turns.length} turns) and ${Object.keys(pdfs).length} PDFs; v1 at ${v1}${existsSync(v1) ? '' : ' (gone)'}`);
+console.log(`wrote ${file} (${turns.length} turns) and ${Object.keys(pdfs).length} PDFs; patched v1 at ${v1}`);

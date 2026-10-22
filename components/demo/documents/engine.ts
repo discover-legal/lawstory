@@ -1,4 +1,5 @@
 import recording from '@/demo/documents/recording.json';
+import type { Break } from './paginate';
 
 // The recorded engine: stands in for the two API calls the v1 editor made (POST /api/chat and
 // POST /api/documents/preview, c34b131) with answers read from demo/documents/recording.json.
@@ -13,7 +14,8 @@ export type DemoDoc = {
   marriageDate?: string; separationDate?: string; requiredDocuments?: string[]; facts: Fact[];
 };
 export type SubDocument = 'divorce_petition' | 'divorce_decree';
-type Turn = { say: string; topics: string[]; reply: string; doc: DemoDoc; preview: Record<SubDocument, Record<string, number>> };
+type Turn = { say: string; topics: string[]; reply: string; doc: DemoDoc; preview: Record<SubDocument, Record<string, number>>;
+  breaks: Record<SubDocument, Break[]> };
 export type Phase = { id: string; name: string };
 type Recording = { source: string; recordedAt: string; client: string; welcome: string; sections: Section[];
   pdfs: Record<SubDocument, { href: string; pages: number }>; phases: Phase[]; turns: Turn[] };
@@ -63,9 +65,10 @@ export function chatTurn(message: string, step: number): ChatResult {
   return { response: `${note}\n\n${questionAt(step)}`, step, affidavitData: here, newFacts: [], outcome: later ? 'out_of_order' : 'off_script' };
 }
 
-/** The rendered draft (the v1 Ontario templates' `sections`) for a step and sub-document, or null before any. */
-export function previewAt(step: number, sub: SubDocument): { sections: Sections } | null {
+/** The rendered draft (the v1 Ontario templates' `sections`) for a step and sub-document, with the blocks
+ * that start each page of its PDF (record.mjs), or null before any. */
+export function previewAt(step: number, sub: SubDocument): { sections: Sections; breaks: Break[] } | null {
   if (step === 0) return null;
-  const refs = REC.turns[step - 1].preview[sub];
-  return { sections: Object.fromEntries(Object.entries(refs).map(([k, i]) => [k, REC.sections[i] as Section | string])) };
+  const { preview, breaks } = REC.turns[step - 1];
+  return { sections: Object.fromEntries(Object.entries(preview[sub]).map(([k, i]) => [k, REC.sections[i] as Section | string])), breaks: breaks[sub] };
 }

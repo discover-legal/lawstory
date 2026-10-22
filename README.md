@@ -20,7 +20,8 @@ products as **demos**, plus `/work` (honest status + consultancy, "Price on requ
    saved; Reset clears it. `demo/documents/record.mjs` builds `recording.json` + `public/drafts/*.pdf`
    by running the real v1 Ontario interview code, life-story profile merge (`mergeUserProfile`, its table
    in memory), templates and PDF renderer offline; the client's lines and the per-turn model output are
-   scripted (no real-model Ontario run exists in git history). Re-running it reproduces the files byte for byte.
+   scripted (no real-model Ontario run exists in git history). It first applies `v1-template-fixes.patch` (product
+   template fixes) to the extracted code; preview pages break where each PDF does. Re-runs are byte-identical.
 2. **BigLaw** **[biglaw-live]** `/demo/biglaw` is BigLaw's own v2 UI on its **recorded engine** (pick a
    matter, run a task, findings, click a quote to its highlighted source, the memo), vendored as built
    output in `public/demo/biglaw/` (index.html + one JS + one CSS, ~550 KB; `VERSION` names the BigLaw

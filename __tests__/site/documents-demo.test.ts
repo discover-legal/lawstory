@@ -42,12 +42,16 @@ describe('recording', () => {
     const all = JSON.stringify(REC.sections) + REC.welcome + REC.turns.map((t) => t.reply).join(' ');
     expect(all).not.toMatch(/\b(Petition|Decree)\b/);
     const order = text(TURNS, 'divorce_decree');
-    expect(order).toContain('no community debts to be allocated');
+    expect(order).toContain('no family debts to be allocated');
+    expect(order).toContain('schedule: weekdays with the Applicant and every other weekend with the Respondent. In the absence');
     expect(order).not.toContain('confirm whether you and your spouse have any');
   });
 
-  it('previews show the PDF\'s blank line for a missing value, never a [TOKEN]', () => {
-    expect(JSON.stringify(REC.sections)).not.toMatch(/\[[A-Z][A-Z /_-]{2,40}\]/);
+  it('previews show the PDF\'s blank line for a missing value, never a [TOKEN], drafter note or US idiom', () => {
+    expect(JSON.stringify(REC.sections)).not.toMatch(/\[[A-Z][A-Z /_-]{2,40}\]|\[SCHEDULE|Drafter note|\bcommunity\b|\bmarital\b/);
+    const kids = text(TURNS, 'divorce_petition');
+    expect(kids).toContain('"content":"(a) Anika Okafor, born September 2, 2016","type":"child_item"');
+    expect(kids).not.toContain('Child 1:');
     expect(text(TURNS, 'divorce_petition')).toContain('Court File No. ______________');
   });
 
@@ -95,9 +99,18 @@ describe('recorded engine', () => {
 });
 
 describe('preview pagination (port of the v1 DocumentPreview)', () => {
-  it('breaks the final petition into several pages and keeps every section title', () => {
-    const pages = paginate(previewAt(TURNS, 'divorce_petition')!.sections, 'divorce_petition', (t) => 24 * Math.ceil((t.length || 1) / 70));
-    expect(pages.length).toBeGreaterThan(1);
+  it('every recorded draft has exactly its PDF\'s pages, and keeps every section title', () => {
+    const at = (s: number, sub: 'divorce_petition' | 'divorce_decree') => paginate(previewAt(s, sub)!.sections, sub, previewAt(s, sub)!.breaks);
+    for (const sub of ['divorce_petition', 'divorce_decree'] as const) {
+      expect(at(TURNS, sub).length).toBe(REC.pdfs[sub].pages);
+      for (let s = 1; s <= TURNS; s++) expect(at(s, sub).every((pg) => pg.content.length > 0)).toBe(true);
+    }
+    // A paragraph the PDF carries over is split at the same word, nothing lost.
+    const [p1, p2] = at(TURNS, 'divorce_decree');
+    const head = p1.content.at(-1)!; const tail = p2.content[0];
+    expect([head.split, tail.split]).toEqual(['head', 'tail']);
+    expect(`${head.content} ${tail.content}`).toContain('is dissolved pursuant to section 8 of the Divorce Act');
+    const pages = at(TURNS, 'divorce_petition');
     const titles = pages.flatMap((p) => p.content).filter((b) => b.type === 'section-title').map((b) => b.content);
     expect(titles).toEqual(expect.arrayContaining(['I. PARTIES', 'IV. GROUNDS FOR DIVORCE']));
     expect(pages[0].content[0]).toMatchObject({ type: 'filerBlock', content: expect.stringContaining('Applicant, Self-Represented') });

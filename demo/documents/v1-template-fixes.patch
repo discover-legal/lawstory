@@ -1,0 +1,110 @@
+diff --git a/services/pdfService.js b/services/pdfService.js
+index f03417a..a17ac05 100644
+--- a/services/pdfService.js
++++ b/services/pdfService.js
+@@ -525,6 +525,15 @@ class PDFService {
+ 
+           if (item.number) {
+             this.renderNumberedParagraph(doc, item.number, item.content);
++          } else if (/_item$/.test(item.type || '')) {
++            // Sub-list entry ("(a) …") of the numbered paragraph above:
++            // an indented block.
++            const left = doc.page.margins.left + 54;
++            doc.fontSize(12).font('Times-Roman');
++            doc.text(item.content, left, doc.y, {
++              width: doc.page.width - left - doc.page.margins.right, align: 'left', lineGap: 6,
++            });
++            doc.x = doc.page.margins.left;
+           } else {
+             doc.fontSize(12).font('Times-Roman');
+             doc.text(item.content, { align: 'justify', indent: 36, lineGap: 6 });
+diff --git a/services/supportDocs/BaseAnswerTemplate.js b/services/supportDocs/BaseAnswerTemplate.js
+index 60fdfdd..07fb2b6 100644
+--- a/services/supportDocs/BaseAnswerTemplate.js
++++ b/services/supportDocs/BaseAnswerTemplate.js
+@@ -128,6 +128,11 @@ function canadianize(text) {
+     .replace(/\bmarital assets\b/gi, 'family property')
+     .replace(/\bmarital debts\b/gi, 'family debts')
+     .replace(/\bmarital property\b/gi, 'family property')
++    // Ontario is not a community-property province: the base decree's
++    // "community debts" / "marital/community debts" are family debts here.
++    .replace(/\bmarital\/community debts\b/gi, 'family debts')
++    .replace(/\bcommunity debts\b/gi, 'family debts')
++    .replace(/\bcommunity property\b/gi, 'family property')
+     // "Counter-Petition" is a US usage; Ontario Form 10 carries the
+     // respondent's affirmative relief inside the Answer itself, as the
+     // Respondent's Claim (Answer with Claim).
+diff --git a/templates/core/BaseDivorcePetitionTemplate.js b/templates/core/BaseDivorcePetitionTemplate.js
+index 28bc277..92cbcf1 100644
+--- a/templates/core/BaseDivorcePetitionTemplate.js
++++ b/templates/core/BaseDivorcePetitionTemplate.js
+@@ -1023,10 +1023,12 @@ class BaseDivorcePetitionTemplate {
+           const childInfo = typeof child === 'string'
+             ? child
+             : `${child.name || '______________________'}, born ${dobText || '______________'}`;
++          // One numbered paragraph with a lettered sub-list: the children are
++          // particulars of the paragraph above, not paragraphs of their own.
+           items.push({
+-            number: paragraphNum++,
+-            content: `Child ${index + 1}: ${childInfo}`,
+-            type: 'child_detail'
++            number: null,
++            content: `(${String.fromCharCode(97 + index)}) ${childInfo}`,
++            type: 'child_item'
+           });
+         });
+       }
+diff --git a/templates/states/ontario/DivorceDecreeTemplate.js b/templates/states/ontario/DivorceDecreeTemplate.js
+index 235b938..8388d39 100644
+--- a/templates/states/ontario/DivorceDecreeTemplate.js
++++ b/templates/states/ontario/DivorceDecreeTemplate.js
+@@ -13,6 +13,7 @@ const {
+   incomeImputationPosition,
+   normalizeCanadianDivorceData,
+ } = require('../../core/canadianHelpers');
++const { canadianizeStructure } = require('../../../services/supportDocs/BaseAnswerTemplate');
+ 
+ /**
+  * Ontario Divorce Judgment Template
+@@ -468,6 +469,16 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+    * @param {Object} divorceData - Divorce data
+    * @returns {string} Parenting time language
+    */
++  /**
++   * The base debt section speaks of "community debts" (US community-property
++   * vocabulary). Ontario debts are family debts under the Family Law Act, so
++   * the section goes through the same Canadian vocabulary filter as the
++   * Ontario Answer.
++   */
++  generateDebtAllocationSection(divorceData) {
++    return canadianizeStructure(super.generateDebtAllocationSection(divorceData));
++  }
++
+   getVisitationLanguage(divorceData) {
+     // A substantive parentTimeDetails string (alt Fri–Sun + Wed dinners,
+     // holiday rotations) belongs verbatim in the order — the boilerplate
+@@ -493,13 +504,19 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+     // schedule; render an explicit [SCHEDULE — insert...] bracket so the
+     // drafter fills it in before filing.
+     const NON_OPERATIVE_RE = /(not yet (?:provided|specified|decided|agreed)|tbd|tba|unspecified|to be (?:decided|determined|agreed)|placeholder|\bwants?\b|\bwould like\b|\bprefers?\b|\bhopes?\b|\bseeks?\b|\bwishes?\b|\bwill request\b)/i;
+-    if (details.length > 50 && !NON_OPERATIVE_RE.test(details)) {
+-      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: ${details} In the absence of written agreement to vary the schedule, the terms above control.${nonAlienation}`;
++    // Any operative schedule renders as order text, short or long: the old
++    // length > 50 gate sent a real but brief schedule ("every other weekend
++    // with the Respondent") to the non-operative branch below.
++    if (details.length > 0 && !NON_OPERATIVE_RE.test(details)) {
++      const sentence = /[.!?]$/.test(details) ? details : `${details}.`;
++      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: ${sentence} In the absence of written agreement to vary the schedule, the terms above control.${nonAlienation}`;
+     }
+     if (details.length > 0) {
+-      // Non-operative content — surface the drafter's note as an in-line
+-      // comment (never as an operative order) and demand a real schedule.
+-      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: [SCHEDULE — insert specific parenting schedule (weekday/weekend, holidays, exchanges) before filing]. (Drafter note: ${details})${nonAlienation}`;
++      // Non-operative content (a wish, "TBD") is never an order: a blank in
++      // the standard Draft-note style, quoting what the interview recorded.
++      // (It used to emit a "[SCHEDULE — …]" bracket the filing sanitizer
++      // cannot see and a raw "(Drafter note: …)".)
++      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: ________________________________________\n(Draft — insert the specific parenting schedule (weekdays and weekends, holidays, exchanges) before filing; the interview recorded: "${details.replace(/"/g, "'")}")${nonAlienation}`;
+     }
+     return 'IT IS ORDERED that each party shall have parenting time with the child(ren) as agreed in writing by the parties, or, failing agreement, in accordance with a parenting schedule to be filed with this Court.' + nonAlienation;
+   }

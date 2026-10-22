@@ -39,7 +39,7 @@ export const PERSONA = {
     { say: 'We have two kids: Anika, born September 2, 2016, and Rohan, born January 20, 2019. They live with me during the week and see Daniel every other weekend.',
       topics: ['kids', 'children', 'child', 'son', 'daughter', 'born', 'live with me', 'weekend'],
       model: { ...no, phase_complete: false, children: [{ name: 'Anika Okafor', dob: '2016-09-02' }, { name: 'Rohan Okafor', dob: '2019-01-20' }],
-        number_of_children: 2, primary_custodian: 'petitioner', parent_time_plan: 'custom', parent_time_details: 'every other weekend with Daniel',
+        number_of_children: 2, primary_custodian: 'petitioner', parent_time_plan: 'custom', parent_time_details: 'weekdays with the Applicant and every other weekend with the Respondent',
         response: 'Thank you. What decision-making arrangement are you proposing? (joint / sole)',
         extracted_facts: [fact('Daniel Okafor and I have two children: Anika, born September 2, 2016, and Rohan, born January 20, 2019.', 'children', { numeric_value: 2 }),
           fact('Our children live with me during the week and spend every other weekend with Daniel Okafor.', 'children', { subcategory: 'parenting_time' })] } },

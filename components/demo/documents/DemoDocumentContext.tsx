@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import type { Break } from './paginate';
 import { chatTurn, docAt, previewAt, questionAt, type DemoDoc, type Sections, type SubDocument } from './engine';
 
 // Stands in for contexts/DocumentContext.js (c34b131) with the parts the editor reads: currentDocument,
@@ -9,7 +10,7 @@ import { chatTurn, docAt, previewAt, questionAt, type DemoDoc, type Sections, ty
 export type Message = { type: 'user' | 'bot'; content: string; note?: boolean };
 type Ctx = {
   currentDocument: DemoDoc & { activeSubDocument: SubDocument };
-  preview: { sections: Sections } | null;
+  preview: { sections: Sections; breaks: Break[] } | null;
   messages: Message[];
   isLoading: boolean;
   step: number;
