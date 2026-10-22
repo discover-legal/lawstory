@@ -4,10 +4,10 @@
   "maxFile": 600,
   "files": {},
   "entries": {
-    "__tests__": 4878, "core": 4855, "app": 785, "demo": 740, "components": 710, "docs": 550, "content": 345,
-    "README.md": 300, "styles": 250, "scripts": 195, "e2e": 100, ".github": 100, "next.config.mjs": 100, "evidence": 85,
+    "__tests__": 4878, "core": 4393, "app": 785, "demo": 740, "components": 1150, "docs": 550, "content": 345,
+    "README.md": 300, "styles": 250, "scripts": 215, "e2e": 100, ".github": 100, "next.config.mjs": 100, "evidence": 85,
     "CLAUDE.md": 70, "purge-log.md": 60, "eslint.config.mjs": 50, "package.json": 45, "Dockerfile": 35, "render.yaml": 30,
     "tsconfig.json": 25, "tools": 20, ".gitignore": 16, ".dockerignore": 16, "jest.config.js": 15, ".env.example": 15,
-    ".gitattributes": 10, "SECURITY.md": 6, "public": 5, ".nvmrc": 1, "tailwind.config.ts": 25, "postcss.config.mjs": 5, "PLAN.md": 5
+    ".gitattributes": 10, "SECURITY.md": 6, "public": 5, ".nvmrc": 1, "tailwind.config.ts": 25, "postcss.config.mjs": 5, "PLAN.md": 7
   }
 }

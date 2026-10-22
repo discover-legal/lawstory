@@ -30,15 +30,27 @@ check((await get('/api/health')).r.status === 200, '/api/health not 200');
 const nf = await get('/no-such-page');
 check(nf.r.status === 404 && nf.body.includes('<title>Page not found'), '/no-such-page: 404 page');
 check((await get('/_next/image?url=%2Ficon.svg&w=64&q=75')).r.status === 404, '/_next/image optimizer reachable');
-// Every page (content/site.ts ROUTES; pages.test keeps the lists equal): 200, prerendered, no form
-// controls, no literal email; then every internal link found on them resolves (no dead links).
+// Every page (content/site.ts ROUTES; pages.test keeps the lists equal): 200, prerendered, no <form>, form
+// controls only on /demo/*, no literal email; then every internal link found on them resolves (no dead links).
 const ROUTES = ['/', '/work', '/demo/discover-legal', '/demo/biglaw', '/research', '/privacy', '/tos'];
 const links = new Set(['/sitemap.xml', '/robots.txt']);
 for (const p of ROUTES) {
   const { r, body } = await get(p);
   check(r.status === 200 && /^1(, 1)*$/.test(r.headers.get('x-nextjs-prerender') ?? ''), `${p} status ${r.status}, not prerendered`);
-  check(!/<(form|input|textarea|select)\b/i.test(body) && !body.includes('@discover.legal'), `${p} has a form control or an email`);
+  check(!/<form\b/i.test(body) && (p.startsWith('/demo/') || !/<(input|textarea|select)\b/i.test(body))
+    && !body.includes('@discover.legal'), `${p} has a form, a form control outside /demo/, or an email`);
   for (const m of body.matchAll(/href="(\/(?!\/|_next\/)[^"#?]*)/g)) links.add(m[1]);
+}
+// The Documents demo's own JS (the chunks that carry its recording) never touches the network, and its
+// draft PDFs are served.
+const page = (await get('/demo/discover-legal')).body;
+const chunks = [];
+for (const m of page.matchAll(/src="(\/_next\/static\/[^"]+\.js)"/g)) { const js = (await get(m[1])).body; if (js.includes('88 Harbour Street')) chunks.push([m[1], js]); }
+check(chunks.length > 0, 'demo recording chunk not found');
+for (const [src, js] of chunks) check(!/\bfetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource/.test(js), `${src} uses a network API`);
+for (const d of ['petition', 'decree']) {
+  const { r, body } = await get(`/drafts/ontario-${d}-draft.pdf`);
+  check(r.status === 200 && body.startsWith('%PDF'), `/drafts/ontario-${d}-draft.pdf not served`);
 }
 for (const l of links) { const { r } = await get(l); check(r.status === 200, `link ${l} status ${r.status}`); }
 for (const f of fails) console.error(`SMOKE FAIL: ${f}`);

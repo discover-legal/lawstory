@@ -34,6 +34,22 @@ const ICONS = {
   code: P('m18 16 4-4-4-4', 'm6 8-4 4 4 4', 'm14.5 4-5 16'),
   eye: [...P('M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0'),
     ['circle', { cx: '12', cy: '12', r: '3' }]],
+  // Demo editor (components/demo/documents), the same Lucide icons the v1 app used.
+  send: P('M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z',
+    'm21.854 2.147-10.94 10.939'),
+  bot: [...P('M12 8V4H8', 'M2 14h2', 'M20 14h2', 'M15 13v2', 'M9 13v2'), ['rect', { width: '16', height: '12', x: '4', y: '8', rx: '2' }]],
+  user: [...P('M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'), ['circle', { cx: '12', cy: '7', r: '4' }]],
+  download: P('M12 15V3', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm7 10 5 5 5-5'),
+  messageSquare: P('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
+  rotateCcw: P('M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5'),
+  zoomIn: [['circle', { cx: '11', cy: '11', r: '8' }], ...P('m21 21-4.35-4.35', 'M11 8v6', 'M8 11h6')],
+  zoomOut: [['circle', { cx: '11', cy: '11', r: '8' }], ...P('m21 21-4.35-4.35', 'M8 11h6')],
+  chevronLeft: P('m15 18-6-6 6-6'), chevronRight: P('m9 18 6-6-6-6'), chevronDown: P('m6 9 6 6 6-6'), chevronUp: P('m18 15-6-6-6 6'),
+  listChecks: P('M13 5h8', 'M13 12h8', 'M13 19h8', 'm3 17 2 2 4-4', 'm3 7 2 2 4-4'),
+  loader: P('M21 12a9 9 0 1 1-6.219-8.56'),
+  info: [['circle', { cx: '12', cy: '12', r: '10' }], ...P('M12 16v-4', 'M12 8h.01')],
+  circleCheck: [['circle', { cx: '12', cy: '12', r: '10' }], ...P('m9 12 2 2 4-4')],
+  circleX: [['circle', { cx: '12', cy: '12', r: '10' }], ...P('m15 9-6 6', 'm9 9 6 6')],
 } satisfies Record<string, Node[]>;
 export type IconName = keyof typeof ICONS;
 
