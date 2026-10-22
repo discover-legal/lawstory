@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chatTurn, docAt, previewAt, questionAt, REC, score, suggestionAt, TURNS } from '@/components/demo/documents/engine';
+import { chatTurn, DOC_NAME, docAt, phaseAt, previewAt, questionAt, REC, score, suggestionAt, TURNS } from '@/components/demo/documents/engine';
 import { paginate } from '@/components/demo/documents/paginate';
 
 // The Documents demo: a recorded engine behind the ported editor. It must replay the recording, keep
@@ -33,6 +33,29 @@ describe('recording', () => {
       expect(score(REC.turns[s - 1].say, REC.turns[s - 1].topics)).toBeGreaterThan(0);
     }
     expect(docAt(TURNS).facts.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('uses Ontario\'s document names, and the Divorce Order states the no-debts finding the profile merge confirmed', () => {
+    expect(DOC_NAME).toEqual({ divorce_petition: 'Application', divorce_decree: 'Divorce Order' });
+    expect(Object.values(REC.pdfs).map((p) => p.href)).toEqual(['/drafts/ontario-application-draft.pdf', '/drafts/ontario-divorce-order-draft.pdf']);
+    expect(questionAt(0)).toContain('Application for divorce and your Divorce Order');
+    const all = JSON.stringify(REC.sections) + REC.welcome + REC.turns.map((t) => t.reply).join(' ');
+    expect(all).not.toMatch(/\b(Petition|Decree)\b/);
+    const order = text(TURNS, 'divorce_decree');
+    expect(order).toContain('no community debts to be allocated');
+    expect(order).not.toContain('confirm whether you and your spouse have any');
+  });
+
+  it('previews show the PDF\'s blank line for a missing value, never a [TOKEN]', () => {
+    expect(JSON.stringify(REC.sections)).not.toMatch(/\[[A-Z][A-Z /_-]{2,40}\]/);
+    expect(text(TURNS, 'divorce_petition')).toContain('Court File No. ______________');
+  });
+
+  it('the trail is the Ontario interview\'s own phases, in order, ending complete', () => {
+    expect(REC.phases.map((p) => p.id)).toEqual(['INTAKE', 'RESIDENCY', 'GROUNDS', 'CHILDREN', 'PROPERTY', 'SUPPORT', 'SERVICE', 'REVIEW']);
+    expect(phaseAt(0)).toMatchObject({ index: 0, total: 8, done: false, phase: { name: 'Getting Started' } });
+    for (let s = 1; s <= TURNS; s++) expect(phaseAt(s).index).toBeGreaterThanOrEqual(phaseAt(s - 1).index);
+    expect(phaseAt(TURNS)).toMatchObject({ index: 7, done: true });
   });
 
   it('ships both draft PDFs it points at', () => {
@@ -77,6 +100,7 @@ describe('preview pagination (port of the v1 DocumentPreview)', () => {
     expect(pages.length).toBeGreaterThan(1);
     const titles = pages.flatMap((p) => p.content).filter((b) => b.type === 'section-title').map((b) => b.content);
     expect(titles).toEqual(expect.arrayContaining(['I. PARTIES', 'IV. GROUNDS FOR DIVORCE']));
+    expect(pages[0].content[0]).toMatchObject({ type: 'filerBlock', content: expect.stringContaining('Applicant, Self-Represented') });
   });
 });
 

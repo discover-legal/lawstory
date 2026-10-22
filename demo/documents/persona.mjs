@@ -10,8 +10,8 @@ const fact = (content, category, extra = {}) => ({ content, category, ...extra }
 
 export const PERSONA = {
   client: 'Priya Nair (fictional)',
-  // ChatInterface.js at c34b131: the welcome message for a new divorce package.
-  welcome: "Hi! I'm here to help you create your divorce package, which includes both your Divorce Petition and Divorce Decree.\n\nTo begin, tell me your full legal name, your spouse's full legal name, and where you live.",
+  // ChatInterface.js at c34b131: the welcome message for a new divorce package, with Ontario's document names.
+  welcome: "Hi! I'm here to help you create your divorce package, which includes both your Application for divorce and your Divorce Order.\n\nTo begin, tell me your full legal name, your spouse's full legal name, and where you live.",
   turns: [
     { say: "Hi. I'm Priya Nair. My husband Daniel Okafor and I have been separated since March 2024 and I want to file for divorce in Ontario.",
       topics: ['name', 'i am', "i'm", 'my husband', 'my wife', 'spouse', 'divorce', 'ontario', 'separated'],
@@ -55,7 +55,7 @@ export const PERSONA = {
         extracted_facts: [fact('Child support will follow the Federal Child Support Guidelines amount, paid by Daniel Okafor.', 'children', { subcategory: 'child_support' })] } },
     { say: "We own the condo at 88 Harbour Street together and a 2021 Toyota RAV4. We don't have any debts, we paid off the car.",
       topics: ['own', 'condo', 'house', 'home', 'car', 'property', 'debts', 'debt', 'mortgage', 'account'],
-      model: { ...no, phase_complete: false, has_property: true, has_debts: false,
+      model: { ...no, phase_complete: false, has_property: true, // no has_debts: the merge confirms it (record.mjs)
         response: 'Thank you. Have you reached a separation agreement about property, or is that still to be resolved?',
         extracted_facts: [fact('Daniel Okafor and I jointly own a condominium at 88 Harbour Street, Toronto, and a 2021 Toyota RAV4.', 'property'),
           fact('We have no debts; the car loan is paid off.', 'property', { subcategory: 'no_debts' })] } },

@@ -55,7 +55,7 @@ const blJs = bl.body.match(/src="(\/demo\/biglaw\/assets\/[^"]+\.js)"/)?.[1];
 check(bl.body.includes('<div id="root">') && /frame-ancestors 'self';/.test(bl.r.headers.get('content-security-policy') ?? ''), '/demo/biglaw: app or headers');
 check([200, 308].includes((await get('/demo/biglaw/')).r.status), '/demo/biglaw/ not served');
 check(blJs && !/\bfetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource/.test((await get(blJs)).body), `${blJs} missing or uses a network API`);
-for (const d of ['petition', 'decree']) {
+for (const d of ['application', 'divorce-order']) {
   const { r, body } = await get(`/drafts/ontario-${d}-draft.pdf`);
   check(r.status === 200 && body.startsWith('%PDF'), `/drafts/ontario-${d}-draft.pdf not served`);
 }

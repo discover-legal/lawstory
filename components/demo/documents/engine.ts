@@ -14,12 +14,22 @@ export type DemoDoc = {
 };
 export type SubDocument = 'divorce_petition' | 'divorce_decree';
 type Turn = { say: string; topics: string[]; reply: string; doc: DemoDoc; preview: Record<SubDocument, Record<string, number>> };
+export type Phase = { id: string; name: string };
 type Recording = { source: string; recordedAt: string; client: string; welcome: string; sections: Section[];
-  pdfs: Record<SubDocument, { href: string; pages: number }>; turns: Turn[] };
+  pdfs: Record<SubDocument, { href: string; pages: number }>; phases: Phase[]; turns: Turn[] };
 
 export const REC = recording as unknown as Recording;
 export const TURNS = REC.turns.length;
 export const EMPTY_DOC: DemoDoc = { documentType: 'divorce_package', state: 'ON', facts: [] };
+/** Ontario's names for the two drafts (the v1 package called them Petition and Decree). */
+export const DOC_NAME: Record<SubDocument, string> = { divorce_petition: 'Application', divorce_decree: 'Divorce Order' };
+export const PROVINCE: Record<string, string> = { ON: 'Ontario' };
+
+/** The interview phase at `step` (every interview starts in the first) and the recorded phase list. */
+export const phaseAt = (step: number) => {
+  const i = step === 0 ? 0 : REC.phases.findIndex((p) => p.id === REC.turns[step - 1].doc.phase);
+  return { index: i, phase: REC.phases[i] ?? null, total: REC.phases.length, done: step >= TURNS };
+};
 
 export type Outcome = 'played' | 'out_of_order' | 'off_script' | 'finished';
 export type ChatResult = { response: string; step: number; affidavitData: DemoDoc; newFacts: Fact[]; outcome: Outcome };

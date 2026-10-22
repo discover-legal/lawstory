@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from '@/components/Icon';
 import { useDemoDocument } from './DemoDocumentContext';
-import type { SubDocument } from './engine';
+import { DOC_NAME, type SubDocument } from './engine';
 import { PAGE, paginate, type Block, type Measure } from './paginate';
 
 // The rendering half of components/app/DocumentPreview.js (c34b131): package tabs, zoom, WYSIWYG US
@@ -11,8 +11,8 @@ import { PAGE, paginate, type Block, type Measure } from './paginate';
 // Tailwind classes (this site's lint forbids both); zoom uses discrete classes, and phones start at
 // 40% and desktops at 50% (the product used 65% and 80%) so a page fits its narrower column here. The refresh button is gone: the recorded
 // engine re-renders on every turn.
-const TABS: Record<SubDocument, { label: string; icon: IconName }> = {
-  divorce_petition: { label: 'Petition', icon: 'fileText' }, divorce_decree: { label: 'Decree', icon: 'scale' },
+const TABS: Record<SubDocument, { label: string; icon: IconName }> = { // Ontario's names, not v1's Petition/Decree
+  divorce_petition: { label: DOC_NAME.divorce_petition, icon: 'fileText' }, divorce_decree: { label: DOC_NAME.divorce_decree, icon: 'scale' },
 };
 const DOWNLOADABLE = new Set<string>(['divorce_petition', 'divorce_decree']);
 const tabsFor = (required?: string[]) => {
@@ -25,7 +25,7 @@ const FONT = '"Times New Roman", Times, serif';
 let canvas: HTMLCanvasElement | null = null; // one measuring canvas, created on first use (client only)
 const PRE = 'm-0 whitespace-pre-wrap font-serif text-[16px]';
 const CLASS: Record<string, string> = {
-  header: 'mb-4 text-center font-bold', venue: 'mb-4 whitespace-pre-line text-center',
+  filerBlock: 'mb-6 whitespace-pre-line', header: 'mb-4 text-center font-bold', venue: 'mb-4 whitespace-pre-line text-center',
   caseCaption: 'mb-4 whitespace-pre-line border-b-2 border-black pb-5 text-center',
   title: 'mb-6 border-b-2 border-black pb-3 text-center text-[18px] font-bold', 'section-title': 'mb-3 mt-9 font-bold underline',
   paragraph: 'mb-6 text-justify', relief_item: 'mb-[5px] ml-[0.5in] text-justify', 'preformatted-text': 'mb-6 whitespace-pre-line text-justify',
@@ -92,8 +92,8 @@ export function DocumentPreview() {
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center max-w-md">
             <Icon name="fileText" className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-700 mb-2">Preview will appear shortly!</h3>
-            <p className="text-slate-500 mb-4">Once you provide your name in the chat, your divorce documents (petition and decree) will appear here with the correct formatting for your jurisdiction.</p>
+            <h3 className="text-lg font-medium text-slate-700 mb-2">Your drafts appear here</h3>
+            <p className="text-sm text-slate-500 mb-4">Once you give your name in the chat, your draft Application and Divorce Order appear here, formatted for Ontario, and update with every answer.</p>
           </div>
         </div>
       </div>

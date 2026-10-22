@@ -1,10 +1,10 @@
 # discover.legal
 
-> **Status: under construction on `site-v6`.** This README is the contract for the clean-slate rewrite
-> (design: Option C). Each PR into `site-v6` makes part of it true and updates this file in the same PR.
-> Items marked **[S1]** or **[S2-sample]** exist now; items marked **[planned: S<N>]** do not exist yet. Production
-> (`main`) still serves the previous product until the cutover. The previous product (accounts,
-> payments, 110 jurisdictions, v1 engine) is preserved on the branch `archive/pre-pareback`.
+> **Status: the clean-slate rewrite (design: Option C) is on `main` and serves discover.legal.** This README
+> is its contract; each PR keeps it true in the same change. Items marked **[S1]**, **[S2-sample]**,
+> **[site-restore]**, **[docs-live]** or **[biglaw-live]** exist now; items marked **[planned: S<N>]** do not
+> exist yet. The previous product (accounts, payments, 110 jurisdictions, v1 engine) is preserved on the
+> branch `archive/pre-pareback`.
 
 discover.legal is the website of a **legal-technology consultancy**. It sells four services: **Buy**
 (independent selection), **Build** (client-owned software), **Run** (managed operation on the firm's
@@ -13,13 +13,14 @@ next step; every price is "Price on request" until the owner sets numbers. It al
 products as **demos**, plus `/work` (honest status + consultancy, "Price on request").
 
 1. **discover.legal Documents (Ontario)** **[docs-live]** `/demo/discover-legal` is the product's own
-   editor (chat, Document Details, facts, paginated Petition/Decree preview; ported from the v1 app at
+   editor (chat, Document Details, facts, paginated preview of the Application and Divorce Order; ported from the v1 app at
    `c34b131` into `components/demo/documents/`) on a **recorded engine**: visitors type, their words
    pick the nearest recorded turn (off-script → the recorded question again, with a note), facts fill in,
    the draft updates, and the two draft PDFs download at the end. No model call, no request, nothing
    saved; Reset clears it. `demo/documents/record.mjs` builds `recording.json` + `public/drafts/*.pdf`
-   by running the real v1 Ontario interview code, templates and PDF renderer offline; the client's lines
-   and the per-turn model output are scripted (no real-model Ontario run exists in git history).
+   by running the real v1 Ontario interview code, life-story profile merge (`mergeUserProfile`, its table
+   in memory), templates and PDF renderer offline; the client's lines and the per-turn model output are
+   scripted (no real-model Ontario run exists in git history). Re-running it reproduces the files byte for byte.
 2. **BigLaw** **[biglaw-live]** `/demo/biglaw` is BigLaw's own v2 UI on its **recorded engine** (pick a
    matter, run a task, findings, click a quote to its highlighted source, the memo), vendored as built
    output in `public/demo/biglaw/` (index.html + one JS + one CSS, ~550 KB; `VERSION` names the BigLaw
@@ -40,35 +41,32 @@ set, and then Google sets its own cookies (see Limitations).
 ```
 app/                         Next.js App Router. Every route is prerendered (`npm run build` fails otherwise;
                              a `[param]` route passes only with `dynamicParams = false`).
-  layout.tsx                 [S2-sample] root layout: tokens + Protocol, header nav, footer (#contact, spelled-out email); GA: S6
-  page.tsx                   [S2-sample] / home: positioning, CTA, the two products, how we work
+  layout.tsx                 [site-restore] root layout: Tailwind look, header nav, footer (#contact, spelled-out email); GA: S6
+  page.tsx                   [site-restore] / home: positioning, CTA, the two products, how we work
   work/page.tsx              [S2-sample] /work products with honest status, consultancy ("Price on request"), CTA
-  demo/discover-legal/page.tsx  [docs-live] the playable Documents demo (/demo/biglaw: public/demo/biglaw, vendored)
+  demo/discover-legal/page.tsx  [docs-live] the playable Documents demo
+  research/, privacy/, tos/  [site-restore] /research (open experiments), /privacy, /tos
   sitemap.ts, robots.ts      [S2-sample] every route + allow only in the production build; else empty / Disallow: /
   not-found.tsx, icon.svg    [S1] 404 ("Page not found"), favicon
   services/page.tsx          [planned: S7] /services   packages ("Price on request"), pricing rules, FAQ
-  documents/page.tsx         [planned: S6] /documents  framing, iframe, "for law firms" CTA
-  documents/embed/page.tsx   [planned: S6] /documents/embed  the replay player (noindex; frameable by self, as /demo/** is)
-  biglaw/page.tsx            [planned: S7] /biglaw     BigLaw demo iframe or poster; run-it-yourself / managed CTAs
-  research/page.tsx          [planned: S7] /research   open experiments with their real status and repositories
   contact/page.tsx           [planned: S7] /contact    booking link first, obfuscated email second; works without JS
-  privacy/page.tsx, terms/page.tsx   [planned: S7]
-components/                  [S2-sample] Cta, useHydrated; [docs-live] demo/documents; [planned] PackageCard,
-                             Analytics (GA4), DemoFrame, player/{Player,Transcript,Chips,Preview}
-content/site.ts              [S2-sample] routes, nav, work, services (price null → "Price on request"), contact;
-                             [planned: S7] pricing.ts packages
+components/                  [site-restore] SiteChrome (nav, footer), PageHero, Prose, ContactCta, Icon, useHydrated;
+                             [docs-live] demo/documents (the ported editor + recorded engine); [planned] Analytics (GA4)
+content/site.ts              [S2-sample] routes, nav, work, services (price null → "Price on request"), contact
 styles/tokens.css            [S1] the 15 semantic tokens (colour, type, radius, shadow, status), light + dark
 styles/directions/*.css      [S1] case-file, protocol, chambers: token overrides only (see "Visual direction")
-styles/globals.css           [S1] element styles written only against tokens
-core/                        [planned: S2/S3] the v2 engine, trimmed to the Ontario divorce interview, plus
-                             intelligence/tape.ts (record/replay) and render/watermark.ts
-demo/documents/               [docs-live] persona.mjs, record.mjs (owner-run), recording.json; public/drafts/ its PDFs
-public/demo/                 [planned: S5] GENERATED, gitignored: tree.json, n/<node>.<kind>.html, preview.css, DEMO-*.pdf
-__tests__/site/              [S1] loc-budget, tokens, lint-colour, deps, config, deploy, repo (Jest, node, no network)
+styles/globals.css           [site-restore] Tailwind layers + element rules written only against tokens
+tailwind.config.ts           [site-restore] the marketing look's colours (brand blue), content globs
+core/                        [planned] the v2 engine, trimmed to the Ontario divorce interview (record/replay)
+demo/documents/              [docs-live] persona.mjs, record.mjs (owner-run), recording.json; public/drafts/ its PDFs
+public/demo/biglaw/          [biglaw-live] BigLaw's built UI, vendored (never hand-edit); other public/demo/* is gitignored
+__tests__/site/              [S1] loc-budget, tokens, lint-colour, deps, config, deploy, repo, pages; documents-demo,
+                             biglaw-demo (Jest, node, no network)
 e2e/smoke.spec.mjs           [planned: S9] Playwright smoke against the standalone server
 scripts/                     [S1] loc-budget.mjs + loc-budgets.json (line gate), colour-literals.json (lint list),
                              smoke.mjs (HTTP smoke), standalone-assets.mjs (prerender check + static copy after build),
-                             migrate.js (no-op for Render's old preDeployCommand; remove once the dashboard setting is cleared)
+                             sync-biglaw-demo.mjs (refreshes public/demo/biglaw), migrate.js (no-op for Render's old
+                             preDeployCommand; remove once the dashboard setting is cleared)
 Dockerfile, .dockerignore    [S1] standalone image, non-root, app files read-only, ENTRYPOINT [] (none)
 render.yaml                  [S1] the production service as it will be after cutover (see "Deploy")
 .github/                     [S1] workflows/ci.yml (the gates below); dependabot.yml (weekly npm + actions)
@@ -76,22 +74,20 @@ render.yaml                  [S1] the production service as it will be after cut
 ```
 
 **Dependencies** [S1, `deps.test`]. Runtime: exactly `next`, `react`, `react-dom`, exact versions. Dev
-(S1): `typescript`, `@types/{node,react,react-dom,jest}`, `eslint`, `eslint-config-next`, `jest`. Later
-PRs add `pdfkit`, `tsx` (S3/S5), `openai` (recording only, S4), `jest-environment-jsdom`,
-`@testing-library/react` (S6), `playwright-core` (S9). No Auth0, Stripe, pg, zod, Tailwind or js-yaml.
+(S1): `typescript`, `@types/{node,react,react-dom,jest}`, `eslint`, `eslint-config-next`, `jest`; site-restore adds
+`tailwindcss`, `postcss` (build time only). Planned: `playwright-core` (S9). No Auth0, Stripe, pg, zod or js-yaml.
 
 ### Redirects (308, in `next.config.mjs`) [planned: S7]
 | From | To |
 |---|---|
 | `www.`, `ca.`, `canada.`, `make.` hosts | apex `discover.legal`, same path |
-| `/tools/documents`, `/tools/biglaw` | `/documents`, `/biglaw` |
-| `/tos` | `/terms` |
+| `/tools/documents`, `/tools/biglaw` | `/demo/discover-legal`, `/demo/biglaw` |
 | `/resources`, `/resources/:slug`, `/brand` | `/` (all 69 articles and the brand page are cut) |
-| `/dashboard`, `/editor/:path*`, `/profile`, `/legal-profile`, `/respond`, `/serve`, `/hearing`, `/payment-success` | `/documents` |
+| `/dashboard`, `/editor/:path*`, `/profile`, `/legal-profile`, `/respond`, `/serve`, `/hearing`, `/payment-success` | `/demo/discover-legal` |
 
-Until S7 these paths answer 404 on the `site-v6` preview.
+Until S7 these paths answer 404.
 
-### Security headers [S1 baseline; S6 adds the frame, GA and embed rules]
+### Security headers [S1 baseline; S6 adds the GA rules]
 `next.config.mjs` sends these on every path (exact values pinned by `config.test`, checked live by
 `scripts/smoke.mjs`); they match or exceed the old production site:
 - CSP `default-src 'self'; script-src 'self' 'unsafe-inline'` (Next's inline bootstrap); `style-src
@@ -106,10 +102,8 @@ Until S7 these paths answer 404 on the `site-v6` preview.
   `https://discover.legal`; `/api/health` (a copy of the home page) is always `noindex`.
 - HTML is `public, max-age=0, must-revalidate` (Next's default is `s-maxage=31536000`); hashed
   `/_next/static` assets keep `immutable`.
-- `/demo/**` (S5's previews, framed by the S6 player; also the S2 sample pages) gets `frame-ancestors 'self'` and `SAMEORIGIN`; a
-  preview links its CSS as a same-origin file, so `style-src` stays `'self'` everywhere.
-- [planned: S6] `frame-src 'self' <BigLaw demo origin>`; `/documents/embed` gets `frame-ancestors 'self'`
-  and `SAMEORIGIN`. Only when `NEXT_PUBLIC_GA_ID` matches `^G-[A-Z0-9]{4,16}$`: Google's GA4 origins
+- `/demo/**` (the two demos) gets `frame-ancestors 'self'` and `SAMEORIGIN`; `style-src` stays `'self'` everywhere.
+- [planned: S6] Only when `NEXT_PUBLIC_GA_ID` matches `^G-[A-Z0-9]{4,16}$`: Google's GA4 origins
   (`*.googletagmanager.com` in `script-src`; it plus `*.google-analytics.com`, `*.analytics.google.com`
   in `connect-src` and `img-src`). Unset, no Google origin appears anywhere.
 
@@ -135,7 +129,7 @@ runtime is not detected.
 
 ---
 
-## The Ontario replay pipeline [planned: S2–S5, S10]
+## The Ontario replay pipeline [planned: S2–S5, S10; until then the docs-live recorded engine above stands in]
 
 ```
  demo/personas/on-marcus.json ─► demo:record ─► demo/fixtures/on-marcus/v1/{manifest,tape,snapshot}  (owner, real model, once)
@@ -143,7 +137,7 @@ runtime is not detected.
           ├─► public/demo/on-marcus/v1/tree.json             transcript tree
           ├─► public/demo/on-marcus/v1/n/<node>.<kind>.html  draft preview per step
           └─► public/demo/on-marcus/v1/DEMO-on-marcus-<leaf>-<kind>.pdf  (watermarked)
- /documents/embed  Player: reads only those static files; Next / Back / chips; PDF links at the end
+ /demo/discover-legal  the editor reads only those static files; PDF links at the end
 ```
 Every model call during recording goes through `Tape(record)` keyed by
 `kind:purpose:sha256(canonical request)`; the build replays with no model and fails with
@@ -176,7 +170,6 @@ docker run --rm -p 3000:3000 discover-legal      # PORT=3000 and HOSTNAME=0.0.0.
 | `NEXT_PUBLIC_SITE_URL` | build | [S1] Canonical origin. Exactly `https://discover.legal` (render.yaml): indexable. Otherwise every response says `noindex`. S7: sitemap, robots, `metadataBase`. |
 | `NEXT_PUBLIC_BOOKING_URL` | build | [S2-sample] Scheduler link (https only), the primary CTA "Book a call". Unset/invalid: "Email us" is primary, assembled in the browser (no-JS: `#contact`). |
 | `NEXT_PUBLIC_GA_ID` | build | [planned: S6] GA4 ID (`G-…`). Unset: no analytics, no Google origin in the CSP. Never production's ID on a preview. |
-| `NEXT_PUBLIC_BIGLAW_DEMO_URL` | build | [planned: S7] BigLaw demo origin to embed. Unset: /biglaw shows a poster; `frame-src` stays `'none'`. |
 | `DEMO_LLM_API_KEY`, `DEMO_LLM_BASE_URL`, `DEMO_LLM_MODEL` | owner's machine | [planned: S4] `demo:record` only. Never set on Render. |
 
 `NEXT_PUBLIC_*` values are inlined into public output at build time: never put a secret in one. Every
@@ -195,9 +188,10 @@ NUL and its extension is not binary (png jpg gif webp ico woff woff2 pdf: not co
 counted whatever its extension); or a path is a symlink, a submodule or not a regular file.
 
 ### Test [S1]
-- `npm test`: 8 suites in `__tests__/site/` (their `it` names state what each pins): `loc-budget`,
+- `npm test`: 10 suites in `__tests__/site/` (their `it` names state what each pins): `loc-budget`,
   `tokens`, `lint-colour`, `deps`, `config`, `deploy`, `repo`, `pages` (routes, sample disclosure, no form
-  controls or literal email, CTA with/without booking URL, sitemap/robots). `scripts/smoke.mjs` also
+  or literal email, inputs only under /demo/*, CTA with/without booking URL, sitemap/robots), `documents-demo`
+  (recording, recorded engine, Ontario names and phases, no network), `biglaw-demo` (vendored bundle). `scripts/smoke.mjs` also
   checks every route is 200 and prerendered and that every internal link on them resolves.
 - CI (`.github/workflows/ci.yml`) runs on pushes to `main` and `site-v6` and on PRs into either (PR
   branches have no push trigger, so nothing runs twice; only PR runs cancel each other), on

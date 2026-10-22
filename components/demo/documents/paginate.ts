@@ -2,7 +2,9 @@ import type { Sections } from './engine';
 
 // The pagination half of components/app/DocumentPreview.js (c34b131), ported to TypeScript: the same
 // section orders, flattening, height estimates and keep-together rule, so the demo pages break where
-// the product's did. `measure` is the product's canvas text measurement (DocumentPreview.tsx).
+// the product's did. `measure` is the product's canvas text measurement (DocumentPreview.tsx). One
+// addition: the Application's filer block (name, address lines), which the PDF prints first and v1's
+// editor preview left out, so the preview and the download match.
 export type Block = { type: string; content: string; keepWithNext?: boolean; isLastFact?: boolean };
 export type Page = { content: Block[]; pageNumber: number };
 export type Measure = (text: string, fontSize: number, maxWidth: number, pre?: boolean) => number;
@@ -11,7 +13,7 @@ export const PAGE = { width: 8.5, marginLeft: 1, marginRight: 1, lineHeight: 24,
 const CONTINUATION_MARKER_HEIGHT = 36;
 const MAX_PAGE_HEIGHT = 850;
 const ORDERS: Record<string, string[]> = {
-  divorce_petition: ['header', 'venue', 'caseCaption', 'title', 'parties', 'jurisdiction', 'marriageInfo', 'grounds',
+  divorce_petition: ['filerBlock', 'header', 'venue', 'caseCaption', 'title', 'parties', 'jurisdiction', 'marriageInfo', 'grounds',
     'childrenInfo', 'propertyInfo', 'reliefRequested', 'verification', 'signatureBlock', 'footer'],
   divorce_decree: ['header', 'venue', 'caseCaption', 'title', 'appearances', 'jurisdiction', 'dissolution', 'propertyDivision',
     'debtAllocation', 'childCustody', 'childSupport', 'spousalSupport', 'nameChange', 'finalOrders', 'judgmentBlock', 'signatureBlock', 'footer'],
@@ -42,7 +44,8 @@ function flatten(sections: Sections, docType: string): Block[] {
     if (!raw) continue;
     if (typeof raw === 'string') { out.push({ type: key, content: raw }); continue; }
     const s = raw as Sec;
-    if (key === 'caseCaption') out.push({ type: 'caseCaption', content: s.formatted || s.content || '' });
+    if (key === 'filerBlock') out.push({ type: 'filerBlock', content: ((s as { lines?: string[] }).lines ?? []).join('\n') });
+    else if (key === 'caseCaption') out.push({ type: 'caseCaption', content: s.formatted || s.content || '' });
     else if (key === 'signatureBlock') out.push({ type: 'signature', content: s.formatted || s.content || '' });
     else if (s.title && (s.items || s.text)) {
       out.push({ type: 'section-title', content: s.title, keepWithNext: true });
@@ -68,6 +71,7 @@ function height(b: Block, m: Measure, following = false): number {
     case 'venue': return 24 * Math.max(1, t.split('\n').length) + 16;
     case 'title': return 80;
     case 'caseCaption': return m(t, f, w, true) + 38;
+    case 'filerBlock': return m(t, f, w, true) + 24;
     case 'signature': return m(t, f, w, true) + 30;
     case 'verification': return m(t, f, w, true) + PAGE.lineHeight * 2;
     case 'preformatted-text': return m(t, f, w, true) + PAGE.lineHeight;
