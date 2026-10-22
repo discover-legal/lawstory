@@ -8,6 +8,7 @@
 //    content fails unless the extension is in BINARY: then it is not counted, but capped at BINARY_MAX_BYTES.
 //  - A line ends at LF, CRLF, a lone CR, U+2028, U+2029 or NEL; an unterminated last line counts. Each line counts once per
 //    started LINE_BYTES bytes, so a long-line or one-line file is charged for its size, in every type.
+//  - VENDORED (built output from another repo, gated by its own tests) is not counted.
 //  - Symlinks, submodules and anything else that is not a regular file fail; only ENOENT (deleted but
 //    still in the index) is skipped.
 import { execFileSync } from 'node:child_process';
@@ -18,6 +19,7 @@ const HARD_MAX_LINES = 2000;
 const LINE_BYTES = 200;
 const BINARY = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.woff', '.woff2', '.pdf']);
 const BINARY_MAX_BYTES = 1_000_000;
+const VENDORED = ['public/demo/biglaw/']; // scripts/sync-biglaw-demo.mjs; pages.test caps its size
 
 const args = process.argv.slice(2);
 const bi = args.indexOf('--budgets');
@@ -49,7 +51,7 @@ if (entrySum > budgets.total) errors.push(`entry budgets sum to ${entrySum} > to
 const git = (...a) => execFileSync('git', a, { cwd: root, maxBuffer: 64 << 20 }).toString('utf8').split('\0').filter(Boolean);
 const mode = new Map(git('ls-files', '-s', '-z').map((l) => [l.slice(l.indexOf('\t') + 1), l.split(' ')[0]]));
 const paths = [...new Set([...mode.keys(), ...git('ls-files', '-z', '--others', '--exclude-standard')])]
-  .filter((p) => p !== 'package-lock.json');
+  .filter((p) => p !== 'package-lock.json' && !VENDORED.some((v) => p.startsWith(v)));
 
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 const byEntry = new Map(); let total = 0;

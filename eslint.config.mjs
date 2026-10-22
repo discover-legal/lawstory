@@ -42,5 +42,5 @@ export default defineConfig([
     ban(`AssignmentExpression[left.property.name=${SLOT_KEY}]${notToken('right')}`, COL),
     ban(`CallExpression[callee.property.name=/^setAttribute/] > Literal.arguments[value=${SLOT_KEY}]`, COL)] } },
   { files: ['**/*.js'], rules: { '@typescript-eslint/no-require-imports': 'off' } },
-  globalIgnores(['.next/**', 'out/**', 'coverage/**', 'next-env.d.ts']),
+  globalIgnores(['.next/**', 'out/**', 'coverage/**', 'next-env.d.ts', 'public/demo/**']),
 ]);

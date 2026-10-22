@@ -6,8 +6,9 @@ export const PRODUCTION_ORIGIN = 'https://discover.legal';
 /** Only the production build is indexable (next.config.mjs sends X-Robots-Tag noindex everywhere else). */
 export const indexable = process.env.NEXT_PUBLIC_SITE_URL === PRODUCTION_ORIGIN;
 
-/** Every page route; the sitemap, the smoke script and the route tests read this list. */
+/** Every route; the sitemap, the smoke script and the route tests read this list. STATIC_APPS are vendored builds in public/. */
 export const ROUTES = ['/', '/work', '/demo/discover-legal', '/demo/biglaw', '/research', '/privacy', '/tos'] as const;
+export const STATIC_APPS: readonly string[] = ['/demo/biglaw'];
 export const NAV = [{ href: '/work', label: 'Services' }, { href: '/demo/discover-legal', label: 'Documents' },
   { href: '/demo/biglaw', label: 'BigLaw' }, { href: '/research', label: 'Research' }] as const;
 export const GITHUB_ORG = 'https://github.com/discover-legal';

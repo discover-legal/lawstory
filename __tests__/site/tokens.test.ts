@@ -127,7 +127,7 @@ describe('design tokens', () => {
 
   it('CSS lives only in styles/ (tokens, globals, directions): no CSS file or module anywhere else', () => {
     const css = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '*.css', '*.scss', '*.sass', '*.less'],
-      { cwd: repo, encoding: 'utf8' }).split('\n').filter(Boolean).sort();
+      { cwd: repo, encoding: 'utf8' }).split('\n').filter((f) => f && !f.startsWith('public/demo/biglaw/')).sort(); // vendored build
     expect(css).toEqual(['styles/globals.css', 'styles/tokens.css', ...DIRECTIONS.map((d) => `styles/directions/${d}`)].sort());
   });
 
