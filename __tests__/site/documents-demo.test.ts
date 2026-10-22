@@ -55,6 +55,37 @@ describe('recording', () => {
     expect(text(TURNS, 'divorce_petition')).toContain('Court File No. ______________');
   });
 
+  it('a relief item renders only once the interview recorded a fact or request that supports it', () => {
+    const relief = (s: number) => ((previewAt(s, 'divorce_petition')!.sections.reliefRequested as { items: { content: string; letter?: string }[] })
+      .items.filter((i) => i.letter));
+    for (let s = 1; s <= TURNS; s++) {
+      const facts = docAt(s).facts.map((f) => f.content).join(' ');
+      const items = relief(s).map((i) => i.content).join(' ');
+      expect(relief(s).map((i) => i.letter).join('')).toBe('abcdefgh'.slice(0, relief(s).length));
+      expect(items).not.toMatch(/matrimonial home|debts|spousal support/); // no possession or debt request, no waiver recorded
+      expect(/net family properties/.test(items)).toBe(/jointly own/.test(facts));
+      expect(/parenting order/.test(items)).toBe(/two children/.test(facts));
+      expect(/child support order/.test(items)).toBe(/Child support will follow/.test(facts));
+    }
+    expect(relief(TURNS).map((i) => i.content.slice(0, 18))).toEqual(['A divorce order pu', 'Equalization of ne', 'A parenting order ',
+      'A child support or', 'Such further and o']);
+    // Before the facts exist, the drafts hold blanks, not claims, findings or orders.
+    const first = text(1, 'divorce_petition') + text(1, 'divorce_decree');
+    expect(first).not.toMatch(/no (minor )?children|separate and apart for|parties own property|Okafor, (was served|accepted)|ORDERS that each party (retains|shall be responsible)|child support shall/);
+  });
+
+  it('reads as an Ontario pleading and order: articles, Ontario wording and full citations', () => {
+    const all = JSON.stringify(REC.sections);
+    expect(all).not.toMatch(/\b(by|and|to|with|of|that) (Applicant|Respondent)\b|(^|\\n|")(Applicant|Respondent), (?!Self-Represented)/);
+    expect(all).not.toMatch(/IT IS ORDERED|habitually|Venue is proper|JUDGE PRESIDING|none are expected|resident of \d|hearing the parties|c\. 3(?! \(2nd Supp\.\))/);
+    expect(all).not.toMatch(/health and dental|disposes of all matters|not expressly granted is dismissed/); // nothing recorded; property still open
+    const final = text(TURNS, 'divorce_petition') + text(TURNS, 'divorce_decree');
+    expect(final).not.toContain('child(ren)');
+    for (const s of ['by the Applicant and the Respondent', 'The Applicant, Priya Nair, resides in Toronto', 'ordinarily resident in Ontario',
+      'THIS COURT ORDERS that Priya Nair and Daniel Okafor, who were married in Toronto, Ontario, on June 14, 2014, are divorced',
+      'are not determined by this Order', 'Daniel Okafor shall pay to Priya Nair child support']) expect(final).toContain(s);
+  });
+
   it('the trail is the Ontario interview\'s own phases, in order, ending complete', () => {
     expect(REC.phases.map((p) => p.id)).toEqual(['INTAKE', 'RESIDENCY', 'GROUNDS', 'CHILDREN', 'PROPERTY', 'SUPPORT', 'SERVICE', 'REVIEW']);
     expect(phaseAt(0)).toMatchObject({ index: 0, total: 8, done: false, phase: { name: 'Getting Started' } });
@@ -109,7 +140,7 @@ describe('preview pagination (port of the v1 DocumentPreview)', () => {
     const [p1, p2] = at(TURNS, 'divorce_decree');
     const head = p1.content.at(-1)!; const tail = p2.content[0];
     expect([head.split, tail.split]).toEqual(['head', 'tail']);
-    expect(`${head.content} ${tail.content}`).toContain('is dissolved pursuant to section 8 of the Divorce Act');
+    expect(`${head.content} ${tail.content}`).toContain('are divorced pursuant to section 8 of the Divorce Act');
     const pages = at(TURNS, 'divorce_petition');
     const titles = pages.flatMap((p) => p.content).filter((b) => b.type === 'section-title').map((b) => b.content);
     expect(titles).toEqual(expect.arrayContaining(['I. PARTIES', 'IV. GROUNDS FOR DIVORCE']));

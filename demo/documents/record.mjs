@@ -20,7 +20,9 @@
 // The preview gets pdfService's own sanitizeForFiling (template [TOKENS] become the PDF's blank line).
 // PRODUCT FIXES: v1-template-fixes.patch is applied to the extracted tree before anything runs (Ontario
 // "family debts", the parenting schedule as order text or a standard Draft note, children as one
-// paragraph with a sub-list), so every word still comes from the product's (fixed) templates.
+// paragraph with a sub-list; a claim, finding or order only from a recorded fact or request, else a
+// Draft blank; Ontario wording: articles, "THIS COURT ORDERS", s.3 / r. 5(1) / Guidelines s.13, full
+// Divorce Act cites), so every word still comes from the product's (fixed) templates.
 // Page breaks: each turn's two drafts are also rendered to PDF with PDFKit's text() traced, and the
 // preview breaks its pages at the same blocks (or inside the same paragraph, at the same word).
 import { execFileSync } from 'node:child_process';
