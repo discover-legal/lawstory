@@ -23,7 +23,7 @@ function Mark({ dark = false }: { dark?: boolean }) {
 
 export function SiteNav() {
   return (
-    <nav aria-label="Main" className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/70">
+    <nav aria-label="Main" className="sticky top-0 z-50 bg-white border-b border-slate-200/70">
       <div className={WRAP}>
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">

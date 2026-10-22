@@ -10,8 +10,8 @@ export const metadata: Metadata = { title: 'Documents demo', description: LEDE }
 const DISCLOSURE = 'Recorded demo: a fictional client (Priya Nair) and a fixed recording, not live AI. It is not legal advice. Nothing you type is sent anywhere or saved; it stays in this browser tab until you reset or leave.';
 
 const HOW: [string, string][] = [
-  ['The interface', 'The product’s editor, ported from the app: the interview chat, Document Details, the facts list, and the paginated draft preview with its Petition and Decree tabs. Accounts, payment, saving and evidence upload are taken out.'],
-  ['The drafts', 'Every word of the preview and the PDFs is produced by the product’s own Ontario templates and PDF renderer, run over the recorded facts. Nothing in a draft was written for this page.'],
+  ['The interface', 'The product’s editor, ported from the app: the interview chat, Document Details, the facts list, and the paginated draft preview with its Application and Divorce Order tabs. Accounts, payment, saving and evidence upload are taken out.'],
+  ['The drafts', 'Every word of the preview and the PDFs is produced by the product’s own Ontario templates and PDF renderer, run over the recorded facts. Nothing in a draft was written for this page. Four template fixes this demo found (Ontario debt wording, the parenting schedule, the children list, page breaks) are applied to the product’s code as a patch, not to the drafts.'],
   ['The replies', 'There is no recorded live-model run of an Ontario interview to replay, so the assistant’s replies were scripted for this recording from the product’s Ontario interview questions, and the product’s interview code turned each turn into facts and the next phase. Your words are matched to the nearest recorded answer; anything off-script gets the recorded question again.'],
 ];
 

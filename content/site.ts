@@ -65,7 +65,7 @@ export const SOLUTIONS: Solution[] = [
     icon: 'fileText', tint: 'bg-brand-tint text-brand', cta: 'Explore Documents',
     tagline: 'A guided interview turns a client’s story into organized Ontario family-law drafts, in the vocabulary the court uses. Shown here as a scripted sample with a fictional client.',
     points: ['Interview once; every document fills from the same record', 'Every fact keeps the words it came from',
-      'A missing fact becomes a Draft note, never an invention', 'A sample: no accounts, nothing to type, nothing saved'] },
+      'A missing fact becomes a Draft note, never an invention', 'A recorded demo: no accounts, nothing sent, nothing saved'] },
   { key: 'biglaw', name: 'BigLaw', href: '/demo/biglaw', status: 'Free · Open source · Experimental', source: BIGLAW_REPO,
     icon: 'scale', tint: 'bg-purple-50 text-purple-600', cta: 'Explore BigLaw',
     tagline: 'An open-source legal AI platform: research, drafting, redlining, e-signatures, docketing and billing, orchestrated by a bench of agents with a verification protocol between every finding and the page.',

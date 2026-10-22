@@ -51,5 +51,5 @@ node scripts/smoke.mjs http://localhost:3000   # headers / health / 404 smoke of
 ## Layout
 `app/` pages · `styles/` tokens, directions, globals · `scripts/` loc-budget(s), smoke,
 standalone-assets · `__tests__/site/` · `Dockerfile` · `render.yaml` · `.github/` CI (main + site-v6) + Dependabot.
-`components/` (Cta, demo/) · `content/` (site.ts). Planned: `core/` (v2 engine, Ontario only), `demo/` (record/replay),
+`components/` (SiteChrome, ContactCta, demo/documents) · `content/` (site.ts) · `demo/documents/` (record.mjs, recording). Planned: `core/` (v2 engine, Ontario only),
 `e2e/` (see README).

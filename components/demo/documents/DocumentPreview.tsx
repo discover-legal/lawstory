@@ -3,16 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from '@/components/Icon';
 import { useDemoDocument } from './DemoDocumentContext';
-import type { SubDocument } from './engine';
-import { PAGE, paginate, type Block, type Measure } from './paginate';
+import { DOC_NAME, type SubDocument } from './engine';
+import { paginate, type Block } from './paginate';
 
 // The rendering half of components/app/DocumentPreview.js (c34b131): package tabs, zoom, WYSIWYG US
-// Letter pages, page counter and navigation. The product's <style> block and inline styles become
+// Letter pages (broken where the draft's PDF breaks, from the recording), page counter and navigation. The product's <style> block and inline styles become
 // Tailwind classes (this site's lint forbids both); zoom uses discrete classes, and phones start at
 // 40% and desktops at 50% (the product used 65% and 80%) so a page fits its narrower column here. The refresh button is gone: the recorded
 // engine re-renders on every turn.
-const TABS: Record<SubDocument, { label: string; icon: IconName }> = {
-  divorce_petition: { label: 'Petition', icon: 'fileText' }, divorce_decree: { label: 'Decree', icon: 'scale' },
+const TABS: Record<SubDocument, { label: string; icon: IconName }> = { // Ontario's names, not v1's Petition/Decree
+  divorce_petition: { label: DOC_NAME.divorce_petition, icon: 'fileText' }, divorce_decree: { label: DOC_NAME.divorce_decree, icon: 'scale' },
 };
 const DOWNLOADABLE = new Set<string>(['divorce_petition', 'divorce_decree']);
 const tabsFor = (required?: string[]) => {
@@ -21,22 +21,26 @@ const tabsFor = (required?: string[]) => {
 };
 const ZOOM: Record<number, string> = { 30: '[zoom:0.3]', 40: '[zoom:0.4]', 50: '[zoom:0.5]', 60: '[zoom:0.6]', 70: '[zoom:0.7]', 80: '[zoom:0.8]',
   90: '[zoom:0.9]', 100: '[zoom:1]', 110: '[zoom:1.1]', 120: '[zoom:1.2]', 130: '[zoom:1.3]', 140: '[zoom:1.4]', 150: '[zoom:1.5]' };
-const FONT = '"Times New Roman", Times, serif';
-let canvas: HTMLCanvasElement | null = null; // one measuring canvas, created on first use (client only)
-const PRE = 'm-0 whitespace-pre-wrap font-serif text-[16px]';
+// services/pdfService.js's layout in CSS px (1pt = 4/3 px): Times 12pt body = 16px with lineGap 6 →
+// 26px lines; moveDown(n) = n × 18px at 12pt; caption 12pt solid; titles 13–14pt bold, centred; first-line
+// indent 36pt = 48px. Pages break where the PDF's do (recorded), so the type has to fill them the same way.
 const CLASS: Record<string, string> = {
-  header: 'mb-4 text-center font-bold', venue: 'mb-4 whitespace-pre-line text-center',
-  caseCaption: 'mb-4 whitespace-pre-line border-b-2 border-black pb-5 text-center',
-  title: 'mb-6 border-b-2 border-black pb-3 text-center text-[18px] font-bold', 'section-title': 'mb-3 mt-9 font-bold underline',
-  paragraph: 'mb-6 text-justify', relief_item: 'mb-[5px] ml-[0.5in] text-justify', 'preformatted-text': 'mb-6 whitespace-pre-line text-justify',
-  continuation: 'mb-3 mt-6 text-center text-[15px] italic text-slate-700',
+  filerBlock: 'mb-[25px] whitespace-pre-line text-[14.7px] leading-[19px]',
+  header: 'mb-[30px] text-center text-[21px] font-bold', venue: 'mb-[28px] whitespace-pre-line text-center text-[18.7px] font-bold',
+  caseCaption: 'mb-[18px] whitespace-pre-line border-b border-black pb-[27px] text-center leading-[18px]',
+  title: 'mb-[31px] border-b border-black pb-[3px] text-center text-[18.7px] font-bold leading-[21px]',
+  'section-title': 'mb-[16px] mt-[9px] text-center text-[17.3px] font-bold leading-[19px]',
+  num: 'mb-[14px] whitespace-pre-line pl-[22px] -indent-[22px] text-justify', 'num-d': 'mb-[11px] whitespace-pre-line pl-[22px] -indent-[22px] text-justify',
+  prose: 'mb-[26px] whitespace-pre-line indent-[48px] text-justify', 'prose-d': 'mb-[11px] whitespace-pre-line indent-[48px] text-justify', sub: 'mb-[14px] ml-[72px]',
+  relief_intro: 'mb-[9px] indent-[48px] text-justify', relief_item: 'mb-[9px] ml-[48px] pl-[24px] -indent-[24px] text-justify',
+  relief_more: 'mb-[9px] indent-[96px] text-justify', signature: 'my-[27px] whitespace-pre-line leading-[23px]',
+  judgment: 'mt-[36px] whitespace-pre-line leading-[23px]',
 };
 
 function Section({ b }: { b: Block }) {
-  if (b.type === 'signature' || b.type === 'judgmentBlock' || b.type === 'footer') return <div className="mb-6 mt-12"><pre className={PRE}>{b.content}</pre></div>;
-  if (b.type === 'verification') return <div className="mb-6 mt-12"><pre className={`${PRE} leading-6`}>{b.content}</pre></div>;
-  if (b.type === 'paragraph' || b.type === 'relief_item') return <p className={CLASS[b.type]}>{b.content}</p>;
-  return <div className={CLASS[b.type] ?? 'mb-6 indent-[0.5in] text-justify'}>{b.content}</div>;
+  // A paragraph the PDF carries over: no gap after the head, no first-line indent on the tail.
+  const split = b.split === 'head' ? ' !mb-0' : b.split === 'tail' ? ' !indent-0' : '';
+  return <div className={`${CLASS[b.type] ?? 'mb-[26px] whitespace-pre-line'}${b.bold ? ' font-bold' : ''}${split}`}>{b.content}</div>;
 }
 
 export function DocumentPreview() {
@@ -49,25 +53,7 @@ export function DocumentPreview() {
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const pages = useMemo(() => {
-    const measure: Measure = (text, fontSize, maxWidth, pre = false) => {
-      canvas ??= document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return PAGE.lineHeight * Math.ceil(text.length / 80);
-      ctx.font = `${fontSize}px ${FONT}`;
-      const wrap = (line: string) => {
-        let n = 0; let cur = '';
-        for (const word of line.split(' ')) {
-          const test = cur ? `${cur} ${word}` : word;
-          if (ctx.measureText(test).width > maxWidth && cur) { n++; cur = word; } else cur = test;
-        }
-        return n + (cur ? 1 : 0);
-      };
-      const lines = pre ? text.split('\n').reduce((n, l) => n + (l.trim() === '' ? 1 : wrap(l)), 0) : wrap(text);
-      return lines * PAGE.lineHeight;
-    };
-    return preview ? paginate(preview.sections, active, measure) : [];
-  }, [preview, active]);
+  const pages = useMemo(() => (preview ? paginate(preview.sections, active, preview.breaks) : []), [preview, active]);
   const total = pages.length;
 
   useEffect(() => {
@@ -92,8 +78,8 @@ export function DocumentPreview() {
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center max-w-md">
             <Icon name="fileText" className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-700 mb-2">Preview will appear shortly!</h3>
-            <p className="text-slate-500 mb-4">Once you provide your name in the chat, your divorce documents (petition and decree) will appear here with the correct formatting for your jurisdiction.</p>
+            <h3 className="text-lg font-medium text-slate-700 mb-2">Your drafts appear here</h3>
+            <p className="text-sm text-slate-500 mb-4">Once you give your name in the chat, your draft Application and Divorce Order appear here, formatted for Ontario, and update with every answer.</p>
           </div>
         </div>
       </div>
@@ -128,9 +114,9 @@ export function DocumentPreview() {
         <div className={`mx-auto w-fit ${ZOOM[zoom]}`}>
           {pages.map((page, i) => (
             <div key={`${active}-${page.pageNumber}`} ref={(el) => { pageRefs.current[i] = el; }} data-page-number={page.pageNumber}
-              className={`relative box-border h-[1056px] w-[816px] overflow-hidden bg-white p-24 font-serif text-[16px] leading-6 text-black shadow-md ${i < total - 1 ? 'mb-8' : ''}`}>
+              className={`relative box-border h-[1056px] w-[816px] overflow-hidden bg-white p-24 font-times text-[16px] leading-[26px] text-black shadow-md ${i < total - 1 ? 'mb-8' : ''}`}>
               {page.content.map((b, j) => <Section key={j} b={b} />)}
-              <div className="absolute bottom-[0.5in] left-1/2 -translate-x-1/2 text-xs text-slate-500">Page {page.pageNumber} of {total}</div>
+              <div className="absolute bottom-[34px] left-1/2 -translate-x-1/2 whitespace-nowrap text-[13px] leading-none text-black">Page {page.pageNumber} of {total} • Created with Discover.Legal</div>
             </div>
           ))}
         </div>

@@ -1,0 +1,565 @@
+diff --git a/services/agents/BaseDivorceOrchestrator.js b/services/agents/BaseDivorceOrchestrator.js
+index fa238d5..793d6bc 100644
+--- a/services/agents/BaseDivorceOrchestrator.js
++++ b/services/agents/BaseDivorceOrchestrator.js
+@@ -227,2 +227,4 @@ function buildPhaseTool(stateCode, { nameMissing = false } = {}) {
+           has_debts:    { type: 'boolean', description: 'true if the parties accumulated community/marital debts during the marriage, false if none' },
++          matrimonial_home_possession_requested: { type: 'boolean', description: 'true ONLY when the user explicitly asks to stay in / have possession of the family home; never inferred from owning or living in it' },
++          debt_allocation_requested: { type: 'boolean', description: 'true ONLY when the user explicitly asks the court to decide who pays which debts' },
+           petitioner_property: { type: 'array', items: { type: 'string' }, description: `Assets the petitioner keeps. Extract ONLY assets the user explicitly assigned to the petitioner. ${PROPERTY_ITEM_DESCRIPTION}` },
+@@ -445,2 +447,4 @@ const FIELD_MAP = {
+   has_debts:                   'hasDebts',
++  matrimonial_home_possession_requested: 'matrimonialHomePossessionRequested',
++  debt_allocation_requested:   'debtAllocationRequested',
+   petitioner_property:         'petitionerProperty',
+diff --git a/services/pdfService.js b/services/pdfService.js
+index f03417a..a17ac05 100644
+--- a/services/pdfService.js
++++ b/services/pdfService.js
+@@ -527,2 +527,11 @@ class PDFService {
+             this.renderNumberedParagraph(doc, item.number, item.content);
++          } else if (/_item$/.test(item.type || '')) {
++            // Sub-list entry ("(a) …") of the numbered paragraph above:
++            // an indented block.
++            const left = doc.page.margins.left + 54;
++            doc.fontSize(12).font('Times-Roman');
++            doc.text(item.content, left, doc.y, {
++              width: doc.page.width - left - doc.page.margins.right, align: 'left', lineGap: 6,
++            });
++            doc.x = doc.page.margins.left;
+           } else {
+diff --git a/services/supportDocs/BaseAnswerTemplate.js b/services/supportDocs/BaseAnswerTemplate.js
+index 60fdfdd..07fb2b6 100644
+--- a/services/supportDocs/BaseAnswerTemplate.js
++++ b/services/supportDocs/BaseAnswerTemplate.js
+@@ -130,2 +130,7 @@ function canadianize(text) {
+     .replace(/\bmarital property\b/gi, 'family property')
++    // Ontario is not a community-property province: the base decree's
++    // "community debts" / "marital/community debts" are family debts here.
++    .replace(/\bmarital\/community debts\b/gi, 'family debts')
++    .replace(/\bcommunity debts\b/gi, 'family debts')
++    .replace(/\bcommunity property\b/gi, 'family property')
+     // "Counter-Petition" is a US usage; Ontario Form 10 carries the
+diff --git a/templates/core/BaseDivorcePetitionTemplate.js b/templates/core/BaseDivorcePetitionTemplate.js
+index 28bc277..b6bec6d 100644
+--- a/templates/core/BaseDivorcePetitionTemplate.js
++++ b/templates/core/BaseDivorcePetitionTemplate.js
+@@ -643,3 +643,3 @@ class BaseDivorcePetitionTemplate {
+     } else if (this.isMissingAddressCase(divorceData)) {
+-      respondentContent += `\n(Draft — insert ${t.responderLabel}'s current address before filing, or affirm the address is unknown for alternative-service treatment)`;
++      respondentContent += `\n(Draft — insert the ${t.responderLabel}'s current address before filing, or affirm the address is unknown for alternative-service treatment)`;
+     }
+@@ -691,3 +691,4 @@ class BaseDivorcePetitionTemplate {
+     if (raw && !unknownPattern.test(raw)) {
+-      return `is a resident of ${raw}`;
++      // A street address is where someone resides AT; a bare place, IN.
++      return /\d/.test(raw) ? `resides at ${raw}` : `resides in ${raw}`;
+     }
+@@ -873,2 +874,3 @@ class BaseDivorcePetitionTemplate {
+     const marriagePlace = this.formatMarriagePlace(divorceData);
++    // A date mid-sentence takes a comma after the year ("June 14, 2014, in").
+     const marriagePlaceSuffix = marriagePlace ? ` in ${marriagePlace}` : '';
+@@ -878,3 +880,3 @@ class BaseDivorcePetitionTemplate {
+         number: paragraphNum++,
+-        content: `${this.terminology.filerLabel} and ${this.terminology.responderLabel} were married on ${marriageDateFormatted}${marriagePlaceSuffix}.`,
++        content: `The ${this.terminology.filerLabel} and the ${this.terminology.responderLabel} were married on ${marriageDateFormatted}${marriagePlaceSuffix ? `,${marriagePlaceSuffix}` : ''}.`,
+         type: 'marriage_info'
+@@ -889,3 +891,3 @@ class BaseDivorcePetitionTemplate {
+         number: paragraphNum++,
+-        content: `${this.terminology.filerLabel} and ${this.terminology.responderLabel} were married on __________________${marriagePlaceSuffix}.\n(Draft — insert exact date of marriage before filing)`,
++        content: `The ${this.terminology.filerLabel} and the ${this.terminology.responderLabel} were married on __________________${marriagePlaceSuffix}.\n(Draft — insert the exact date of marriage before filing)`,
+         type: 'marriage_info'
+@@ -1025,6 +1027,8 @@ class BaseDivorcePetitionTemplate {
+             : `${child.name || '______________________'}, born ${dobText || '______________'}`;
++          // One numbered paragraph with a lettered sub-list: the children are
++          // particulars of the paragraph above, not paragraphs of their own.
+           items.push({
+-            number: paragraphNum++,
+-            content: `Child ${index + 1}: ${childInfo}`,
+-            type: 'child_detail'
++            number: null,
++            content: `(${String.fromCharCode(97 + index)}) ${childInfo}`,
++            type: 'child_item'
+           });
+@@ -1036,3 +1040,3 @@ class BaseDivorcePetitionTemplate {
+         number: paragraphNum++,
+-        content: `No other children were born to or adopted by ${this.terminology.filerLabel} and ${this.terminology.responderLabel} during the marriage, and none are expected.`,
++        content: `No other children were born to or adopted by the ${this.terminology.filerLabel} and the ${this.terminology.responderLabel} during the marriage${this.noChildrenExpectedClause()}.`,
+         type: 'children_info'
+@@ -1067,2 +1071,10 @@ class BaseDivorcePetitionTemplate {
+    */
++  /**
++   * Tail of the "no other children" paragraph. US petitions also plead that
++   * no children are expected; jurisdictions whose forms do not ask return ''.
++   */
++  noChildrenExpectedClause() {
++    return ', and none are expected';
++  }
++
+   appendAgreedChildArrangementPleadings(items, paragraphNum, divorceData) {
+diff --git a/templates/core/canadianHelpers.js b/templates/core/canadianHelpers.js
+index 91eabc6..c370aee 100644
+--- a/templates/core/canadianHelpers.js
++++ b/templates/core/canadianHelpers.js
+@@ -364,3 +364,30 @@ function incomeImputationFacts(d) {
+ 
++/**
++ * Apply `fn` to every string in a generated document (sections, fullText,
++ * htmlContent), in place. Plain objects and arrays only: the document's
++ * Date timestamp and other class instances are left alone.
++ */
++function mapDocumentStrings(node, fn) {
++  if (typeof node === 'string') return fn(node);
++  if (Array.isArray(node)) return node.map((v) => mapDocumentStrings(v, fn));
++  if (node && Object.getPrototypeOf(node) === Object.prototype) {
++    for (const k of Object.keys(node)) node[k] = mapDocumentStrings(node[k], fn);
++  }
++  return node;
++}
++
++/**
++ * "child(ren)" is a drafting hedge for an unknown count. Once the interview
++ * has recorded the children, the document says "child" or "children".
++ */
++function settleChildNoun(doc, data) {
++  const n = Array.isArray(data && data.children) ? data.children.length : 0;
++  if (n === 0) return doc;
++  const noun = n === 1 ? 'child' : 'children';
++  return mapDocumentStrings(doc, (s) => s.replace(/child\(ren\)/g, noun));
++}
++
+ module.exports = {
++  mapDocumentStrings,
++  settleChildNoun,
+   evaluateOneYearSeparation,
+diff --git a/templates/states/ontario/DivorceDecreeTemplate.js b/templates/states/ontario/DivorceDecreeTemplate.js
+index 235b938..daa5e3c 100644
+--- a/templates/states/ontario/DivorceDecreeTemplate.js
++++ b/templates/states/ontario/DivorceDecreeTemplate.js
+@@ -14,3 +14,6 @@ const {
+   normalizeCanadianDivorceData,
++  mapDocumentStrings,
++  settleChildNoun,
+ } = require('../../core/canadianHelpers');
++const { canadianizeStructure } = require('../../../services/supportDocs/BaseAnswerTemplate');
+ 
+@@ -87,3 +90,3 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+   getCaseNumberLabel() {
+-    return 'Court File No.:';
++    return 'Court File No.';
+   }
+@@ -132,3 +135,3 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+       ? ''
+-      : '(Draft — insert case number before filing)\n';
++      : '(Draft — insert the court file number before filing)\n';
+     const applicant = (divorceData.petitionerName || '[APPLICANT NAME]').toUpperCase();
+@@ -137,6 +140,6 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+     const formatted = (
+-      `IN THE ${courtName}\n\n` +
++      `ONTARIO\n${courtName}\n\n` +
+       `${caseLabel} ${caseNumber}\n` +
+       `${draftNote}` +
+-      `\nIN THE MATTER OF THE DIVORCE ACT, RSC 1985, c. 3\n\n` +
++      `\nIN THE MATTER OF THE DIVORCE ACT, RSC 1985, c. 3 (2nd Supp.)\n\n` +
+       `BETWEEN:\n\n` +
+@@ -210,5 +213,19 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+       });
++    } else if (divorceData.hasProperty !== true && !propAgreementDescribed) {
++      // Property not yet discussed: the same blank, never an order.
++      items.push({
++        content: '________________________________________\n(Draft — confirm whether you and your spouse have net family property to equalize under the Family Law Act, RSO 1990, c. F.3, or a written agreement, before filing. Silence on this line may be treated as no equalization owing, waiving your claim.)',
++        type: 'property_draft_note'
++      });
++    } else if (!propAgreementDescribed && !divorceData.equalizationPayment
++      && asList(divorceData.petitionerProperty).length === 0 && asList(divorceData.respondentProperty).length === 0) {
++      // Property with no agreement and nothing to order: the Divorce Order
++      // leaves the equalization claim open rather than disposing of it.
++      items.push({
++        content: 'The claims for equalization of the parties\' net family properties under the Family Law Act, RSO 1990, c. F.3, are not determined by this Order.',
++        type: 'finding'
++      });
+     } else {
+       items.push({
+-        content: 'The Court has considered the equalization of the parties\' net family property pursuant to the Family Law Act, RSO 1990, c. F.3, s.5.',
++        content: 'The Court has considered the equalization of the parties\' net family properties pursuant to the Family Law Act, RSO 1990, c. F.3, s.5.',
+         type: 'finding'
+@@ -289,3 +306,3 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+         : `${child.name || '[CHILD NAME]'}, born ${dobDisplay}`;
+-      items.push({ content: `${index + 1}. ${childInfo}`, type: 'child_item' });
++      items.push({ content: `(${String.fromCharCode(97 + index)}) ${childInfo}`, type: 'child_item' });
+     });
+@@ -382,3 +399,6 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+       ? 'Upon reading the Application, the Affidavit for Divorce (Form 36), and the material filed, and being satisfied that the Court has jurisdiction and that the requirements of the Divorce Act and the Family Law Rules have been met:\n\n'
+-      : 'Upon reading the Application and hearing the parties:\n\n';
++      : divorceData.respondentAppeared
++        ? 'Upon reading the Application and hearing the parties:\n\n'
++        // No hearing is recorded: an uncontested divorce is decided on the papers.
++        : 'Upon reading the Application and the material filed:\n\n';
+ 
+@@ -401,6 +421,6 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+     text +=
+-      `${this.terminology.filerLabel}, ${divorceData.petitionerName || '_________________________________'}, ` +
++      `The ${this.terminology.filerLabel}, ${divorceData.petitionerName || '_________________________________'}, ` +
+       `${petRepClause}.\n\n`;
+     text +=
+-      `${this.terminology.responderLabel}, ${divorceData.respondentName || '_________________________________'}, ` +
++      `The ${this.terminology.responderLabel}, ${divorceData.respondentName || '_________________________________'}, ` +
+       `${this.getRespondentAppearanceText(divorceData)}.`;
+@@ -460,5 +480,24 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+     }
+-    return uncontested
+-      ? 'was served with the Application and does not oppose the relief sought'
+-      : 'was served with the Application';
++    if (uncontested) return 'was served with the Application and does not oppose the relief sought';
++    // Service not yet recorded: a blank, never a recital that it happened.
++    return '__________________________ (Draft — confirm how the Respondent was served with the Application before filing)';
++  }
++
++  /** Jurisdiction under s.3 of the Divorce Act, and the dates, comma after the year. */
++  generateJurisdictionSection(divorceData) {
++    const marriage = this.formatDate(divorceData.marriageDate) || '__________________';
++    const separation = this.formatDate(divorceData.separationDate) || '__________________';
++    return {
++      title: 'JURISDICTION',
++      text: `The Court finds that it has jurisdiction under section 3 of the Divorce Act, RSC 1985, c. 3 (2nd Supp.). The parties were married on ${marriage}, and ceased to live together as spouses on or about ${separation}.`,
++      type: 'jurisdiction'
++    };
++  }
++
++  /** Ontario's judge's signature line (Form 25A), not a US "JUDGE PRESIDING". */
++  generateJudgmentBlock() {
++    return {
++      text: 'SIGNED on _____________________, 20___.\n\n\n_________________________________\nSignature of judge',
++      type: 'judgment'
++    };
+   }
+@@ -470,2 +509,15 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+    */
++  /**
++   * The base debt section speaks of "community debts" (US community-property
++   * vocabulary). Ontario debts are family debts under the Family Law Act, so
++   * the section goes through the same Canadian vocabulary filter as the
++   * Ontario Answer.
++   */
++  generateDebtAllocationSection(divorceData) {
++    // Debts not yet discussed get the base's confirm-before-filing blank,
++    // not its "each party shall be responsible …" orders.
++    const unrecorded = divorceData.hasDebts == null && divorceData.debtAllocationRequested !== true;
++    return canadianizeStructure(super.generateDebtAllocationSection(unrecorded ? { ...divorceData, hasDebts: false } : divorceData));
++  }
++
+   getVisitationLanguage(divorceData) {
+@@ -495,9 +547,15 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+     const NON_OPERATIVE_RE = /(not yet (?:provided|specified|decided|agreed)|tbd|tba|unspecified|to be (?:decided|determined|agreed)|placeholder|\bwants?\b|\bwould like\b|\bprefers?\b|\bhopes?\b|\bseeks?\b|\bwishes?\b|\bwill request\b)/i;
+-    if (details.length > 50 && !NON_OPERATIVE_RE.test(details)) {
+-      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: ${details} In the absence of written agreement to vary the schedule, the terms above control.${nonAlienation}`;
++    // Any operative schedule renders as order text, short or long: the old
++    // length > 50 gate sent a real but brief schedule ("every other weekend
++    // with the Respondent") to the non-operative branch below.
++    if (details.length > 0 && !NON_OPERATIVE_RE.test(details)) {
++      const sentence = /[.!?]$/.test(details) ? details : `${details}.`;
++      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: ${sentence} In the absence of written agreement to vary the schedule, the terms above control.${nonAlienation}`;
+     }
+     if (details.length > 0) {
+-      // Non-operative content — surface the drafter's note as an in-line
+-      // comment (never as an operative order) and demand a real schedule.
+-      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: [SCHEDULE — insert specific parenting schedule (weekday/weekend, holidays, exchanges) before filing]. (Drafter note: ${details})${nonAlienation}`;
++      // Non-operative content (a wish, "TBD") is never an order: a blank in
++      // the standard Draft-note style, quoting what the interview recorded.
++      // (It used to emit a "[SCHEDULE — …]" bracket the filing sanitizer
++      // cannot see and a raw "(Drafter note: …)".)
++      return `IT IS ORDERED pursuant to s.16.2 of the Divorce Act that each party shall have parenting time with the child(ren) on the following schedule: ________________________________________\n(Draft — insert the specific parenting schedule (weekdays and weekends, holidays, exchanges) before filing; the interview recorded: "${details.replace(/"/g, "'")}")${nonAlienation}`;
+     }
+@@ -524,13 +582,24 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+       });
+-    } else {
++    } else if (divorceData.childSupportObligor) {
++      // A Guidelines order must state the income and the amount (Federal
++      // Child Support Guidelines, s.13): blanks to fill, payor as recorded.
+       items.push({
+-        content: 'IT IS ORDERED pursuant to s.15.1 of the Divorce Act, RSC 1985, c. 3, that child support shall be paid in accordance with the Federal Child Support Guidelines, SOR/97-175.',
++        content: `IT IS ORDERED pursuant to s.15.1 of the Divorce Act, RSC 1985, c. 3, that ${divorceData.childSupportObligor} shall pay to ${divorceData.childSupportObligee || divorceData.petitionerName || 'the Applicant'} child support of $__________ per month, commencing on __________, being the table amount under the Federal Child Support Guidelines, SOR/97-175, for an annual income of $__________.\n(Draft — insert the monthly amount, the start date and the payor's annual income before filing; section 13 of the Federal Child Support Guidelines requires them)`,
+         type: 'order'
+       });
++    } else {
++      // Support not yet discussed: a blank, never an order nobody asked for.
++      items.push({
++        content: '________________________________________\n(Draft — record who pays child support, the amount and the payor\'s annual income before filing)',
++        type: 'support_draft_note'
++      });
+     }
+ 
+-    items.push({
+-      content: `IT IS ORDERED that ${divorceData.healthInsuranceProvider || 'the support payor'} shall maintain health and dental coverage for the minor child(ren) where available at a reasonable cost through an employer or group plan.`,
+-      type: 'order'
+-    });
++    // Health and dental coverage only when the interview recorded it.
++    if (divorceData.healthInsuranceProvider) {
++      items.push({
++        content: `IT IS ORDERED that ${divorceData.healthInsuranceProvider} shall maintain health and dental coverage for the child(ren) where available at a reasonable cost through an employer or group plan.`,
++        type: 'order'
++      });
++    }
+ 
+@@ -585,11 +654,16 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+ 
+-    items.push({
+-      content: 'IT IS ORDERED that all corollary relief requested in this proceeding and not expressly granted is dismissed.',
+-      type: 'order'
+-    });
+-
+-    items.push({
+-      content: 'IT IS ORDERED that this Divorce Order constitutes the final order in this proceeding and disposes of all matters between the parties.',
+-      type: 'order'
+-    });
++    // A claim the Order leaves open (property not agreed or ordered) must not
++    // be dismissed by a closing clause.
++    const open = this.generatePropertyDivisionSection(divorceData).items.some((item) => item.type === 'property_draft_note'
++      || /not determined by this Order/.test(item.content));
++    if (!open) {
++      items.push({
++        content: 'IT IS ORDERED that all corollary relief requested in this proceeding and not expressly granted is dismissed.',
++        type: 'order'
++      });
++      items.push({
++        content: 'IT IS ORDERED that this Divorce Order constitutes the final order in this proceeding and disposes of all matters between the parties.',
++        type: 'order'
++      });
++    }
+ 
+@@ -600,7 +674,3 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+ 
+-    items.push({
+-      content: this.getEffectiveDateText(),
+-      type: 'order'
+-    });
+-
++    // The effective date is stated once, in the divorce paragraph.
+     items.push({
+@@ -639,2 +709,11 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+     const respondent = divorceData.respondentName || '_________________________________';
++    // Form 25A: the spouses, where and when they married, divorced, and the
++    // effective date — once, here.
++    const date = this.formatDate(divorceData.marriageDate);
++    const clean = (v) => (typeof v === 'string' ? v.trim() : '');
++    const place = clean(divorceData.marriageLocation)
++      || [clean(divorceData.marriageCity), clean(divorceData.marriageStateName)].filter(Boolean).join(', ');
++    const married = date || place
++      ? `, who were married${place ? ` in ${place},` : ''}${date ? ` on ${date},` : ''}`
++      : '';
+     return {
+@@ -642,5 +721,5 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+       text:
+-        `IT IS ORDERED that the marriage between ${applicant} and ${respondent} is dissolved ` +
+-        'pursuant to section 8 of the Divorce Act, RSC 1985, c. 3, and that a Divorce Order shall ' +
+-        'issue, taking effect on the 31st day after it is made (Divorce Act, s.12(1)).',
++        `IT IS ORDERED that ${applicant} and ${respondent}${married} are divorced pursuant to section 8 ` +
++        'of the Divorce Act, RSC 1985, c. 3, the divorce to take effect on the 31st day after the date of ' +
++        'this Order (Divorce Act, s.12(1)).',
+       type: 'dissolution'
+@@ -660,3 +739,8 @@ class OntarioDivorceDecreeTemplate extends BaseDivorceDecreeTemplate {
+     appendContestedIssuesOntarioDecree(doc, data);
+-    return doc;
++    // Ontario's order wording (Form 25A "THIS COURT ORDERS") and the Divorce
++    // Act's full citation, in every paragraph.
++    mapDocumentStrings(doc, (s) => s
++      .replace(/\bIT IS ORDERED\b/g, 'THIS COURT ORDERS')
++      .replace(/RSC 1985, c\. 3(?! \(2nd Supp\.\))/g, 'RSC 1985, c. 3 (2nd Supp.)'));
++    return settleChildNoun(doc, data);
+   }
+diff --git a/templates/states/ontario/DivorcePetitionTemplate.js b/templates/states/ontario/DivorcePetitionTemplate.js
+index 0c1a020..bcf0aad 100644
+--- a/templates/states/ontario/DivorcePetitionTemplate.js
++++ b/templates/states/ontario/DivorcePetitionTemplate.js
+@@ -13,3 +13,5 @@ const {
+   normalizeCanadianDivorceData,
++  settleChildNoun,
+ } = require('../../core/canadianHelpers');
++const { resolvePrimaryResidenceName } = require('../../core/parenting');
+ 
+@@ -134,3 +136,4 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+     const caption = [
+-      `IN THE ${courtName}`,
++      'ONTARIO',
++      courtName,
+       '',
+@@ -167,3 +170,56 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+   getJurisdictionStatement(divorceData) {
+-    return `Either the Applicant or the Respondent has been habitually resident in the Province of Ontario for at least one year immediately preceding the filing of this Application, as required by section 3(1) of the Divorce Act, RSC 1985, c. 3 (2nd Supp.).`;
++    // s.3(1) says "ordinarily resident" and "commencement of the proceeding".
++    // Plead the Applicant's own residence once the interview has recorded a
++    // year or more; until then, the statute's either-spouse wording.
++    const who = Number(divorceData.residencyStateMonths) >= 12 ? 'The Applicant has' : 'Either spouse has';
++    return `${who} been ordinarily resident in Ontario for at least one year immediately before the commencement of this proceeding, as required by section 3(1) of the Divorce Act, RSC 1985, c. 3 (2nd Supp.).`;
++  }
++
++  /**
++   * "Venue is proper" is a US pleading. Ontario's rule is where the case
++   * starts: the municipality where a party resides, or, for a parenting
++   * claim, where the children ordinarily reside (Family Law Rules, r. 5(1)).
++   */
++  generateJurisdictionSection(divorceData) {
++    const section = super.generateJurisdictionSection(divorceData);
++    const withChildren = Array.isArray(divorceData.children) && divorceData.children.length > 0
++      && resolvePrimaryResidenceName(divorceData) === divorceData.petitionerName;
++    const venue = section.items.find((item) => item.type === 'venue');
++    if (venue) {
++      venue.content = `This Application is started in ${this.districtPhrase(divorceData.county)}, where the Applicant ${withChildren ? 'and the children reside' : 'resides'} (Family Law Rules, O. Reg. 114/99, r. 5(1)).`;
++    }
++    section.title = 'II. JURISDICTION AND PLACE OF FILING';
++    return section;
++  }
++
++  /** Party paragraphs read "The Applicant, <name>, resides in …". */
++  generatePartiesSection(divorceData) {
++    const section = super.generatePartiesSection(divorceData);
++    for (const item of section.items) {
++      item.content = item.content
++        .replace(/^(Applicant|Respondent), /, 'The $1, ')
++        .replace(/^(The Applicant, [^\n]*?), is a resident of /, '$1, resides in ');
++    }
++    return section;
++  }
++
++  /** Form 8 does not ask whether children are expected. */
++  noChildrenExpectedClause() {
++    return '';
++  }
++
++  /**
++   * Children: a "no children" statement only on an explicit record that
++   * there are none; before the interview reaches children, a Draft blank
++   * (never a silent "no children" claim).
++   */
++  generateChildrenSection(divorceData) {
++    if (Array.isArray(divorceData.children) && divorceData.children.length > 0 && divorceData.hasMinorChildren !== false) {
++      return super.generateChildrenSection(divorceData);
++    }
++    const number = divorceData._paragraphNum || 9;
++    const content = divorceData.hasMinorChildren === false
++      ? 'There are no children of the marriage within the meaning of the Divorce Act.'
++      : '________________________________________\n(Draft — list the children of the marriage, or confirm there are none, before filing)';
++    return { title: 'V. CHILDREN', items: [{ number, content, type: 'children_info' }], nextParagraphNumber: number + 1 };
+   }
+@@ -223,4 +279,6 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+    */
+-  getResidencePleading(residenceName) {
+-    return `The Applicant requests that the child(ren) primarily reside with ${residenceName}, who shall have the majority of parenting time.`;
++  getResidencePleading(residenceName, divorceData = {}) {
++    const who = residenceName === divorceData.petitionerName ? 'the Applicant'
++      : residenceName === divorceData.respondentName ? 'the Respondent' : residenceName;
++    return `The Applicant requests that the child(ren) reside primarily with ${who}, who shall have the majority of parenting time.`;
+   }
+@@ -278,6 +336,18 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+       }
++    } else if (divorceData.hasProperty !== true) {
++      // Not yet discussed: a blank to fill, never a claim made by silence.
++      items.push({
++        number: paragraphNum++,
++        content: '________________________________________\n(Draft — list the property you and your spouse own, or confirm there is none, before filing)',
++        type: 'property_draft_note'
++      });
+     } else {
++      // Only what the interview recorded: that there is property, and
++      // whether the parties have agreed about it.
++      const posture = String(divorceData.propertyAgreement || '').trim().toLowerCase();
++      const agreement = posture === 'pending' ? ' and have not yet reached an agreement about it'
++        : posture === 'contested' ? ' and do not agree about it' : '';
+       items.push({
+         number: paragraphNum++,
+-        content: 'The parties acquired property during the marriage, including but not limited to real property, personal property, and financial accounts.',
++        content: `The parties own property${agreement}.`,
+         type: 'property_info'
+@@ -287,3 +357,3 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+         number: paragraphNum++,
+-        content: 'The Applicant requests an equalization of the parties\' net family property pursuant to Part I of the Family Law Act, RSO 1990, c. F.3.',
++        content: 'The Applicant claims an equalization of the parties\' net family properties under section 5 of the Family Law Act, RSO 1990, c. F.3.',
+         type: 'property_request'
+@@ -292,3 +362,6 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+ 
+-    if (divorceData.hasDebts !== false) {
++    // Debts are pleaded only when the interview recorded debts or a request
++    // to allocate them; silence is not a claim.
++    const debtsClaimed = divorceData.hasDebts === true || divorceData.debtAllocationRequested === true;
++    if (debtsClaimed) {
+       items.push({
+@@ -301,3 +374,3 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+     return {
+-      title: 'VI. PROPERTY AND DEBTS',
++      title: debtsClaimed ? 'VI. PROPERTY AND DEBTS' : 'VI. PROPERTY',
+       items,
+@@ -358,16 +431,25 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+ 
+-    const reliefItems = [
+-      'A divorce order pursuant to section 8 of the Divorce Act, RSC 1985, c. 3 (2nd Supp.);',
+-      'Division of net family property pursuant to sections 5-9 of the Family Law Act, RSO 1990, c. F.3;',
+-      'An order for possession of the matrimonial home pursuant to section 24 of the Family Law Act;',
+-      'An order allocating responsibility for debts in an equitable manner;'
+-    ];
++    // Each corollary claim renders only on a recorded request or a recorded
++    // fact that supports it; silence is never turned into a claim or waiver.
++    const d = divorceData;
++    const reliefItems = ['A divorce order pursuant to section 8 of the Divorce Act, RSC 1985, c. 3 (2nd Supp.);'];
++    if (d.hasProperty === true && !this.hasAgreedPropertyDivision(d)) {
++      reliefItems.push('Equalization of net family properties pursuant to section 5 of the Family Law Act, RSO 1990, c. F.3;');
++    }
++    if (d.matrimonialHomePossessionRequested === true) {
++      reliefItems.push('An order for exclusive possession of the matrimonial home pursuant to section 24 of the Family Law Act, RSO 1990, c. F.3;');
++    }
++    if (d.hasDebts === true || d.debtAllocationRequested === true) {
++      reliefItems.push('An order allocating responsibility for the parties\' debts;');
++    }
+ 
+-    if (divorceData.hasMinorChildren === true || (divorceData.children && divorceData.children.length > 0)) {
+-      reliefItems.push('A parenting order specifying parenting time and decision-making responsibility pursuant to section 16.1 of the Divorce Act;');
+-      if (divorceData.childSupportAmount) {
+-        const payor = divorceData.childSupportObligor || divorceData.respondentName || 'the Respondent';
+-        reliefItems.push(`A child support order pursuant to section 15.1 of the Divorce Act and the Federal Child Support Guidelines, SOR/97-175, requiring ${payor} to pay $${divorceData.childSupportAmount} per month;`);
+-      } else {
+-        reliefItems.push('A child support order pursuant to section 15.1 of the Divorce Act and the Federal Child Support Guidelines, SOR/97-175;');
++    if (this.hasMinorChildrenForRelief(d)) {
++      if (d.custodyArrangement || d.primaryCustodian || d.parentTimePlan || d.parentTimeDetails) {
++        reliefItems.push('A parenting order specifying parenting time and decision-making responsibility pursuant to section 16.1 of the Divorce Act;');
++      }
++      const payor = d.childSupportObligor || (d.childSupportAmount ? d.respondentName || 'the Respondent' : null);
++      if (d.childSupportAmount) {
++        reliefItems.push(`A child support order pursuant to section 15.1 of the Divorce Act and the Federal Child Support Guidelines, SOR/97-175, requiring ${payor} to pay $${d.childSupportAmount} per month;`);
++      } else if (payor) {
++        reliefItems.push(`A child support order pursuant to section 15.1 of the Divorce Act and the Federal Child Support Guidelines, SOR/97-175, requiring ${payor} to pay the table amount;`);
+       }
+@@ -375,5 +457,6 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+ 
+-    if (divorceData.spousalSupportRequested || divorceData.requestSpousalSupport) {
+-      reliefItems.push('A spousal support order pursuant to section 15.2 of the Divorce Act, as corollary relief;');
+-    } else if (divorceData.spousalSupportRequested === false || divorceData.spousalSupportWaived) {
++    if (d.spousalSupportRequested || d.requestSpousalSupport) {
++      reliefItems.push('A spousal support order pursuant to section 15.2 of the Divorce Act;');
++    } else if (d.spousalSupportWaived === true || d.spousalSupportAgreed === true) {
++      // Only an explicit waiver or agreement: "not asking" is not a waiver.
+       reliefItems.push('An order confirming that neither party shall pay spousal support to the other, each party having waived any claim under section 15.2 of the Divorce Act;');
+@@ -397,8 +480,5 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+     // Agreed corollary relief (agreed support amount, spousal-support
+-
+     // waiver, property agreement) — spliced before the final general prayer.
+-
+     this.appendAgreedReliefItems(reliefItems, divorceData);
+ 
+-
+     reliefItems.forEach((relief, index) => {
+@@ -415,3 +495,3 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+     return {
+-      title: 'RELIEF REQUESTED',
++      title: 'VII. RELIEF REQUESTED',
+       items,
+@@ -442,2 +522,6 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+   getGroundsText(groundsForDivorce, divorceData) {
++    // No ground recorded yet: a blank, not a pleaded year of separation.
++    if (divorceData && !divorceData.groundsForDivorce) {
++      return '________________________________________\n(Draft — state the ground for divorce before filing: one year\'s separation, adultery or cruelty (Divorce Act, s.8(2)))';
++    }
+     const g = (groundsForDivorce || 'separation').toLowerCase();
+@@ -475,3 +559,3 @@ class OntarioDivorcePetitionTemplate extends BaseDivorcePetitionTemplate {
+       appendContestedIssuesOntario(doc, data);
+-      return doc;
++      return settleChildNoun(doc, data);
+     } finally {
