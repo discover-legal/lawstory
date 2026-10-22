@@ -16,11 +16,13 @@ describe('repository hygiene', () => {
   it('git keeps .env.example (the documented example) and the generated demo files are ignored', () => {
     expect(gitIgnored('.env.example')).toBe(false);
     expect(gitIgnored('public/demo/on-marcus/v1/tree.json')).toBe(true);
+    expect(gitIgnored('public/demo/biglaw/index.html')).toBe(false); // the vendored BigLaw UI is committed
   });
 
   it('the Docker build context excludes every env file except the example, and host build output', () => {
     const rules = lines('.dockerignore');
-    expect(rules).toEqual(expect.arrayContaining(['.env*', 'node_modules', '.next', '.git', 'public/demo']));
+    expect(rules).toEqual(expect.arrayContaining(['.env*', 'node_modules', '.next', '.git', 'public/demo/*']));
+    expect(rules.indexOf('!public/demo/biglaw')).toBeGreaterThan(rules.indexOf('public/demo/*'));
     expect(rules.indexOf('!.env.example')).toBeGreaterThan(rules.indexOf('.env*'));
   });
 
@@ -38,7 +40,7 @@ describe('repository hygiene', () => {
       { cwd: repo, encoding: 'utf8' }).split('\n').filter((f) => /\.tsx?$/.test(f));
     const hrefs = tsx.flatMap((f) => [...read(f).matchAll(/href(?:=["{]|: )["']?(\/[^"'#?}]*)/g)].map((m) => m[1]));
     expect(hrefs.length).toBeGreaterThan(0);
-    const missing = hrefs.filter((h) => !existsSync(join(repo, 'app', h, 'page.tsx')));
+    const missing = hrefs.filter((h) => !existsSync(join(repo, 'app', h, 'page.tsx')) && !existsSync(join(repo, 'public', h, 'index.html')));
     expect(missing).toEqual([]);
   });
 

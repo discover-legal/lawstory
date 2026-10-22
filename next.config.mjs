@@ -70,7 +70,9 @@ const nextConfig = {
   async rewrites() {
     // Render health check. The old site answers /api/health even in maintenance mode, so this one path
     // is healthy on both sites across the cutover (PLAN C). It serves the static home; no API code.
-    return [{ source: '/api/health', destination: '/' }, { source: '/favicon.ico', destination: '/icon.svg' }];
+    // /demo/biglaw is the vendored BigLaw UI (public/demo/biglaw, scripts/sync-biglaw-demo.mjs); Next 308s /demo/biglaw/ here.
+    return [{ source: '/api/health', destination: '/' }, { source: '/favicon.ico', destination: '/icon.svg' },
+      { source: '/demo/biglaw', destination: '/demo/biglaw/index.html' }];
   },
   // Redirects arrive with S7. See README.
 };

@@ -33,10 +33,11 @@ check((await get('/_next/image?url=%2Ficon.svg&w=64&q=75')).r.status === 404, '/
 // Every page (content/site.ts ROUTES; pages.test keeps the lists equal): 200, prerendered, no <form>, form
 // controls only on /demo/*, no literal email; then every internal link found on them resolves (no dead links).
 const ROUTES = ['/', '/work', '/demo/discover-legal', '/demo/biglaw', '/research', '/privacy', '/tos'];
+const STATIC_APPS = ['/demo/biglaw']; // vendored builds in public/ (served by a rewrite, so not prerendered pages)
 const links = new Set(['/sitemap.xml', '/robots.txt']);
 for (const p of ROUTES) {
   const { r, body } = await get(p);
-  check(r.status === 200 && /^1(, 1)*$/.test(r.headers.get('x-nextjs-prerender') ?? ''), `${p} status ${r.status}, not prerendered`);
+  check(r.status === 200 && (STATIC_APPS.includes(p) || /^1(, 1)*$/.test(r.headers.get('x-nextjs-prerender') ?? '')), `${p} status ${r.status}, not prerendered`);
   check(!/<form\b/i.test(body) && (p.startsWith('/demo/') || !/<(input|textarea|select)\b/i.test(body))
     && !body.includes('@discover.legal'), `${p} has a form, a form control outside /demo/, or an email`);
   for (const m of body.matchAll(/href="(\/(?!\/|_next\/)[^"#?]*)/g)) links.add(m[1]);
@@ -48,6 +49,12 @@ const chunks = [];
 for (const m of page.matchAll(/src="(\/_next\/static\/[^"]+\.js)"/g)) { const js = (await get(m[1])).body; if (js.includes('88 Harbour Street')) chunks.push([m[1], js]); }
 check(chunks.length > 0, 'demo recording chunk not found');
 for (const [src, js] of chunks) check(!/\bfetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource/.test(js), `${src} uses a network API`);
+// The BigLaw UI: with and without the slash, /demo/** headers, and its one script never touches the network.
+const bl = await get('/demo/biglaw');
+const blJs = bl.body.match(/src="(\/demo\/biglaw\/assets\/[^"]+\.js)"/)?.[1];
+check(bl.body.includes('<div id="root">') && /frame-ancestors 'self';/.test(bl.r.headers.get('content-security-policy') ?? ''), '/demo/biglaw: app or headers');
+check([200, 308].includes((await get('/demo/biglaw/')).r.status), '/demo/biglaw/ not served');
+check(blJs && !/\bfetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource/.test((await get(blJs)).body), `${blJs} missing or uses a network API`);
 for (const d of ['petition', 'decree']) {
   const { r, body } = await get(`/drafts/ontario-${d}-draft.pdf`);
   check(r.status === 200 && body.startsWith('%PDF'), `/drafts/ontario-${d}-draft.pdf not served`);

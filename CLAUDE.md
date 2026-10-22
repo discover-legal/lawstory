@@ -6,10 +6,10 @@ Read `README.md` first: it is the contract, and every item is marked **[S1]**/**
 ## What this repo is now
 A Next.js 16 App Router site, every route prerendered (`npm run build` fails otherwise). S1 is the scaffold: home, 404, design tokens and
 three swappable visual directions, baseline security headers, Jest tests, the line-budget gate, CI,
-Dockerfile and render.yaml. S2-sample adds `/work` and the scripted `/demo/biglaw` walkthrough (`content/samples/`)
-and picks the Protocol direction. `/demo/discover-legal` is the ported v1 editor on a recorded engine
+Dockerfile and render.yaml. S2-sample adds `/work` and picks the Protocol direction. `/demo/discover-legal` is the ported v1 editor on a recorded engine
 (`components/demo/documents/`, `demo/documents/`): inputs exist only under /demo/* and are never submitted
-(no `<form>`, no network API: pages.test, documents-demo.test, smoke). There is no server code, no database, no auth, no payments, no forms and
+(no `<form>`, no network API: pages.test, documents-demo.test, smoke). `/demo/biglaw` is BigLaw's UI vendored in
+`public/demo/biglaw/` (`scripts/sync-biglaw-demo.mjs`; never hand-edit; biglaw-demo.test). There is no server code, no database, no auth, no payments, no forms and
 no API route (`/api/health` is a rewrite to the static home, for Render). Do not add any of those: the
 design forbids them (contact is a booking link plus an obfuscated email).
 
@@ -51,5 +51,5 @@ node scripts/smoke.mjs http://localhost:3000   # headers / health / 404 smoke of
 ## Layout
 `app/` pages · `styles/` tokens, directions, globals · `scripts/` loc-budget(s), smoke,
 standalone-assets · `__tests__/site/` · `Dockerfile` · `render.yaml` · `.github/` CI (main + site-v6) + Dependabot.
-`components/` (Cta, Stepper, SampleView) · `content/` (site.ts, samples/). Planned: `core/` (v2 engine, Ontario only), `demo/` (record/replay),
+`components/` (Cta, demo/) · `content/` (site.ts). Planned: `core/` (v2 engine, Ontario only), `demo/` (record/replay),
 `e2e/` (see README).

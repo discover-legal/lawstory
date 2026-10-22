@@ -9,28 +9,26 @@ import ResearchPage from '@/app/research/page';
 import PrivacyPage from '@/app/privacy/page';
 import TermsPage from '@/app/tos/page';
 import DocumentsSample from '@/app/demo/discover-legal/page';
-import BigLawSample from '@/app/demo/biglaw/page';
 import { ContactCta, EmailLink } from '@/components/ContactCta';
-import { ROUTES, bookingUrl, mailto } from '@/content/site';
+import { ROUTES, STATIC_APPS, bookingUrl, mailto } from '@/content/site';
 
 // The S2 sample pages: routes exist, samples disclose that they are samples, nothing can be typed or
 // saved, and the CTA follows NEXT_PUBLIC_BOOKING_URL. (smoke.mjs checks 200s, prerender and links live.)
 const repo = join(__dirname, '..', '..');
 const PAGES: Record<string, () => React.ReactNode> = { '/': Home, '/work': WorkPage, '/demo/discover-legal': DocumentsSample,
-  '/demo/biglaw': BigLawSample, '/research': ResearchPage, '/privacy': PrivacyPage, '/tos': TermsPage };
+  '/research': ResearchPage, '/privacy': PrivacyPage, '/tos': TermsPage };
+const PAGE_ROUTES = ROUTES.filter((r) => !STATIC_APPS.includes(r));
 const html = (r: string) => renderToStaticMarkup(<RootLayout>{PAGES[r]()}</RootLayout>);
 
 describe('sample site pages', () => {
-  it('every listed route has a page, and every page is listed', () => {
-    expect(Object.keys(PAGES).sort()).toEqual([...ROUTES].sort());
-    for (const r of ROUTES) expect(existsSync(join(repo, 'app', r, 'page.tsx'))).toBe(true);
-  });
-
-  it('/demo/biglaw says it is a fictional sample with nothing saved', () => {
-    const text = html('/demo/biglaw').replace(/<[^>]+>/g, ' ');
-    expect(text).toMatch(/Sample walkthrough: a fictional (client|matter) and scripted output/);
-    expect(text).toMatch(/not legal advice/);
-    expect(text).toMatch(/nothing to type here and nothing is saved/);
+  it('every listed route has a page (or a vendored static app), and every page is listed', () => {
+    expect(Object.keys(PAGES).sort()).toEqual([...PAGE_ROUTES].sort());
+    for (const r of PAGE_ROUTES) expect(existsSync(join(repo, 'app', r, 'page.tsx'))).toBe(true);
+    for (const r of STATIC_APPS) {
+      expect(ROUTES).toContain(r);
+      expect(existsSync(join(repo, 'app', r))).toBe(false); // the rewrite to public/ would lose to a page
+      expect(existsSync(join(repo, 'public', r, 'index.html'))).toBe(true);
+    }
   });
 
   it('/demo/discover-legal says it is a recorded demo with a fictional client, not live AI, nothing sent or saved', () => {
@@ -42,7 +40,7 @@ describe('sample site pages', () => {
   });
 
   // Inputs are allowed only on /demo/* pages, and nothing there is ever submitted: no <form> anywhere.
-  it.each(ROUTES)('%s has no form, no form controls outside /demo/*, and no literal email address', (r) => {
+  it.each(PAGE_ROUTES)('%s has no form, no form controls outside /demo/*, and no literal email address', (r) => {
     const page = html(r);
     expect(page).not.toMatch(/<form\b|\baction=/i);
     if (!r.startsWith('/demo/')) expect(page).not.toMatch(/<(input|textarea|select)\b/i);

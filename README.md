@@ -10,10 +10,7 @@ discover.legal is the website of a **legal-technology consultancy**. It sells fo
 (independent selection), **Build** (client-owned software), **Run** (managed operation on the firm's
 own infrastructure) and **Advise** (fractional technical leadership). Each has packages and a clear
 next step; every price is "Price on request" until the owner sets numbers. It also shows two free
-products as **demos**. **[S2-sample]** `/demo/biglaw` is a scripted sample walkthrough (typed data in
-`content/samples/`, fictional matter, "Sample walkthrough … not legal advice … nothing is saved": matter →
-task → findings with exact/tolerant/excluded badges → memo with an Evidence Note), plus `/work`
-(honest status + consultancy, "Price on request").
+products as **demos**, plus `/work` (honest status + consultancy, "Price on request").
 
 1. **discover.legal Documents (Ontario)** **[docs-live]** `/demo/discover-legal` is the product's own
    editor (chat, Document Details, facts, paginated Petition/Decree preview; ported from the v1 app at
@@ -23,8 +20,13 @@ task → findings with exact/tolerant/excluded badges → memo with an Evidence 
    saved; Reset clears it. `demo/documents/record.mjs` builds `recording.json` + `public/drafts/*.pdf`
    by running the real v1 Ontario interview code, templates and PDF renderer offline; the client's lines
    and the per-turn model output are scripted (no real-model Ontario run exists in git history).
-2. **BigLaw** [planned: S7]. The open-source multi-agent platform, hosted separately at its own
-   origin and embedded here in an iframe (a poster when no demo URL is set).
+2. **BigLaw** **[biglaw-live]** `/demo/biglaw` is BigLaw's own v2 UI on its **recorded engine** (pick a
+   matter, run a task, findings, click a quote to its highlighted source, the memo), vendored as built
+   output in `public/demo/biglaw/` (index.html + one JS + one CSS, ~550 KB; `VERSION` names the BigLaw
+   commit) and served by a rewrite (`/demo/biglaw/` 308s to it). No request, nothing saved. Refresh it:
+   `node scripts/sync-biglaw-demo.mjs <BigLaw checkout> [--no-build]` (runs BigLaw's `make demo-bundle`,
+   which builds for base `/demo/biglaw/` and runs its no-network check; commit the result). The bundle is
+   outside the line budgets; biglaw-demo.test and smoke check it has no network API and runs under the CSP.
 
 The site stores nothing about visitors: no accounts, no database, no payments, no forms, no file
 uploads. The next step is a **booking link** (primary) with an **obfuscated email** as the fallback.
@@ -41,7 +43,7 @@ app/                         Next.js App Router. Every route is prerendered (`np
   layout.tsx                 [S2-sample] root layout: tokens + Protocol, header nav, footer (#contact, spelled-out email); GA: S6
   page.tsx                   [S2-sample] / home: positioning, CTA, the two products, how we work
   work/page.tsx              [S2-sample] /work products with honest status, consultancy ("Price on request"), CTA
-  demo/discover-legal/page.tsx  [docs-live] the playable Documents demo; demo/biglaw: [S2-sample] Stepper walkthrough
+  demo/discover-legal/page.tsx  [docs-live] the playable Documents demo (/demo/biglaw: public/demo/biglaw, vendored)
   sitemap.ts, robots.ts      [S2-sample] every route + allow only in the production build; else empty / Disallow: /
   not-found.tsx, icon.svg    [S1] 404 ("Page not found"), favicon
   services/page.tsx          [planned: S7] /services   packages ("Price on request"), pricing rules, FAQ
@@ -51,10 +53,10 @@ app/                         Next.js App Router. Every route is prerendered (`np
   research/page.tsx          [planned: S7] /research   open experiments with their real status and repositories
   contact/page.tsx           [planned: S7] /contact    booking link first, obfuscated email second; works without JS
   privacy/page.tsx, terms/page.tsx   [planned: S7]
-components/                  [S2-sample] Cta, Stepper, SampleView, useHydrated; [docs-live] demo/documents; [planned] PackageCard,
+components/                  [S2-sample] Cta, useHydrated; [docs-live] demo/documents; [planned] PackageCard,
                              Analytics (GA4), DemoFrame, player/{Player,Transcript,Chips,Preview}
-content/site.ts, samples/    [S2-sample] routes, nav, work, services (price null → "Price on request"), contact,
-                             the two samples; [planned: S7] pricing.ts packages
+content/site.ts              [S2-sample] routes, nav, work, services (price null → "Price on request"), contact;
+                             [planned: S7] pricing.ts packages
 styles/tokens.css            [S1] the 15 semantic tokens (colour, type, radius, shadow, status), light + dark
 styles/directions/*.css      [S1] case-file, protocol, chambers: token overrides only (see "Visual direction")
 styles/globals.css           [S1] element styles written only against tokens
@@ -226,7 +228,7 @@ counted whatever its extension); or a path is a symlink, a submodule or not a re
 
 ## Limitations
 
-- **The BigLaw sample is scripted, not recorded**, and the Documents demo's replies are scripted from the
+- **The BigLaw demo replays one recording**, and the Documents demo's replies are scripted from the
   product's Ontario interview questions (its drafts are real template output). Neither proves model quality. The email is spelled out in the footer
   ("h at discover dot legal") so it works without JavaScript; that is light obfuscation only.
 - **Quality of the Documents demo is unproven** until one v2 recording passes the R0 lawyer checklist.

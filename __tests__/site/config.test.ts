@@ -91,6 +91,7 @@ describe('next.config.mjs', () => {
   });
 
   it('answers the Render health path and /favicon.ico from static files (no API code)', () => {
-    expect(prod.rewrites).toEqual([{ source: '/api/health', destination: '/' }, { source: '/favicon.ico', destination: '/icon.svg' }]);
+    expect(prod.rewrites).toEqual([{ source: '/api/health', destination: '/' }, { source: '/favicon.ico', destination: '/icon.svg' },
+      { source: '/demo/biglaw', destination: '/demo/biglaw/index.html' }]);
   });
 });
