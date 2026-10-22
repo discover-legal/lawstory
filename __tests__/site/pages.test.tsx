@@ -26,23 +26,40 @@ describe('sample site pages', () => {
     for (const r of ROUTES) expect(existsSync(join(repo, 'app', r, 'page.tsx'))).toBe(true);
   });
 
-  it.each(['/demo/discover-legal', '/demo/biglaw'])('%s says it is a fictional sample with nothing saved', (r) => {
-    const text = html(r).replace(/<[^>]+>/g, ' ');
+  it('/demo/biglaw says it is a fictional sample with nothing saved', () => {
+    const text = html('/demo/biglaw').replace(/<[^>]+>/g, ' ');
     expect(text).toMatch(/Sample walkthrough: a fictional (client|matter) and scripted output/);
     expect(text).toMatch(/not legal advice/);
     expect(text).toMatch(/nothing to type here and nothing is saved/);
   });
 
-  it.each(ROUTES)('%s has no form controls and no literal email address', (r) => {
+  it('/demo/discover-legal says it is a recorded demo with a fictional client, not live AI, nothing sent or saved', () => {
+    const text = html('/demo/discover-legal').replace(/<[^>]+>/g, ' ').replace(/&#x27;|’/g, "'");
+    expect(text).toMatch(/Recorded demo: a fictional client \(Priya Nair\) and a fixed recording, not live AI/);
+    expect(text).toMatch(/not legal advice/);
+    expect(text).toMatch(/Nothing you type is sent anywhere or saved/);
+    expect(text).toMatch(/replies were scripted for this recording/); // the honest source note
+  });
+
+  // Inputs are allowed only on /demo/* pages, and nothing there is ever submitted: no <form> anywhere.
+  it.each(ROUTES)('%s has no form, no form controls outside /demo/*, and no literal email address', (r) => {
     const page = html(r);
-    expect(page).not.toMatch(/<(form|input|textarea|select)\b/i);
+    expect(page).not.toMatch(/<form\b|\baction=/i);
+    if (!r.startsWith('/demo/')) expect(page).not.toMatch(/<(input|textarea|select)\b/i);
     expect(page).not.toMatch(/@discover\.legal/);
   });
 
-  it('no form controls exist in the source either', () => {
+  it('the Documents demo renders its chat input (the one place typing is allowed)', () => {
+    expect(html('/demo/discover-legal')).toMatch(/<input[^>]*id="demo-chat-input"/);
+  });
+
+  it('no form controls in the source outside the demo, and no <form> or action= anywhere', () => {
     const files = execFileSync('git', ['ls-files', '-co', '--exclude-standard', 'app', 'components'], { cwd: repo, encoding: 'utf8' })
       .split('\n').filter((f) => f.endsWith('.tsx'));
-    expect(files.filter((f) => /<(form|input|textarea|select)\b/.test(readFileSync(join(repo, f), 'utf8')))).toEqual([]);
+    const isDemo = (f: string) => /^(app|components)\/demo\//.test(f);
+    expect(files.some(isDemo)).toBe(true);
+    expect(files.filter((f) => !isDemo(f) && /<(form|input|textarea|select)\b/.test(readFileSync(join(repo, f), 'utf8')))).toEqual([]);
+    expect(files.filter((f) => /<form\b|\baction=/.test(readFileSync(join(repo, f), 'utf8')))).toEqual([]);
   });
 });
 

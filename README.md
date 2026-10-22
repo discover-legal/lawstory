@@ -10,18 +10,19 @@ discover.legal is the website of a **legal-technology consultancy**. It sells fo
 (independent selection), **Build** (client-owned software), **Run** (managed operation on the firm's
 own infrastructure) and **Advise** (fractional technical leadership). Each has packages and a clear
 next step; every price is "Price on request" until the owner sets numbers. It also shows two free
-products as **demos**. **[S2-sample]** (a cut-down PR covering parts of S6/S7 so the site can go live
-early) ships both as **scripted sample walkthroughs** (typed data in `content/samples/`, fictional people,
-labelled "Sample walkthrough … not legal advice … nothing is saved"): `/demo/discover-legal` (interview
-turns → structured facts with quotes → a Form 8 style excerpt with Draft notes) and `/demo/biglaw`
-(matter → task → findings with exact/tolerant/excluded badges → memo with an Evidence Note), plus `/work`
-(honest status + consultancy, "Price on request"). The recorded replay and embed below are still planned:
+products as **demos**. **[S2-sample]** `/demo/biglaw` is a scripted sample walkthrough (typed data in
+`content/samples/`, fictional matter, "Sample walkthrough … not legal advice … nothing is saved": matter →
+task → findings with exact/tolerant/excluded badges → memo with an Evidence Note), plus `/work`
+(honest status + consultancy, "Price on request").
 
-1. **discover.legal Documents (Ontario)** [planned: S2–S6, S10]. A step-through replay of one real
-   recorded AI interview with a fictional Ontario applicant ("Marcus"). The visitor clicks *Next*, or
-   picks one of the recorded answers where the interview branches. The draft Application (General)
-   and Divorce Order update as the replay moves, and the replay ends with watermarked PDFs. There is
-   no free-text input, and no model is called while a visitor uses the site.
+1. **discover.legal Documents (Ontario)** **[docs-live]** `/demo/discover-legal` is the product's own
+   editor (chat, Document Details, facts, paginated Petition/Decree preview; ported from the v1 app at
+   `c34b131` into `components/demo/documents/`) on a **recorded engine**: visitors type, their words
+   pick the nearest recorded turn (off-script → the recorded question again, with a note), facts fill in,
+   the draft updates, and the two draft PDFs download at the end. No model call, no request, nothing
+   saved; Reset clears it. `demo/documents/record.mjs` builds `recording.json` + `public/drafts/*.pdf`
+   by running the real v1 Ontario interview code, templates and PDF renderer offline; the client's lines
+   and the per-turn model output are scripted (no real-model Ontario run exists in git history).
 2. **BigLaw** [planned: S7]. The open-source multi-agent platform, hosted separately at its own
    origin and embedded here in an iframe (a poster when no demo URL is set).
 
@@ -40,7 +41,7 @@ app/                         Next.js App Router. Every route is prerendered (`np
   layout.tsx                 [S2-sample] root layout: tokens + Protocol, header nav, footer (#contact, spelled-out email); GA: S6
   page.tsx                   [S2-sample] / home: positioning, CTA, the two products, how we work
   work/page.tsx              [S2-sample] /work products with honest status, consultancy ("Price on request"), CTA
-  demo/{discover-legal,biglaw}/page.tsx  [S2-sample] sample walkthroughs (Stepper: one step with JS, all without)
+  demo/discover-legal/page.tsx  [docs-live] the playable Documents demo; demo/biglaw: [S2-sample] Stepper walkthrough
   sitemap.ts, robots.ts      [S2-sample] every route + allow only in the production build; else empty / Disallow: /
   not-found.tsx, icon.svg    [S1] 404 ("Page not found"), favicon
   services/page.tsx          [planned: S7] /services   packages ("Price on request"), pricing rules, FAQ
@@ -50,7 +51,7 @@ app/                         Next.js App Router. Every route is prerendered (`np
   research/page.tsx          [planned: S7] /research   open experiments with their real status and repositories
   contact/page.tsx           [planned: S7] /contact    booking link first, obfuscated email second; works without JS
   privacy/page.tsx, terms/page.tsx   [planned: S7]
-components/                  [S2-sample] Cta, Stepper, SampleView, useHydrated; [planned: S6/S7] PackageCard,
+components/                  [S2-sample] Cta, Stepper, SampleView, useHydrated; [docs-live] demo/documents; [planned] PackageCard,
                              Analytics (GA4), DemoFrame, player/{Player,Transcript,Chips,Preview}
 content/site.ts, samples/    [S2-sample] routes, nav, work, services (price null → "Price on request"), contact,
                              the two samples; [planned: S7] pricing.ts packages
@@ -59,7 +60,7 @@ styles/directions/*.css      [S1] case-file, protocol, chambers: token overrides
 styles/globals.css           [S1] element styles written only against tokens
 core/                        [planned: S2/S3] the v2 engine, trimmed to the Ontario divorce interview, plus
                              intelligence/tape.ts (record/replay) and render/watermark.ts
-demo/                        [planned: S4/S5/S10] persona, fixtures, record.ts, build.ts, redact.ts
+demo/documents/               [docs-live] persona.mjs, record.mjs (owner-run), recording.json; public/drafts/ its PDFs
 public/demo/                 [planned: S5] GENERATED, gitignored: tree.json, n/<node>.<kind>.html, preview.css, DEMO-*.pdf
 __tests__/site/              [S1] loc-budget, tokens, lint-colour, deps, config, deploy, repo (Jest, node, no network)
 e2e/smoke.spec.mjs           [planned: S9] Playwright smoke against the standalone server
@@ -225,11 +226,11 @@ counted whatever its extension); or a path is a symlink, a submodule or not a re
 
 ## Limitations
 
-- **The S2 samples are scripted, not recorded.** They are written in the style of the real engines'
-  output and say so; they prove nothing about model quality. The email is spelled out in the footer
+- **The BigLaw sample is scripted, not recorded**, and the Documents demo's replies are scripted from the
+  product's Ontario interview questions (its drafts are real template output). Neither proves model quality. The email is spelled out in the footer
   ("h at discover dot legal") so it works without JavaScript; that is light obfuscation only.
 - **Quality of the Documents demo is unproven** until one v2 recording passes the R0 lawyer checklist.
-- **No live chat with the model.** The replay shows only what was recorded.
+- **No live chat with the model.** The Documents demo answers only from its recording.
 - **Analytics and consent.** With `NEXT_PUBLIC_GA_ID` set, GA4 sets cookies and sends page views to
   Google, with no consent banner or Consent Mode; whether PIPEDA or GDPR visitors need one is an
   owner/legal decision (cheapest: Consent Mode v2 default `denied`). The privacy page (S7) must disclose GA.
